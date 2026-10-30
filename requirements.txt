@@ -1,0 +1,19 @@
+# GP-MARL-RadNet -- core requirements (Python 3.10+)
+# Install:  pip install -r requirements.txt
+#
+# Simulation, tracking, classifier and dashboard
+numpy>=1.26
+scipy>=1.11
+pandas>=2.0
+pyyaml>=6.0
+scikit-learn>=1.3        # flight-profile classifier (gradient-boosted trees)
+joblib>=1.3
+pillow>=10.0            # decodes elevation tiles for terrain line-of-sight
+gymnasium>=1.0           # spaces used by the environment
+pettingzoo>=1.24         # multi-agent ParallelEnv API
+plotly>=5.18
+streamlit>=1.40          # dashboard:  streamlit run src/interfaces/app.py
+pytest>=8.0
+#
+# MARL training (MAPPO / IPPO) additionally needs PyTorch:
+#   pip install -r requirements-ml.txt

@@ -1,0 +1,29 @@
+name: high_noise
+description: Measurement noise doubled and more false alarms.
+site: {name: "Bursa · Uludağ · TR", lat: 40.14, lon: 29.10}
+dt: 0.5
+duration_s: 120
+area_radius_m: 6500
+seed: 1
+max_track_slots: 6
+terrain: {source: auto}   # real elevation tiles, procedural hills when offline
+
+radar_defaults:
+  fov_az_deg: 60
+  search_sector_deg: 120
+  false_alarms_per_beam: 0.08
+
+radars:
+  - {name: R1, position: [-6000, -5000, 15], heading_deg: 40}
+  - {name: R2, position: [ 6000, -5000, 15], heading_deg: 140}
+  - {name: R3, position: [ 6000,  5000, 15], heading_deg: -140}
+  - {name: R4, position: [-6000,  5000, 15], heading_deg: -40}
+
+targets:
+  - {label: 0}
+  - {label: 1}
+  - {label: 2}
+  - {label: 3}
+
+stress:
+  noise_scale: 2.0

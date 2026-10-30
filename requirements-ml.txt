@@ -1,0 +1,5 @@
+# Optional: deep-learning parts (MAPPO / IPPO training, future 1-D CNN classifier)
+# CPU-only wheels are enough for this project:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+-r requirements.txt
+torch>=2.2
