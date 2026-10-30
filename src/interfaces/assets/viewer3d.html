@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RadNet 3-D viewer</title>
+<style>
+:root{--bg:#0E1417;--panel:rgba(11,17,20,.82);--line:#22303A;--ink:#E6EDEF;--mut:#8DA2AC;--teal:#4FD1C5;--blue:#7FB3FF;--orange:#F5A524}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+.mono{font-family:ui-monospace,"IBM Plex Mono",Menlo,monospace}
+#scene{position:absolute;inset:0 0 54px 0;background:linear-gradient(180deg,#4d6274 0%,#8ea2af 40%,#2a3236 100%)}
+#scene canvas{display:block;width:100%;height:100%;touch-action:none}
+.hud{position:absolute;z-index:3;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+#hudL{top:10px;left:10px;padding:8px 10px;min-width:210px}
+#hudL .row{display:flex;align-items:center;gap:8px;margin:3px 0}
+#hudL .nm{width:26px;font-weight:700}
+#hudL .md{width:80px;font-size:11px}
+.bar{flex:1;height:6px;background:#22303A;border-radius:3px;overflow:hidden}.bar i{display:block;height:100%}
+#hudR{top:10px;right:10px;padding:6px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:60%}
+.hb{min-height:32px;padding:0 10px;border-radius:6px;border:1px solid #2C3C46;background:#0E1417;color:var(--ink);cursor:pointer;font:12px ui-monospace,monospace}
+.hb.on{border-color:var(--teal);background:#1A3A3A}
+#legend{bottom:64px;left:10px;padding:6px 10px;display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:#cfd9dd}
+#legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+#labels{position:absolute;inset:0 0 54px 0;pointer-events:none;z-index:2;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;font:600 11px ui-monospace,monospace;padding:1px 5px;border-radius:3px;background:rgba(11,17,20,.75);white-space:nowrap}
+#bottom{position:absolute;left:0;right:0;bottom:0;height:54px;display:flex;align-items:center;gap:10px;padding:0 12px;background:#111A1E;border-top:1px solid var(--line)}
+#bottom button{min-height:38px;min-width:44px;padding:0 12px;border-radius:7px;border:1px solid #2C3C46;background:transparent;color:var(--ink);cursor:pointer;font:inherit}
+#play{background:var(--teal)!important;color:#062421!important;border:0!important;font-weight:700!important;min-width:84px!important}
+#scrub{flex:1;accent-color:var(--teal)}
+#loading{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:rgba(11,17,20,.6);font:12px ui-monospace,monospace;color:#cfd9dd;text-align:center;padding:16px}
+#attr{position:absolute;right:8px;bottom:60px;z-index:3;font-size:10px;color:#e6edef;text-shadow:0 1px 2px #000;opacity:.85}
+#follow{right:10px;bottom:100px;padding:8px 10px;min-width:220px;display:none;font-size:12px}
+#follow .hdr{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:700;margin-bottom:4px}
+#follow .hdr button{min-height:28px;min-width:28px;border-radius:6px;border:1px solid #2C3C46;background:#0E1417;color:var(--ink);cursor:pointer}
+#follow .kv{display:grid;grid-template-columns:auto auto;column-gap:12px;row-gap:2px;color:#cfd9dd}
+#follow .kv b{color:var(--mut);font-weight:500}
+@media (max-width:760px){#hudL,#legend{display:none}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="scene"></div>
+<div id="labels"></div>
+<div class="hud mono" id="hudL"></div>
+<div class="hud mono" id="follow">
+  <div class="hdr"><span id="fTitle"></span><button type="button" id="unfollow" aria-label="Stop following" title="Stop following">✕</button></div>
+  <div id="fBody"></div>
+</div>
+<div class="hud" id="hudR">
+  <select class="hb" id="siteSel" aria-label="Map location" title="Map location"></select>
+  <select class="hb" id="styleSel" aria-label="Map style" title="Map style"></select>
+  <button class="hb" data-cam="oblique">3-D</button>
+  <button class="hb" data-cam="top">Top</button>
+  <button class="hb" id="orbit">Orbit</button>
+  <button class="hb on" data-tog="beams">Beams</button>
+  <button class="hb on" data-tog="cover">Coverage</button>
+  <button class="hb on" data-tog="trails">Trails</button>
+  <button class="hb on" data-tog="dets">Detections</button>
+  <button class="hb on" data-tog="truth">Truth</button>
+  <button class="hb on" data-tog="los" title="radar-target line of sight: green visible, red hidden by terrain">LOS</button>
+</div>
+<div class="hud" id="legend">
+  <span style="color:#8DA2AC">click a target or track to follow it ·</span>
+  <span><i style="background:#4FD1C5"></i>search beam</span>
+  <span><i style="background:#7FB3FF"></i>track beam</span>
+  <span><i style="background:#C39BFF"></i>interleaved</span>
+  <span><i style="background:#E6EDEF"></i>fused track · 3σ</span>
+  <span><i style="background:#9fffe0"></i>detection</span>
+  <span><i style="background:#ff5c5c"></i>false alarm</span>
+  <span><i style="background:#5cff8a"></i>LOS clear</span>
+  <span><i style="background:#ff3b3b"></i>LOS blocked by terrain</span>
+  <span id="clsLegend"></span>
+</div>
+<div id="attr"></div>
+<div id="loading"><span id="loadTxt">Starting 3-D view…</span></div>
+<div id="bottom">
+  <button id="play">Pause</button>
+  <button id="stepB" title="one frame">Step</button>
+  <button id="speed">1×</button>
+  <input id="scrub" type="range" min="0" value="0" step="1" aria-label="Replay position">
+  <span class="mono" id="time">0.0 s</span>
+</div>
+
+<script id="payload" type="application/json">__PAYLOAD__</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const D = JSON.parse(document.getElementById('payload').textContent);
+const F = D.frames, NF = F.length;
+const CLS_COL = [0xff9f43, 0xd980fa, 0x7bed9f, 0xfeca57];
+const CLS_CSS = ['#ff9f43', '#d980fa', '#7bed9f', '#feca57'];
+const MODE = ['IDLE', 'SEARCH', 'TRACK', 'OFFLINE', 'INTERLEAVED'];
+const MODE_COL = [0x8DA2AC, 0x4FD1C5, 0x7FB3FF, 0xff5c5c, 0xC39BFF];
+const MODE_CSS = ['#8DA2AC', '#4FD1C5', '#7FB3FF', '#ff5c5c', '#C39BFF'];
+const EXAG = 1.5;                       // vertical exaggeration of terrain and altitudes
+document.getElementById('clsLegend').innerHTML = D.classes.map((c, i) =>
+  `<span style="margin-right:10px"><i style="background:${CLS_CSS[i]};border-radius:50%"></i>${c}</span>`).join('');
+
+/* ------------------------------------------------------------------ terrain tiles
+   Terrain = DEM tiles (AWS Terrain Tiles, "terrarium" encoding) draped with
+   satellite imagery tiles (Esri World Imagery).  Both are loaded at view
+   time and credited in the corner; if they cannot be fetched (offline) a
+   procedural ground is generated instead. */
+const ZD = 12, ZI = 13, N = 4;          // DEM zoom, imagery zoom, N x N DEM tiles
+const DEM = (z, x, y) => `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
+const ESRI = (svc) => (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/${svc}/MapServer/tile/${z}/${y}/${x}`;
+const STYLES = {
+  satellite: {name: 'Satellite', url: ESRI('World_Imagery'), attr: 'Imagery © Esri, Maxar, Earthstar Geographics'},
+  topo: {name: 'Topographic', url: ESRI('World_Topo_Map'), attr: 'Map © Esri and contributors'},
+  streets: {name: 'Streets', url: ESRI('World_Street_Map'), attr: 'Map © Esri and contributors'},
+  offline: {name: 'Offline (procedural)', url: null, attr: 'Procedural ground (offline)'},
+};
+const SITES = D.sites && D.sites.length ? D.sites : [D.site];
+const store = {get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+               set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} }};
+const lon2x = (lon, z) => (lon + 180) / 360 * 2 ** z;
+const lat2y = (lat, z) => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z; };
+
+function mosaic(url, z, x0, y0, n, tick) {
+  const c = document.createElement('canvas'); c.width = c.height = n * 256;
+  const g = c.getContext('2d', {willReadFrequently: true});
+  g.fillStyle = '#4b5440'; g.fillRect(0, 0, c.width, c.height);
+  let ok = 0; const jobs = [];
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) jobs.push(new Promise(res => {
+    let done = false; const fin = () => { if (!done) { done = true; tick(); res(); } };
+    const im = new Image(); im.crossOrigin = 'anonymous';
+    im.onload = () => { g.drawImage(im, i * 256, j * 256); ok++; fin(); };
+    im.onerror = fin; setTimeout(fin, 15000); im.src = url(z, x0 + i, y0 + j);
+  }));
+  return Promise.all(jobs).then(() => ({c, g, ok, n: n * n}));
+}
+function procHeights(w, h) {
+  const d = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const u = x / w, v = y / h;
+    d[y * w + x] = 1400 + 900 * Math.max(0, u - 0.65) ** 1.5 + 300 * Math.exp(-((u - 0.85) ** 2 + (v - 0.3) ** 2) * 20)
+      + 20 * Math.sin(u * 31 + v * 7) + 14 * Math.sin(v * 27 - u * 13); }
+  return d;
+}
+function procImagery() {
+  const c = document.createElement('canvas'); c.width = c.height = 1024; const g = c.getContext('2d');
+  g.fillStyle = '#6b7350'; g.fillRect(0, 0, 1024, 1024); let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const cols = ['#58663e', '#7d8455', '#8f8a62', '#4c5a36', '#a39a73', '#667147'];
+  for (let i = 0; i < 1800; i++) { g.fillStyle = cols[(rnd() * cols.length) | 0]; g.fillRect(rnd() * 1024, rnd() * 1024, 8 + rnd() * 50, 8 + rnd() * 50); }
+  return c;
+}
+
+/* ------------------------------------------------------------------ renderer */
+const box = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+box.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x9aabb5, 30, 110);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.02, 500);
+const controls = new OrbitControls(camera, renderer.domElement);
+Object.assign(controls, {enableDamping: true, dampingFactor: 0.08, maxPolarAngle: Math.PI * 0.49,
+  minDistance: 0.5, maxDistance: 80, autoRotateSpeed: 0.6, screenSpacePanning: false});
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const sun = new THREE.DirectionalLight(0xfff4e6, 0.7); sun.position.set(-6, 10, 4); scene.add(sun);
+
+/* sim ENU metres -> three.js km: X = east, Y = up, Z = -north */
+let T = null;
+const W = (x, y) => [x / 1000, -y / 1000];
+function hAt(X, Z) {                      // terrain height (scene units) at scene X,Z
+  if (!T) return 0;
+  const {data, w, h} = T.dem, u = (X - T.x0km) / T.size, v = (Z - T.z0km) / T.size;
+  // cell-centre convention, identical to src/core/terrain.py::Terrain.height
+  const px = Math.min(w - 1.001, Math.max(0, u * w - 0.5)), py = Math.min(h - 1.001, Math.max(0, v * h - 0.5));
+  const x0 = px | 0, y0 = py | 0, fx = px - x0, fy = py - y0, i = y0 * w + x0;
+  const m = (data[i] * (1 - fx) + data[i + 1] * fx) * (1 - fy) + (data[i + w] * (1 - fx) + data[i + w + 1] * fx) * fy;
+  return (m - T.hMin) / 1000 * EXAG;
+}
+const altY = (X, Z, zMetres) => Math.max(hAt(X, Z) + 0.05, T.base + zMetres / 1000 * EXAG);
+
+/* terrain computed by the simulator (src/core/terrain.py): the viewer draws
+   exactly the heights the line-of-sight test uses */
+const SIMT = D.terrain || null;
+function simHeights() {
+  if (!SIMT || SIMT.source === 'flat') return {data: new Float32Array(64 * 64), w: 64, h: 64};
+  const bytes = Uint8Array.from(atob(SIMT.data), c => c.charCodeAt(0));
+  return {data: Float32Array.from(new Int16Array(bytes.buffer)), w: SIMT.w, h: SIMT.h};
+}
+let loadTok = 0;
+async function loadTerrain(site, styleKey) {
+  const tok = ++loadTok, style = STYLES[styleKey] || STYLES.satellite;
+  document.getElementById('loading').style.display = 'flex';
+  const fx = lon2x(site.lon, ZD), fy = lat2y(site.lat, ZD);
+  const x0 = Math.floor(fx - N / 2), y0 = Math.floor(fy - N / 2), k = 2 ** (ZI - ZD);
+  let done = 0; const total = N * N * (1 + k * k);
+  const tick = () => { done++; document.getElementById('loadTxt').textContent = `Loading terrain & imagery · ${done}/${total} tiles`; };
+  const noImg = Promise.resolve({c: null, ok: 0, n: 1});
+  const useSim = SIMT && site === SITES[0];
+  const [dem, img] = await Promise.all([style.url && !useSim ? mosaic(DEM, ZD, x0, y0, N, tick) : noImg,
+                                        style.url ? mosaic(style.url, ZI, x0 * k, y0 * k, N * k, tick) : noImg]);
+  if (tok !== loadTok) return;                 // a newer selection superseded this one
+  let w = N * 256, h = N * 256, data = null, demSrc = 'synthetic elevation';
+  if (useSim) { const s = simHeights(); data = s.data; w = s.w; h = s.h;
+    demSrc = {tiles: 'Elevation: AWS Terrain Tiles', procedural: 'procedural elevation (offline)', flat: 'flat terrain'}[SIMT.source]; }
+  else if (dem.ok === dem.n) { try { const px = dem.g.getImageData(0, 0, w, h).data; data = new Float32Array(w * h);
+    for (let i = 0; i < w * h; i++) data[i] = px[i * 4] * 256 + px[i * 4 + 1] + px[i * 4 + 2] / 256 - 32768; } catch (e) { data = null; } }
+  if (data && !useSim) demSrc = 'Elevation: AWS Terrain Tiles';
+  if (!data) data = procHeights(w, h);
+  const imgLive = img.ok >= img.n * 0.6;
+  let hMin = Infinity; for (let i = 0; i < data.length; i++) if (data[i] < hMin) hMin = data[i];
+  const tileKm = 40075.016 * Math.cos(site.lat * Math.PI / 180) / 2 ** ZD, size = N * tileKm;
+  // place the mosaic so that the site lat/lon is the scene origin
+  const x0km = -(fx - x0) * tileKm, z0km = -(fy - y0) * tileKm;
+  if (T) { scene.remove(T.mesh, T.floor); T.mesh.geometry.dispose(); T.mesh.material.map.dispose(); T.mesh.material.dispose(); }
+  T = {dem: {data, w, h}, hMin, size, x0km, z0km, base: 0, sim: useSim};
+  const geo = new THREE.PlaneGeometry(size, size, 255, 255); geo.rotateX(-Math.PI / 2);
+  geo.translate(x0km + size / 2, 0, z0km + size / 2);
+  const pa = geo.attributes.position; for (let i = 0; i < pa.count; i++) pa.setY(i, hAt(pa.getX(i), pa.getZ(i)));
+  geo.computeVertexNormals();
+  const tex = new THREE.CanvasTexture(imgLive ? img.c : procImagery()); tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  T.mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({map: tex}));
+  T.floor = new THREE.Mesh(new THREE.PlaneGeometry(800, 800).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({color: styleKey === 'satellite' ? 0x3d4536 : 0x9aa59a}));
+  T.floor.position.y = -0.05; scene.add(T.mesh, T.floor);
+  const hs = []; const R = D.area_radius / 1000;
+  for (let a = -4; a <= 4; a++) for (let b = -4; b <= 4; b++) hs.push(hAt(a / 4 * R, b / 4 * R));
+  hs.sort((p, q) => p - q); T.base = hs[hs.length >> 1];
+  if (useSim) T.base = (0 - hMin) / 1000 * EXAG;       // simulator heights are relative to the area datum
+  document.getElementById('attr').textContent = (imgLive ? style.attr : 'Procedural imagery (offline)')
+    + ' · ' + demSrc + ` · vertical ×${EXAG} · ${site.name}`;
+}
+
+/* ------------------------------------------------------------------ helpers */
+const labelBox = document.getElementById('labels');
+function mkLabel(col) { const el = document.createElement('div'); el.className = 'lbl'; el.style.color = col; labelBox.appendChild(el); return {el, pos: new THREE.Vector3(), on: false}; }
+const labels = [];
+function lineObj(color, opacity = 1) {
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3 * 400), 3)); g.setDrawRange(0, 0);
+  return new THREE.Line(g, new THREE.LineBasicMaterial({color, transparent: opacity < 1, opacity}));
+}
+function setLine(line, pts) {
+  const a = line.geometry.attributes.position, n = Math.min(pts.length, a.count);
+  for (let i = 0; i < n; i++) a.setXYZ(i, pts[i].x, pts[i].y, pts[i].z);
+  a.needsUpdate = true; line.geometry.setDrawRange(0, n); line.geometry.computeBoundingSphere();
+}
+const groups = {beams: new THREE.Group(), cover: new THREE.Group(), trails: new THREE.Group(), dets: new THREE.Group(), truth: new THREE.Group(), los: new THREE.Group()};
+const losLines = new Map();                 // "radar:target" -> line
+function losLine(key) {
+  if (!losLines.has(key)) { const l = lineObj(0x5cff8a, 0.6); groups.los.add(l); losLines.set(key, l); }
+  return losLines.get(key);
+}
+Object.values(groups).forEach(g => scene.add(g));
+
+/* ------------------------------------------------------------------ static objects */
+let radObjs = [];
+function buildRadars() {
+  radObjs.forEach(R => { scene.remove(R.g); R.beams.forEach(m => groups.beams.remove(m)); R.lb.el.remove(); labels.splice(labels.indexOf(R.lb), 1); });
+  groups.cover.clear();
+  radObjs = D.radars.map((r, i) => {
+    const [X, Z] = W(r.pos[0], r.pos[1]), G = hAt(X, Z);
+    const mat = new THREE.MeshLambertMaterial({color: 0x4FD1C5});
+    const g = new THREE.Group(); g.position.set(X, G, Z);
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.04, 0.22), mat); pad.position.y = 0.02;
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.05, 0.22, 10), mat); mast.position.y = 0.13;
+    const face = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.2, 0.26), mat); face.position.set(0.04, 0.27, 0);
+    g.add(pad, mast, face); g.rotation.y = r.heading;   // array face looks along the boresight
+    scene.add(g);
+    // coverage fan on the ground: +-fov around the boresight out to r_max
+    const pts = [new THREE.Vector3(X, G + 0.03, Z)];
+    for (let k = 0; k <= 64; k++) { const az = r.heading - r.fov + 2 * r.fov * k / 64;
+      const x = X + r.rmax / 1000 * Math.cos(az), z = Z - r.rmax / 1000 * Math.sin(az); pts.push(new THREE.Vector3(x, hAt(x, z) + 0.03, z)); }
+    pts.push(pts[0].clone());
+    const fan = lineObj(0x4FD1C5, 0.35); setLine(fan, pts); groups.cover.add(fan);
+    const beams = [];
+    for (let b = 0; b < 8; b++) {
+      const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(15), 3));
+      bg.setIndex([0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1]);
+      const m = new THREE.Mesh(bg, new THREE.MeshBasicMaterial({color: 0x4FD1C5, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false}));
+      groups.beams.add(m); beams.push(m);
+    }
+    const lb = mkLabel('#7FE3D8'); labels.push(lb);
+    return {r, g, mat, X, Z, G, beams, lb, top: new THREE.Vector3(X, G + 0.3, Z)};
+  });
+}
+// world direction of a beam given in the radar's sensor frame (azimuth positive to the right)
+function beamDir(r, az, el) { const a = r.heading - az; return new THREE.Vector3(Math.cos(el) * Math.cos(a), Math.sin(el) * EXAG, -Math.cos(el) * Math.sin(a)).normalize(); }
+function setBeam(mesh, R, az, el, color, len) {
+  const r = R.r, L = (len || r.rmax) / 1000, o = R.top, ha = r.bw_az / 2, he = r.bw_el / 2;
+  const cs = [[-ha, -he], [ha, -he], [ha, he], [-ha, he]].map(([da, de]) => beamDir(r, az + da, el + de).multiplyScalar(L).add(o));
+  const p = mesh.geometry.attributes.position; p.setXYZ(0, o.x, o.y, o.z); cs.forEach((c, i) => p.setXYZ(i + 1, c.x, c.y, c.z));
+  p.needsUpdate = true; mesh.geometry.computeBoundingSphere(); mesh.material.color.setHex(color); mesh.visible = true;
+}
+
+/* targets (truth) and tracks are pooled by id */
+const tgtObjs = new Map(), trkObjs = new Map();
+function tgtObj(t) {
+  if (tgtObjs.has(t.id)) return tgtObjs.get(t.id);
+  const col = CLS_COL[t.label] ?? 0xffffff;
+  const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 12), new THREE.MeshBasicMaterial({color: col}));
+  const drop = lineObj(col, 0.5), trail = lineObj(col, 0.55);
+  groups.truth.add(sphere, drop); groups.trails.add(trail);
+  const o = {sphere, drop, trail, lb: mkLabel(CLS_CSS[t.label])}; labels.push(o.lb); tgtObjs.set(t.id, o); return o;
+}
+function trkObj(id) {
+  if (trkObjs.has(id)) return trkObjs.get(id);
+  const boxM = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(0.12, 0.12, 0.12)), new THREE.LineBasicMaterial({color: 0xE6EDEF}));
+  const sig = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 2), new THREE.MeshBasicMaterial({color: 0xE6EDEF, wireframe: true, transparent: true, opacity: 0.28, depthWrite: false}));
+  const trail = lineObj(0xE6EDEF, 0.9);
+  scene.add(boxM, sig); groups.trails.add(trail);
+  const o = {boxM, sig, trail, lb: mkLabel('#E6EDEF'), hist: []}; labels.push(o.lb); trkObjs.set(id, o); return o;
+}
+const detGeo = new THREE.BufferGeometry(); detGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3 * 256), 3));
+detGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(3 * 256), 3));
+const detPts = new THREE.Points(detGeo, new THREE.PointsMaterial({size: 0.12, vertexColors: true, transparent: true, opacity: 0.95, depthWrite: false}));
+groups.dets.add(detPts);
+
+/* ------------------------------------------------------------------ per-frame update */
+const lerp = (a, b, f) => a + (b - a) * f;
+const scenePos = (p) => { const [X, Z] = W(p[0], p[1]); return new THREE.Vector3(X, altY(X, Z, p[2]), Z); };
+function apply(fi) {
+  const i0 = Math.floor(fi), i1 = Math.min(NF - 1, i0 + 1), f = fi - i0, A = F[i0], B = F[i1];
+  // radars and beams
+  A.radars.forEach((rs, i) => {
+    const R = radObjs[i]; R.mat.color.setHex(MODE_COL[rs.mode]);
+    R.beams.forEach((m, k) => {
+      const b = rs.beams[k]; if (!b) { m.visible = false; return; }
+      // interleaved look: search cells in the search colour at full range, the last beam is the track dwell
+      const trackBeam = rs.mode === 2 || (rs.mode === 4 && k === rs.beams.length - 1);
+      setBeam(m, R, b[0], b[1], rs.mode === 4 && !trackBeam ? MODE_COL[1] : MODE_COL[rs.mode], trackBeam ? rs.len : null);
+    });
+    R.lb.pos.copy(R.top).add(new THREE.Vector3(0, 0.15, 0)); R.lb.on = true;
+    R.lb.el.textContent = `${R.r.name} · ${MODE[rs.mode]}`; R.lb.el.style.color = MODE_CSS[rs.mode];
+  });
+  // truth targets (interpolated)
+  const seenT = new Set();
+  A.targets.forEach(t => {
+    const tb = B.targets.find(q => q.id === t.id) || t, o = tgtObj(t); seenT.add(t.id);
+    const P = scenePos([lerp(t.p[0], tb.p[0], f), lerp(t.p[1], tb.p[1], f), lerp(t.p[2], tb.p[2], f)]);
+    o.sphere.position.copy(P); o.sphere.visible = true;
+    setLine(o.drop, [P, new THREE.Vector3(P.x, hAt(P.x, P.z), P.z)]);
+    const hist = []; for (let k = Math.max(0, i0 - 60); k <= i0; k++) { const q = F[k].targets.find(z => z.id === t.id); if (q) hist.push(scenePos(q.p)); }
+    hist.push(P); setLine(o.trail, hist);
+    o.lb.pos.copy(P).add(new THREE.Vector3(0, 0.14, 0)); o.lb.on = groups.truth.visible;
+    o.lb.el.textContent = `truth · ${D.classes[t.label]}`;
+  });
+  // radar -> target line of sight (computed by the simulator, incl. terrain occlusion)
+  A.radars.forEach((rs, i) => {
+    const R = radObjs[i]; if (!R) return;
+    A.targets.forEach((t, j) => {
+      const l = losLine(i + ':' + t.id), st = rs.los ? rs.los[j] : 0;
+      if (!st) { l.visible = false; return; }
+      const o = tgtObjs.get(t.id); if (!o) { l.visible = false; return; }
+      setLine(l, [R.top, o.sphere.position]); l.visible = true;
+      l.material.color.setHex(st === 1 ? 0x5cff8a : 0xff3b3b); l.material.opacity = st === 1 ? 0.45 : 0.9;
+    });
+  });
+  // fused tracks
+  const seen = new Set();
+  A.tracks.forEach(t => {
+    const tb = B.tracks.find(q => q.id === t.id) || t, o = trkObj(t.id); seen.add(t.id);
+    const P = scenePos([lerp(t.p[0], tb.p[0], f), lerp(t.p[1], tb.p[1], f), lerp(t.p[2], tb.p[2], f)]);
+    o.boxM.position.copy(P); o.boxM.visible = true; o.boxM.material.color.setHex(t.conf ? 0xE6EDEF : 0x8DA2AC);
+    o.sig.position.copy(P); o.sig.visible = t.conf; o.sig.scale.setScalar(Math.max(0.03, 3 * t.sig / 1000));
+    const hist = []; for (let k = Math.max(0, i0 - 60); k <= i0; k++) { const q = F[k].tracks.find(z => z.id === t.id); if (q) hist.push(scenePos(q.p)); }
+    hist.push(P); setLine(o.trail, hist); o.trail.visible = t.conf;
+    o.lb.pos.copy(P).add(new THREE.Vector3(0, -0.12, 0)); o.lb.on = t.conf;
+    o.lb.el.textContent = t.cls >= 0 ? `T${t.id} · ${D.classes[t.cls]} ${Math.round(t.pc * 100)}%` : `T${t.id} · σ ${Math.round(t.sig)} m`;
+    o.lb.el.style.color = t.cls >= 0 ? CLS_CSS[t.cls] : '#E6EDEF';
+  });
+  trkObjs.forEach((o, id) => { if (!seen.has(id)) { o.boxM.visible = o.sig.visible = o.trail.visible = false; o.lb.on = false; } });
+  // detections of this frame
+  const pa = detGeo.attributes.position, ca = detGeo.attributes.color, n = Math.min(256, A.dets.length);
+  for (let k = 0; k < n; k++) { const d = A.dets[k], P = scenePos(d); pa.setXYZ(k, P.x, P.y, P.z);
+    if (d[3]) ca.setXYZ(k, 1, 0.36, 0.36); else ca.setXYZ(k, 0.62, 1, 0.88); }
+  pa.needsUpdate = ca.needsUpdate = true; detGeo.setDrawRange(0, n); detGeo.computeBoundingSphere();
+  // HUD
+  document.getElementById('hudL').innerHTML = `<div style="color:#8DA2AC;margin-bottom:4px">t = ${lerp(A.t, B.t, f).toFixed(1)} s · ${A.tracks.filter(t => t.conf).length} confirmed tracks</div>` +
+    A.radars.map((rs, i) => `<div class="row"><span class="nm" style="color:${MODE_CSS[rs.mode]}">${D.radars[i].name}</span><span class="md" style="color:${MODE_CSS[rs.mode]}">${MODE[rs.mode]}</span>
+    <span class="bar" title="energy"><i style="width:${rs.energy * 100}%;background:#4FD1C5"></i></span><span class="bar" title="thermal margin"><i style="width:${rs.heat * 100}%;background:#F5A524"></i></span></div>`).join('') +
+    `<div style="color:#8DA2AC;font-size:10px;margin-top:4px">bars: energy · thermal margin</div>`;
+  document.getElementById('time').textContent = `${lerp(A.t, B.t, f).toFixed(1)} s / ${F[NF - 1].t.toFixed(1)} s`;
+  updateFollow(A);
+}
+
+/* ------------------------------------------------------------------ click a target or track to follow it */
+let follow = null;                          // {kind: 'target' | 'track', id}
+const followEl = document.getElementById('follow'), fTitle = document.getElementById('fTitle'), fBody = document.getElementById('fBody');
+document.getElementById('unfollow').onclick = stopFollow;
+const ring = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.014, 8, 48),
+  new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.95, depthTest: false}));
+ring.rotation.x = Math.PI / 2; ring.renderOrder = 10; ring.visible = false; scene.add(ring);
+function followMesh() {
+  if (!follow) return null;
+  const o = follow.kind === 'target' ? tgtObjs.get(follow.id) : trkObjs.get(follow.id);
+  if (!o) return null;
+  const m = follow.kind === 'target' ? o.sphere : o.boxM;
+  return m.visible ? m : null;
+}
+// screen-space picking: nearest target / track marker within 22 px of the click
+function pickAt(cx, cy) {
+  const w = box.clientWidth, h = box.clientHeight, q = new THREE.Vector3();
+  let best = null, bd = 22;
+  const test = (kind, id, pos) => {
+    q.copy(pos).project(camera); if (q.z > 1) return;
+    const d = Math.hypot((q.x + 1) / 2 * w - cx, (1 - q.y) / 2 * h - cy);
+    if (d < bd) { bd = d; best = {kind, id}; }
+  };
+  if (groups.truth.visible) tgtObjs.forEach((o, id) => { if (o.sphere.visible) test('target', id, o.sphere.position); });
+  trkObjs.forEach((o, id) => { if (o.boxM.visible && o.sig.visible) test('track', id, o.boxM.position); });
+  return best;
+}
+function startFollow(hit) {
+  follow = hit;
+  controls.autoRotate = false; document.getElementById('orbit').classList.remove('on');
+  const m = followMesh(); if (!m) return;
+  const off = camera.position.clone().sub(controls.target);
+  if (off.length() > 3.0) off.setLength(3.0);                  // zoom in to ~3 km
+  controls.target.copy(m.position); camera.position.copy(m.position).add(off); controls.update();
+}
+function stopFollow() { follow = null; ring.visible = false; followEl.style.display = 'none'; }
+const kv = rows => '<div class="kv">' + rows.map(([k, v]) => `<b>${k}</b><span>${v}</span>`).join('') + '</div>';
+function updateFollow(A) {
+  if (!follow) return;
+  const m = followMesh();
+  followEl.style.display = 'block';
+  // only the title and body change per frame; the close button stays the same element
+  const head = (title, col) => { fTitle.textContent = title; fTitle.style.color = col; return ''; };
+  if (!m) {
+    ring.visible = false;
+    fBody.innerHTML = head(follow.kind === 'track' ? `T${follow.id}` : 'target', '#8DA2AC') +
+      '<div style="color:#8DA2AC">not present at this time (track dropped or not yet started)</div>';
+  } else {
+    // rigid follow: shift camera and orbit centre by the object's motion; orbiting still works
+    const d = m.position.clone().sub(controls.target); controls.target.add(d); camera.position.add(d);
+    ring.position.copy(m.position); ring.visible = true;
+    ring.scale.setScalar(Math.max(0.6, camera.position.distanceTo(m.position) / 4));
+    if (follow.kind === 'target') {
+      const j = A.targets.findIndex(t => t.id === follow.id), t = A.targets[j];
+      const nLos = A.radars.filter(rs => rs.los && rs.los[j] === 1).length;
+      const nHid = A.radars.filter(rs => rs.los && rs.los[j] === 2).length;
+      let trk = null, best = 1e9;
+      A.tracks.forEach(tr => { if (!tr.conf) return; const e = Math.hypot(tr.p[0] - t.p[0], tr.p[1] - t.p[1], tr.p[2] - t.p[2]);
+        if (e < best && e < 3 * tr.sig + 500) { best = e; trk = tr; } });
+      fBody.innerHTML = head(`truth · ${D.classes[t.label]}`, CLS_CSS[t.label]) + kv([
+        ['altitude', `${Math.round(t.p[2])} m`], ['speed', `${Math.hypot(...t.v).toFixed(1)} m/s`],
+        ['line of sight', `${nLos} radar(s)` + (nHid ? ` · ${nHid} hidden by terrain` : '')],
+        ['tracked by', trk ? `T${trk.id} · error ${Math.round(best)} m` : 'no confirmed track']]);
+    } else {
+      const tr = A.tracks.find(q => q.id === follow.id);
+      let err = 1e9; A.targets.forEach(t => { err = Math.min(err, Math.hypot(tr.p[0] - t.p[0], tr.p[1] - t.p[1], tr.p[2] - t.p[2])); });
+      fBody.innerHTML = head(`fused track T${tr.id}`, tr.cls >= 0 ? CLS_CSS[tr.cls] : '#E6EDEF') + kv([
+        ['class', tr.cls >= 0 ? `${D.classes[tr.cls]} · ${Math.round(tr.pc * 100)}%` : 'not classified yet'],
+        ['σ position', `${Math.round(tr.sig)} m`], ['speed', `${Math.hypot(...tr.v).toFixed(1)} m/s`],
+        ['altitude', `${Math.round(tr.p[2])} m`], ['error to nearest truth', `${Math.round(err)} m`]]);
+    }
+  }
+}
+let downAt = null;
+renderer.domElement.addEventListener('pointerdown', e => { downAt = {x: e.clientX, y: e.clientY}; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!downAt || e.button !== 0) { downAt = null; return; }
+  const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y); downAt = null;
+  if (moved > 5) return;                                       // it was a drag (orbit / pan)
+  const r = renderer.domElement.getBoundingClientRect(), hit = pickAt(e.clientX - r.left, e.clientY - r.top);
+  if (hit) startFollow(hit); else stopFollow();
+});
+renderer.domElement.addEventListener('pointermove', e => {
+  if (e.buttons) return;
+  const r = renderer.domElement.getBoundingClientRect();
+  renderer.domElement.style.cursor = pickAt(e.clientX - r.left, e.clientY - r.top) ? 'pointer' : '';
+});
+
+/* ------------------------------------------------------------------ labels, camera, controls */
+const pv = new THREE.Vector3();
+function placeLabels() {
+  const w = box.clientWidth, h = box.clientHeight;
+  labels.forEach(o => { if (!o.on) { o.el.style.display = 'none'; return; }
+    pv.copy(o.pos).project(camera); const vis = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05;
+    o.el.style.display = vis ? '' : 'none';
+    if (vis) o.el.style.transform = `translate(${(pv.x + 1) / 2 * w}px,${(1 - pv.y) / 2 * h}px) translate(-50%,-120%)`; });
+}
+function setView(kind) {
+  const b = T ? T.base : 0, R = D.area_radius / 1000;
+  if (kind === 'top') { controls.target.set(0, b, 0); camera.position.set(0, b + R * 3.2, 0.01); }
+  else { controls.target.set(0, b, 0); camera.position.set(-R * 0.4, b + R * 1.1, R * 2.1); }
+  controls.update();
+}
+document.querySelectorAll('[data-cam]').forEach(b => b.onclick = () => { stopFollow(); setView(b.dataset.cam); });
+const orbitB = document.getElementById('orbit');
+orbitB.onclick = () => { controls.autoRotate = !controls.autoRotate; orbitB.classList.toggle('on', controls.autoRotate); };
+document.querySelectorAll('[data-tog]').forEach(b => b.onclick = () => { const g = groups[b.dataset.tog]; g.visible = !g.visible; b.classList.toggle('on', g.visible); });
+
+let playing = true, speed = 1, fi = 0, last = performance.now();
+const scrub = document.getElementById('scrub'); scrub.max = NF - 1;
+document.getElementById('play').onclick = e => { playing = !playing; e.target.textContent = playing ? 'Pause' : 'Play'; };
+document.getElementById('stepB').onclick = () => { playing = false; document.getElementById('play').textContent = 'Play'; fi = Math.min(NF - 1, Math.floor(fi) + 1); };
+const SPEEDS = [0.5, 1, 2, 4];
+document.getElementById('speed').onclick = e => { speed = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length]; e.target.textContent = speed + '×'; };
+scrub.oninput = () => { fi = +scrub.value; playing = false; document.getElementById('play').textContent = 'Play'; };
+
+function resize() { const w = box.clientWidth, h = box.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(box); resize();
+
+function loop(now) {
+  requestAnimationFrame(loop);
+  const dts = Math.min(0.1, (now - last) / 1000); last = now;
+  if (T && NF > 0) {
+    if (playing) { fi += dts * speed / D.dt; if (fi >= NF - 1) fi = 0; scrub.value = Math.floor(fi); }
+    apply(fi); placeLabels();
+  }
+  controls.update(); renderer.render(scene, camera);
+}
+/* map location and style pickers */
+const siteSel = document.getElementById('siteSel'), styleSel = document.getElementById('styleSel');
+siteSel.innerHTML = SITES.map((s, i) => `<option value="${i}">${s.name}</option>`).join('');
+if (SIMT) siteSel.style.display = 'none';   // the site is chosen in the dashboard: it defines the simulated terrain
+styleSel.innerHTML = Object.entries(STYLES).map(([k, s]) => `<option value="${k}">${s.name}</option>`).join('');
+const savedSite = SIMT ? 0 : SITES.findIndex(s => s.name === store.get('radnet.site'));
+siteSel.value = String(savedSite >= 0 ? savedSite : 0);
+styleSel.value = STYLES[store.get('radnet.style')] ? store.get('radnet.style') : 'satellite';
+let firstView = true;
+function reload() {
+  const site = SITES[+siteSel.value], style = styleSel.value;
+  loadTerrain(site, style).catch(() => {}).finally(() => {
+    if (!T) { document.getElementById('loadTxt').textContent = 'Terrain could not be built.'; return; }
+    buildRadars(); if (firstView) { setView('oblique'); firstView = false; }
+    document.getElementById('loading').style.display = 'none';
+  });
+}
+siteSel.onchange = () => { store.set('radnet.site', SITES[+siteSel.value].name); reload(); };
+styleSel.onchange = () => { store.set('radnet.style', styleSel.value); reload(); };
+reload();
+requestAnimationFrame(loop);
+setTimeout(() => { if (!T) document.getElementById('loadTxt').textContent = 'Still loading… three.js and map tiles need an internet connection; WebGL must be enabled.'; }, 15000);
+</script>
+</body>
+</html>
