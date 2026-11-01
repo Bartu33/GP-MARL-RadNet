@@ -24,6 +24,23 @@ balanced accuracy and the confusion matrix. Files written:
 
 The same can be done from the **Classifier** tab of the dashboard.
 
+Classifier study (dataset checks, MLP vs GRU, fused vs single-radar tracks):
+
+```bash
+python -m src.services.classifier_study --episodes 40
+```
+
+Every episode has three radars, so the fused track and each radar's local
+track follow the same target. The report (`models/metadata/classifier_study.json`,
+also shown on the Classifier tab) gives macro-F1, balanced accuracy and ECE
+for GBM, MLP and GRU, trained and tested on fused or local tracks, plus a
+true-state upper bound. It also replaces the simulator's classifier
+(`models/checkpoints/flight_profile_gbm.joblib`) with a GBM trained on fused
+tracks, the evidence the fusion centre actually has (`--no-sim-model` keeps
+the old one; `--from-data` reuses the saved dataset instead of simulating
+again). Background on RL-based classification:
+`doc/research/rl_classification.md`.
+
 ## 3. Dashboard
 
 ```bash
@@ -63,27 +80,57 @@ YAML files in `configs/scenarios/`. Copy one and edit:
   (boresight, counter-clockwise from east); any `RadarParams` field can be
   overridden here or in `radar_defaults`.
 * `targets`: list of `{label: 0..3}` (optionally `position`).
+* `share_actions: true` lets every radar action also decide whether its
+  reports are sent to the fusion centre (fusion participation); with
+  `reward.w_comm` each delivered report costs reward (`share_control.yaml`).
 * `interleaved_actions: true` adds the INTERLEAVED (search + track) actions;
   `reward.w_fair` adds a load-equalisation term (see doc/research/radar_modes.md).
 * `stress`: `fail_radar`, `fail_time_s`, `comm_drop_prob`,
-  `max_reports_per_radar`, `noise_scale`.
+  `max_reports_per_radar`, `noise_scale`, `outages` (list of
+  `[radar index or all, t0, t1]`: the radar transmits but detects nothing in
+  that window; `track_loss.yaml` uses a 20 s outage on all radars to force
+  track loss and reacquisition).
 * `site`: latitude / longitude of the area; it selects the terrain.
 * `terrain`: `{source: auto}` downloads real elevation tiles once (cached in
   `data/raw/terrain/`) and falls back to procedural hills offline; `flat`,
   `procedural` and `tiles` force one source. Terrain blocks radar line of
   sight, and targets keep at least 30 m above the ground.
 
-## 5. MARL training (optional)
+## 5. Metrics
+
+Every number in the dashboard is defined in `src/core/evaluation.py`
+(`METRIC_INFO`); the Experiments tab shows the same table under
+"What do the metrics mean?". The main ones:
+
+| Metric | Meaning |
+|---|---|
+| `coverage_in_range` | share of target-steps with a valid confirmed track while at least one radar can see the target |
+| `track_coverage` | the same over all target-steps, also when no radar can see the target |
+| `detection_loss` | share of detection opportunities (target inside a beam of a transmitting radar, line of sight) without a detection |
+| `track_losses` | fused tracks following a target that the tracker deleted; one missed detection is not a track loss |
+| `interruptions`, `interrupted_s`, `reacquire_s` | gaps without a valid track after first acquisition, their total length and the mean length of gaps that ended with reacquisition |
+| `longest_track_s` | longest uninterrupted valid-track interval (mean over targets) |
+| `correct_class_continuity` | share of target-steps with a valid track and the correct predicted class |
+| `id_switches` | a target became matched to another track while the old one still existed |
+| `pos_rmse_m`, `pos_err_median_m` | RMS and median position error of matched fused tracks |
+| `decision_ms` | time the coordination policy needs per step for all radars (inference time) |
+| `single_best_coverage`, `single_best_longest_s`, `single_mean_rmse_m` | the same, for each radar alone with its own local track (structure A); the best radar is reported |
+
+On the 3-D Simulation tab, "Single radar vs network" lists every radar's
+local track next to the fused track.
+
+## 6. MARL training (optional)
 
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 python -m src.services.training_service --scenario nominal --steps 200000
 python -m src.services.training_service --ippo      # IPPO baseline
+python -m src.services.training_service --central   # policy at the fusion centre (central_ppo)
 ```
 
-After training, `mappo` appears in the policy list of the dashboard.
+After training, `central_ppo`, `mappo` or `ippo` appears in the policy list of the dashboard. The team reward includes continuity terms (`reward.w_interrupt`, `reward.w_loss`): targets that lose their track and fused tracks deleted by the tracker are penalised.
 
-## 6. Tests
+## 7. Tests
 
 ```bash
 pytest

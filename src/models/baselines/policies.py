@@ -33,6 +33,18 @@ def _low_energy(env, i, frac=0.15) -> bool:
     return st.energy_j / p.e_max_j < frac
 
 
+REVISIT_S = 2.0          # a confirmed track is refreshed at most this often
+STD_DUE_M = 150.0        # ... or earlier when its position uncertainty grows beyond this
+
+
+def _due(env, tr) -> bool:
+    """Adaptive revisit: a track needs a dedicated dwell only when it is still
+    tentative, has not been updated for ``REVISIT_S`` or has become uncertain.
+    Otherwise the radar's time is better spent searching for new targets."""
+    return (not tr.confirmed or env.t - tr.last_update_t >= REVISIT_S
+            or tr.ekf.pos_std > STD_DUE_M)
+
+
 class FixedScan(Policy):
     """Always search; tracks are maintained only by search detections."""
     name = "fixed_scan"
@@ -61,7 +73,8 @@ class RoundRobin(Policy):
 
 
 class NearestSensor(Policy):
-    """Each radar tracks the closest coverable track (search if none)."""
+    """Each radar refreshes the closest coverable track that is due for a
+    revisit and searches otherwise."""
     name = "nearest"
 
     def act(self, env, obs):
@@ -73,7 +86,7 @@ class NearestSensor(Policy):
             best, bd = None, np.inf
             p = env.radar_params[i]
             for s, tr in enumerate(env.slots):
-                if tr is None or not _coverable(env, i, tr):
+                if tr is None or not _due(env, tr) or not _coverable(env, i, tr):
                     continue
                 d = np.linalg.norm(tr.x[:3] - p.pos)
                 if d < bd:
@@ -83,9 +96,9 @@ class NearestSensor(Policy):
 
 
 class GreedyCentral(Policy):
-    """Centralised heuristic: assign radars to the most uncertain tracks
-    without duplicates; spare radars search.  Searching radars also keep the
-    picture fresh, so every third step one radar is reserved for search."""
+    """Centralised heuristic: assign radars to the most uncertain tracks that
+    are due for a revisit, without duplicates; spare radars search.  Every
+    third step one radar is also reserved for search."""
     name = "central_greedy"
 
     def reset(self, env):
@@ -100,7 +113,7 @@ class GreedyCentral(Policy):
                 out[env.agents[i]] = 0
         if free and self.k % 3 == 0:
             free.pop(self.k % len(free))
-        order = sorted([(s, tr) for s, tr in enumerate(env.slots) if tr is not None],
+        order = sorted([(s, tr) for s, tr in enumerate(env.slots) if tr is not None and _due(env, tr)],
                        key=lambda st: (not st[1].confirmed, -st[1].ekf.pos_std))
         for s, tr in order:
             cands = [i for i in free if _coverable(env, i, tr)]
@@ -137,15 +150,19 @@ POLICIES = {cls.name: cls for cls in (FixedScan, RoundRobin, NearestSensor, Gree
                                        RandomPolicy)}
 
 
+# learned policies -> training_service flags
+LEARNED = {"central_ppo": "--central", "mappo": "", "ippo": "--ippo"}
+
+
 def make_policy(name: str) -> Policy:
     if name in POLICIES:
         return POLICIES[name]()
-    if name in ("mappo", "ippo"):
+    if name in LEARNED:
         from src.models.marl.mappo import DEFAULT_CKPT, MAPPOPolicy  # requires torch
-        path = DEFAULT_CKPT if name == "mappo" else DEFAULT_CKPT.with_name("ippo.pt")
+        path = DEFAULT_CKPT.with_name(f"{name}.pt")
         if not path.exists():
             raise FileNotFoundError(f"no trained {name} checkpoint at {path}; "
-                                    f"run: python -m src.services.training_service{' --ippo' if name == 'ippo' else ''}")
+                                    f"run: python -m src.services.training_service {LEARNED[name]}")
         pol = MAPPOPolicy.load(path)
         pol.name = name
         return pol

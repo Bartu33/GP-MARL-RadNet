@@ -30,6 +30,7 @@ from gymnasium import spaces
 from pettingzoo import ParallelEnv
 
 from src.core import geometry as geo
+from src.core.evaluation import TrackEvaluator
 from src.core.modes import Mode
 from src.core.radar import RadarAction, RadarState, radar_step, resource_vector, snr_linear, antenna_gain
 from src.core.radar import los_status
@@ -46,10 +47,14 @@ OWN_FEATURES = 6 + 4 + 2           # resources + mode one-hot + (online, time fr
 class RadarNetEnv(ParallelEnv):
     metadata = {"name": "radar_net_v0", "render_modes": []}
 
-    def __init__(self, scenario: dict, classifier=None, record: bool = False, seed: int | None = None):
+    def __init__(self, scenario: dict, classifier=None, record: bool = False, seed: int | None = None,
+                 local_tracks: bool = False):
         self.sc = scenario
         self.classifier = classifier
         self.record = record
+        # local_tracks: every radar also runs its own single-radar tracker on its own
+        # detections (structure A of the evaluation); off during training for speed
+        self.local_tracks = local_tracks
         self.dt = float(scenario["dt"])
         self.max_steps = int(round(scenario["duration_s"] / self.dt))
         self.K = int(scenario["max_track_slots"])
@@ -65,6 +70,10 @@ class RadarNetEnv(ParallelEnv):
         self.obs_dim = self.K * SLOT_FEATURES + OWN_FEATURES
         # optional extra actions: INTERLEAVED (search + track) on slot k
         self.interleaved = bool(scenario.get("interleaved_actions", False))
+        # optional measurement-sharing decision: every radar action also says whether this
+        # radar's reports are sent to the fusion centre this step (fusion participation)
+        self.share = bool(scenario.get("share_actions", False))
+        self.n_base_actions = 2 + self.K * (2 if self.interleaved else 1)
 
     # ------------------------------------------------------------------ spaces
     @functools.lru_cache(maxsize=None)
@@ -73,7 +82,8 @@ class RadarNetEnv(ParallelEnv):
 
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent):
-        return spaces.Discrete(2 + self.K * (2 if self.interleaved else 1))
+        # a < n_base: sensing action a, reports shared; a >= n_base: action a - n_base, reports withheld
+        return spaces.Discrete(self.n_base_actions * (2 if self.share else 1))
 
     def state(self) -> np.ndarray:
         """Global state for a centralised critic: all agents' observations."""
@@ -96,11 +106,14 @@ class RadarNetEnv(ParallelEnv):
             self.targets.append(s)
             self.motions.append(m)
         self.tracker = TrackManager()
+        self.local_trackers = [TrackManager() for _ in range(self.n_radars)] if self.local_tracks else []
+        self.local_eval = [TrackEvaluator(len(self.targets), self.dt) for _ in self.local_trackers]
         self.slots: list = [None] * self.K
         self.frames: list[dict] = []
         self.log = {k: [] for k in ("t", "rmse", "tracked", "false_tracks", "energy", "reports",
                                     "class_acc", "reward", "fairness")}
         self.track_load = np.zeros(self.n_radars)         # cumulative seconds spent tracking per radar
+        self.evaluator = TrackEvaluator(len(self.targets), self.dt)   # truth-based metrics, evaluation only
         self._last_reports = []
         self._beam_len = [None] * self.n_radars
         self._update_slots()
@@ -118,16 +131,24 @@ class RadarNetEnv(ParallelEnv):
         for s, m in zip(self.targets, self.motions):
             advance(s, m, self.dt, terrain=self.terrain)
         self.tracker.predict(self.dt)
+        for lt in self.local_trackers:
+            lt.predict(self.dt)
 
         fail = stress.get("fail_radar")
         if fail is not None and self.t >= stress.get("fail_time_s", 0.0):
             self.radar_states[int(fail)].online = False
 
-        all_reports, energy = [], 0.0
+        all_reports, energy, at_radar = [], 0.0, {}
+        self.withheld = 0
         for i, (p, st) in enumerate(zip(self.radar_params, self.radar_states)):
-            act = self._decode_action(i, int(actions.get(self.possible_agents[i], 1)))
+            a = int(actions.get(self.possible_agents[i], 1))
+            shared = a < self.n_base_actions
+            act = self._decode_action(i, a % self.n_base_actions)
             reports, _ = radar_step(self.targets, act, st, p, self.dt, self.rng, radar_index=i,
                                     terrain=self.terrain)
+            if self._in_outage(i):
+                reports = []                     # radar transmits but detects nothing (e.g. jamming)
+            at_radar[i] = reports
             energy += st.last_energy_used_j / p.e_max_j
             if st.mode in (Mode.TRACK, Mode.INTERLEAVED):
                 self.track_load[i] += p.profiles[st.mode].dwell_s
@@ -137,10 +158,16 @@ class RadarNetEnv(ParallelEnv):
                 reports = sorted(reports, key=lambda d: -d["signal_quality"])[:cap]
             if self.rng.random() < stress.get("comm_drop_prob", 0.0):
                 reports = []
+            if not shared:                       # radar keeps its reports (local track only)
+                self.withheld += len(reports)
+                reports = []
             all_reports.extend(reports)
         self._last_reports = all_reports
+        self.evaluator.detections(self.targets, self.radar_params, self.radar_states, at_radar, self.terrain)
 
         self.tracker.process(self.t, all_reports, self.radar_params)
+        for i, lt in enumerate(self.local_trackers):        # at the radar: before communication loss
+            lt.process(self.t, at_radar[i], self.radar_params)
         self._update_channels()
         if self.classifier is not None and self.step_count % 4 == 0:      # every 2 s
             probs = self.classifier.classify_tracks(self.tracker.tracks)
@@ -149,7 +176,13 @@ class RadarNetEnv(ParallelEnv):
                     tr.class_probs = accumulate(tr.class_probs, probs[tr.id])
         self._update_slots()
 
-        reward, metrics = self._team_reward(energy)
+        match = self.match_targets()
+        events = self.evaluator.tracks(self.targets, self.radar_params, self.radar_states, match,
+                                       {tr.id for tr in self.tracker.tracks}, self.terrain)
+        for i, (lt, ev) in enumerate(zip(self.local_trackers, self.local_eval)):
+            ev.tracks(self.targets, [self.radar_params[i]], [self.radar_states[i]], self.match_targets(lt),
+                      {tr.id for tr in lt.tracks}, self.terrain)
+        reward, metrics = self._team_reward(energy, match, events)
         for k, v in metrics.items():
             self.log[k].append(v)
         self.log["t"].append(self.t)
@@ -168,6 +201,13 @@ class RadarNetEnv(ParallelEnv):
         return dict(self._obs), rewards, terms, truncs, infos
 
     # ------------------------------------------------------------------ helpers
+    def _in_outage(self, i: int) -> bool:
+        """Scenario-defined detection outages: ``stress.outages`` = [[radar | "all", t0, t1], ...]."""
+        for r, t0, t1 in self.sc["stress"].get("outages") or []:
+            if (r == "all" or int(r) == i) and t0 <= self.t < t1:
+                return True
+        return False
+
     def _decode_action(self, i: int, a: int) -> RadarAction:
         self._beam_len[i] = None
         if a == 0:
@@ -223,11 +263,12 @@ class RadarNetEnv(ParallelEnv):
                               mode_1h, [float(st.online), self.step_count / self.max_steps]])
         return np.concatenate(blocks + [own]).astype(np.float32)
 
-    def match_targets(self):
-        """Greedy truth-to-track assignment (evaluation only)."""
+    def match_targets(self, tracker=None):
+        """Greedy truth-to-track assignment (evaluation only); fused tracker by default."""
+        confirmed = (tracker or self.tracker).confirmed
         pairs = []
         for ti, tgt in enumerate(self.targets):
-            for k, tr in enumerate(self.tracker.confirmed):
+            for k, tr in enumerate(confirmed):
                 d = np.linalg.norm(tr.x[:3] - tgt.p)
                 if d < 3 * tr.ekf.pos_std + 500.0:
                     pairs.append((d, ti, k))
@@ -238,12 +279,11 @@ class RadarNetEnv(ParallelEnv):
                 continue
             used_t.add(ti)
             used_k.add(k)
-            out[ti] = self.tracker.confirmed[k]
+            out[ti] = confirmed[k]
         return out
 
-    def _team_reward(self, energy: float):
+    def _team_reward(self, energy: float, match: dict, events: dict):
         w = self.sc["reward"]
-        match = self.match_targets()
         n = len(self.targets)
         errs, cls_gain, cls_hits = [], [], []
         for ti, tr in match.items():
@@ -260,7 +300,13 @@ class RadarNetEnv(ParallelEnv):
              - w.get("w_fair", 0.0) * (1.0 - fair)
              + w["w_class"] * (np.mean(cls_gain) if cls_gain else 0.0)
              - w["w_cost"] * energy / max(self.n_radars, 1) * 10
-             - w["w_false"] * false_tracks)
+             - w["w_false"] * false_tracks
+             # continuity (main objective): targets that lost their track after being
+             # tracked, and fused tracks deleted by the tracker this step
+             - w.get("w_interrupt", 0.0) * events["interrupted"] / max(n, 1)
+             - w.get("w_loss", 0.0) * events["track_losses"]
+             # communication cost: reports sent to the fusion centre per radar
+             - w.get("w_comm", 0.0) * len(self._last_reports) / max(self.n_radars, 1))
         metrics = {
             "rmse": float(np.sqrt(np.mean(np.square(errs)))) if errs else np.nan,
             "tracked": len(match) / max(n, 1),
@@ -302,6 +348,8 @@ class RadarNetEnv(ParallelEnv):
             "targets": [{"id": s.id, "label": s.label, "p": r1(s.p), "v": r1(s.v)} for s in self.targets],
             "tracks": tracks,
             "dets": [r1(d["world_xyz"]) + [int(d["is_false_alarm"]), d["radar"]] for d in reports],
+            # confirmed local (single-radar) tracks per radar, for per-radar displays
+            "ltracks": [[{"id": tr.id, "p": r1(tr.x[:3])} for tr in lt.confirmed] for lt in self.local_trackers],
         })
 
 

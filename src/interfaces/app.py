@@ -16,13 +16,14 @@ import pandas as pd
 import streamlit as st
 
 from src.core import detection as det
+from src.core.evaluation import METRIC_INFO
 from src.core.modes import Mode
 from src.core.radar import RadarParams, antenna_gain, measurement_sigmas, snr_linear
 from src.core.rcs import EllipsoidRCS, LookupTableRCS, m2_to_dbsm
 from src.core.scenario import list_scenarios, load_scenario
 from src.core.targets import CLASS_NAMES, CLASS_SHORT, advance, spawn_target
 from src.interfaces import plots, viewer3d
-from src.models.baselines.policies import POLICIES
+from src.models.baselines.policies import LEARNED, POLICIES
 from src.services import simulation_service as sim
 
 st.set_page_config(page_title="GP-MARL-RadNet", layout="wide", page_icon="📡")
@@ -40,16 +41,18 @@ tab_sim, tab_lab, tab_cls, tab_exp, tab_about = st.tabs(
 
 POLICY_NAMES = [p for p in POLICIES if p != "random"] + ["random"]
 CKPT_DIR = ROOT / "models" / "checkpoints"
-TRAINED = [n for n in ("mappo", "ippo") if (CKPT_DIR / f"{n}.pt").exists()]
+TRAINED = [n for n in LEARNED if (CKPT_DIR / f"{n}.pt").exists()]
 POLICY_NAMES = TRAINED + POLICY_NAMES
 POLICY_HELP = {
     "fixed_scan": "Always search.",
     "round_robin": "Alternate search / track, cycling through tracks.",
-    "nearest": "Each radar tracks its closest track.",
-    "central_greedy": "Central heuristic: most uncertain tracks first, no duplicates.",
+    "nearest": "Each radar refreshes its closest track that is due for a revisit, else searches.",
+    "central_greedy": "Central heuristic: most uncertain due tracks first, no duplicates, spare radars search.",
     "interleaved_greedy": "Like central_greedy but tracking radars keep searching (INTERLEAVED mode; "
                           "needs a scenario with interleaved_actions: true, e.g. 'interleaved').",
     "random": "Random actions (sanity check).",
+    "central_ppo": "Trained PPO policy at the fusion centre: sees the fused track table and all radars, "
+                   "sends one action to each radar (models/checkpoints/central_ppo.pt).",
     "mappo": "Trained MAPPO policy (models/checkpoints/mappo.pt).",
     "ippo": "Trained independent-PPO policy (models/checkpoints/ippo.pt).",
 }
@@ -62,7 +65,8 @@ def cached_episode(scenario: str, policy: str, seed: int, use_clf: bool, site_na
     if site is not None:
         sc["site"] = dict(site)
     env, summary = sim.run_episode(sc, policy, seed=seed, classifier="auto" if use_clf else None)
-    return sim.viewer_payload(env), summary, {k: list(map(float, v)) for k, v in env.log.items()}
+    return (sim.viewer_payload(env), summary, {k: list(map(float, v)) for k, v in env.log.items()},
+            sim.per_radar_table(env))
 
 
 # ============================================================== 3-D simulation
@@ -76,11 +80,11 @@ with tab_sim:
     use_clf = c4.toggle("Classifier", value=has_clf, disabled=not has_clf,
                         help="Train it on the Classifier tab first." if not has_clf else None)
     view = c5.radio("View", ["3-D", "2-D"], horizontal=True)
-    if "mappo" not in TRAINED:
-        st.info("**MAPPO is not in the list yet because it has not been trained.** "
-                "Train it once (needs PyTorch, ~1-2 h on a CPU):  \n"
-                "`python -m src.services.training_service --steps 150000` (MAPPO) and "
-                "`python -m src.services.training_service --ippo --steps 150000` (IPPO baseline).  \n"
+    if not TRAINED:
+        st.info("**No learned policy in the list yet because none has been trained.** "
+                "Train once (needs PyTorch, ~1-2 h on a CPU):  \n"
+                "`python -m src.services.training_service --central --steps 150000` (policy at the fusion centre), "
+                "`--steps 150000` (MAPPO) or `--ippo --steps 150000` (IPPO).  \n"
                 "The checkpoints are written to `models/checkpoints/` and then appear here and on the Experiments tab.")
     sc_site = load_scenario(scen)["site"]["name"]
     site_names = [sc_site] + [s["name"] for s in sim.MAP_SITES if s["name"] != sc_site]
@@ -91,19 +95,26 @@ with tab_sim:
     s2.caption(load_scenario(scen)["description"])
 
     with st.spinner("Simulating episode (first run on a new site downloads terrain)…"):
-        payload, summary, log = cached_episode(scen, pol, int(seed), bool(use_clf), site_name)
+        payload, summary, log, radar_table = cached_episode(scen, pol, int(seed), bool(use_clf), site_name)
     t_src = payload.get("terrain", {}).get("source", "flat")
     st.caption({"tiles": "Terrain: real elevation (AWS Terrain Tiles) · line-of-sight active",
                 "procedural": "Terrain: procedural hills (elevation tiles unavailable) · line-of-sight active",
                 "flat": "Terrain: flat"}.get(t_src, ""))
 
-    m = st.columns(6)
-    m[0].metric("Position RMSE", f"{summary['pos_rmse_m']:.0f} m")
-    m[1].metric("Track coverage", f"{summary['track_coverage']:.0%}")
-    m[2].metric("False tracks (avg)", f"{summary['false_tracks_mean']:.2f}")
-    m[3].metric("Class accuracy", "—" if np.isnan(summary["class_accuracy"]) else f"{summary['class_accuracy']:.0%}")
-    m[4].metric("Sensing cost", f"{summary['sensing_cost']:.3f}")
-    m[5].metric("Team return", f"{summary['return']:.0f}")
+    fmt = lambda v, f: "—" if v is None or (isinstance(v, float) and np.isnan(v)) else f.format(v)
+    m = st.columns(8)
+    m[0].metric("Position RMSE", fmt(summary["pos_rmse_m"], "{:.0f} m"), help=METRIC_INFO["pos_rmse_m"][0])
+    m[1].metric("Coverage (in range)", fmt(summary["coverage_in_range"], "{:.0%}"), help=METRIC_INFO["coverage_in_range"][0])
+    m[2].metric("Track losses", fmt(summary["track_losses"], "{}"), help=METRIC_INFO["track_losses"][0])
+    m[3].metric("Longest track", fmt(summary["longest_track_s"], "{:.0f} s"), help=METRIC_INFO["longest_track_s"][0])
+    m[4].metric("Detection loss", fmt(summary["detection_loss"], "{:.0%}"), help=METRIC_INFO["detection_loss"][0])
+    m[5].metric("Class accuracy", fmt(summary["class_accuracy"], "{:.0%}"), help=METRIC_INFO["class_accuracy"][0])
+    m[6].metric("False tracks (avg)", fmt(summary["false_tracks_mean"], "{:.2f}"), help=METRIC_INFO["false_tracks_mean"][0])
+    m[7].metric("Team return", fmt(summary["return"], "{:.0f}"), help=METRIC_INFO["return"][0])
+    with st.expander("Single radar vs network: each radar's local track and the fused track"):
+        st.dataframe(radar_table.round(3), width="stretch", hide_index=True)
+        st.caption("Local tracks use only that radar's own detections (structure A); the fused track combines "
+                   "all radars at the fusion centre. Coverage is measured on the network coverage mask.")
 
     if view == "3-D":
         viewer3d.render(payload, height=740)
@@ -183,33 +194,39 @@ with tab_lab:
 # ============================================================== Classifier
 with tab_cls:
     st.subheader("Flight-profile classifier")
-    st.caption("Kinematic features of fused tracks → gradient-boosted trees. Trained on synthetic "
-               "tracker output, evaluated with an episode-wise split.")
+    st.caption("Kinematic features of fused tracks → gradient-boosted trees, used by the simulator at the "
+               "fusion centre. Trained on fused tracks of multi-radar episodes, evaluated with an episode-wise split.")
     left, right = st.columns([1, 2])
     with left:
-        n_eps = st.slider("Episodes per class", 10, 150, 40, 10)
+        n_eps = st.slider("Episodes per class", 10, 150, 40, 10,
+                          help="40 episodes per class take about 10 minutes on a CPU.")
         if st.button("Generate dataset and train", type="primary"):
-            from src.services import dataset_service as ds
-            with st.spinner("Simulating radar tracks and training…"):
-                df = ds.generate(n_eps, seed=int(np.random.default_rng().integers(1 << 30)))
-                ds.DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-                df.to_csv(ds.DATA_PATH, index=False)
-                _, rep = ds.train(df)
-            st.session_state["cls_report"] = rep
+            import json
+            from src.services import classifier_study as cs
+            with st.spinner("Simulating multi-radar tracks, training GBM / MLP / GRU…"):
+                d = cs.generate(n_eps, seed=int(np.random.default_rng().integers(1 << 30)))
+                cs.DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+                np.savez_compressed(cs.DATA_PATH, **d)
+                cs.train_simulation_model(d)
+                rep_s = cs.run_study(d)
+                cs.REPORT_PATH.write_text(json.dumps(rep_s, indent=2))
             st.cache_data.clear()
-            st.success(f"Macro-F1 {rep['macro_f1']:.2f} · balanced acc. {rep['balanced_accuracy']:.2f}")
+            best = max((r for r in rep_s["results"] if r["train_on"] == r["test_on"] == "fused"),
+                       key=lambda r: r["macro_f1"])
+            st.success(f"Simulator classifier updated · best on fused tracks: {best['model']} "
+                       f"macro-F1 {best['macro_f1']:.2f}")
         st.write("Model file:", "✅ present" if sim.CLASSIFIER_PATH.exists() else "— not trained yet")
         st.markdown("\n".join(f"- **{CLASS_SHORT[i]}** – `{n}`" for i, n in enumerate(CLASS_NAMES)))
     with right:
-        rep = st.session_state.get("cls_report")
-        meta = ROOT / "models" / "metadata" / "flight_profile_gbm.json"
-        if rep is None and meta.exists():
-            import json
-            rep = json.loads(meta.read_text())
-        if rep:
-            st.caption(f"Held-out windows: {rep['n_test']} · macro-F1 {rep['macro_f1']:.2f} · "
-                       f"balanced accuracy {rep['balanced_accuracy']:.2f}")
-            st.plotly_chart(plots.confusion(rep["confusion"], CLASS_SHORT), width="stretch")
+        import json
+        study_path = ROOT / "models" / "metadata" / "classifier_study.json"
+        rows = json.loads(study_path.read_text())["results"] if study_path.exists() else []
+        gbm = next((r for r in rows if r["model"] == "gbm" and r["train_on"] == r["test_on"] == "fused"
+                    and "confusion" in r), None)
+        if gbm:
+            st.caption(f"Simulator classifier (GBM, fused tracks) on held-out episodes: {gbm['n']} windows · "
+                       f"macro-F1 {gbm['macro_f1']:.2f} · balanced accuracy {gbm['balanced_accuracy']:.2f}")
+            st.plotly_chart(plots.confusion(gbm["confusion"], CLASS_SHORT), width="stretch")
         rng = np.random.default_rng(1)
         trajs = []
         for lab in range(4):
@@ -220,6 +237,28 @@ with tab_cls:
                 P.append(s.p.copy())
             trajs.append((lab, np.array(P)))
         st.plotly_chart(plots.trajectories_3d(trajs, "One sample trajectory per class (80 s)"), width="stretch")
+
+    st.subheader("Classifier study: MLP vs GRU, fused vs single-radar tracks")
+    study = ROOT / "models" / "metadata" / "classifier_study.json"
+    if not study.exists():
+        st.info("Run once: `python -m src.services.classifier_study --episodes 40` "
+                "(multi-radar episodes, ~10 min on a CPU).")
+    else:
+        import json
+        rep_s = json.loads(study.read_text())
+        res = pd.DataFrame(rep_s["results"]).drop(columns="confusion", errors="ignore")
+        piv = res.pivot_table(index=["train_on", "test_on"], columns="model", values="macro_f1").round(3)
+        st.dataframe(piv, width="stretch")
+        st.caption("Macro-F1 on held-out episodes. train_on / test_on: fused = network track at the fusion "
+                   "centre, local = one radar's own track, truth = true states (optimistic upper bound only).")
+        with st.expander("ECE and balanced accuracy"):
+            st.dataframe(res.round(3), width="stretch", hide_index=True)
+        ds_chk = rep_s["dataset"]
+        st.markdown(
+            f"**Dataset checks** – windows per class: {ds_chk['windows_per_class']} "
+            f"(training uses a class-balanced subset) · episodes in both train and test: "
+            f"{ds_chk['episodes_in_train_and_test']} · best single feature: `{ds_chk['best_single_feature']}` "
+            f"({ds_chk['best_single_feature_accuracy']:.0%} accuracy alone).")
 
 
 # ============================================================== Experiments
@@ -237,19 +276,32 @@ with tab_exp:
         st.session_state["exp_df"] = df
     df = st.session_state.get("exp_df")
     if df is not None:
-        agg = df.drop(columns="seed").groupby("policy").agg(["mean", "std"]).round(3)
-        st.dataframe(agg, width="stretch")
+        metrics = [c for c in df.columns if c not in ("policy", "seed")]
+        default = [m for m in ("coverage_in_range", "single_best_coverage", "track_losses", "longest_track_s", "reacquire_s",
+                               "correct_class_continuity", "pos_rmse_m", "return") if m in metrics]
+        shown = st.multiselect("Columns", metrics, default=default, key="exp_cols",
+                               help="Each cell is mean ± standard deviation over the seeds.")
+        g = df.groupby("policy")[metrics]
+        mean, std = g.mean(), g.std().fillna(0.0)
+        table = pd.DataFrame({m: [f"{a:.3g} ± {b:.2g}" if np.isfinite(a) else "—"
+                                  for a, b in zip(mean[m], std[m])] for m in shown}, index=mean.index)
+        st.dataframe(table, width="stretch")
         metric = st.selectbox("Metric", [c for c in df.columns if c not in ("policy", "seed")])
         import plotly.express as px
         fig = px.box(df, x="policy", y=metric, points="all", template="plotly_dark")
         fig.update_layout(paper_bgcolor="#0E1417", plot_bgcolor="#151D21", height=380)
         st.plotly_chart(fig, width="stretch")
         st.download_button("Download CSV", df.to_csv(index=False), "experiment.csv", "text/csv")
-    if len(TRAINED) < 2:
-        missing = [n for n in ("mappo", "ippo") if n not in TRAINED]
+    with st.expander("What do the metrics mean?"):
+        st.dataframe(pd.DataFrame([{"metric": k, "meaning": v[0], "unit / denominator": v[1]}
+                                   for k, v in METRIC_INFO.items()]), width="stretch", hide_index=True)
+        st.caption("Track loss counts tracks deleted by the tracker; a single missed detection is not a track loss. "
+                   "Definitions: src/core/evaluation.py.")
+    missing = [n for n in LEARNED if n not in TRAINED]
+    if missing:
         st.info(f"Not trained yet: {', '.join(missing)}. Train with "
-                "`python -m src.services.training_service` (add `--ippo` for IPPO); "
-                "checkpoints in models/checkpoints/ appear here automatically.")
+                + ", ".join(f"`python -m src.services.training_service {LEARNED[n]}`".replace(" `", "`") for n in missing)
+                + " ; checkpoints in models/checkpoints/ appear here automatically.")
 
 
 # ============================================================== About

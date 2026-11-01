@@ -7,6 +7,12 @@ Design (CTDE -- centralised training, decentralised execution):
   predicts the value of the shared team reward,
 * PPO clipped surrogate objective with generalised advantage estimation.
 
+``central_actor=True`` places the policy at the fusion centre (advisor
+design, 29 Oct 2026): the actor sees the global state -- the fused track
+table and every radar's resources -- and outputs one action per radar
+(factorised heads, one categorical per radar), which the radars execute.
+Estimation and tracking stay classical; the policy only coordinates.
+
 Written from the published algorithm descriptions (Schulman et al. 2017,
 "Proximal Policy Optimization Algorithms"; Yu et al. 2022, "The Surprising
 Effectiveness of PPO in Cooperative Multi-Agent Games").  Setting
@@ -46,6 +52,7 @@ class MAPPOConfig:
     max_grad_norm: float = 0.5
     hidden: int = 128
     centralised_critic: bool = True
+    central_actor: bool = False        # policy at the fusion centre (input: global state)
 
 
 class MAPPOAgent(nn.Module):
@@ -53,15 +60,17 @@ class MAPPOAgent(nn.Module):
         super().__init__()
         self.cfg, self.n_agents, self.n_actions = cfg, n_agents, n_actions
         self.obs_dim, self.state_dim = obs_dim, state_dim
-        self.actor = mlp(obs_dim + n_agents, n_actions, cfg.hidden)
+        actor_in = (state_dim if cfg.central_actor else obs_dim) + n_agents
+        self.actor = mlp(actor_in, n_actions, cfg.hidden)
         critic_in = state_dim if cfg.centralised_critic else obs_dim + n_agents
         self.critic = mlp(critic_in, 1, cfg.hidden)
 
     def actor_input(self, obs: torch.Tensor, agent_idx: torch.Tensor) -> torch.Tensor:
         return torch.cat([obs, nn.functional.one_hot(agent_idx, self.n_agents).float()], -1)
 
-    def dist(self, obs, agent_idx):
-        return torch.distributions.Categorical(logits=self.actor(self.actor_input(obs, agent_idx)))
+    def dist(self, obs, agent_idx, state=None):
+        x = state if self.cfg.central_actor else obs
+        return torch.distributions.Categorical(logits=self.actor(self.actor_input(x, agent_idx)))
 
     def value(self, state, obs, agent_idx):
         x = state if self.cfg.centralised_critic else self.actor_input(obs, agent_idx)
@@ -114,7 +123,7 @@ class MAPPOTrainer:
             o = torch.as_tensor(np.stack([obs[a] for a in self.agents]))
             s = torch.as_tensor(env.state()).float().expand(self.N, -1)
             with torch.no_grad():
-                d = self.net.dist(o, idx)
+                d = self.net.dist(o, idx, s)
                 a = d.sample()
                 v = self.net.value(s, o, idx)
             obs, rew, term, trunc, _ = env.step({ag: int(a[i]) for i, ag in enumerate(self.agents)})
@@ -151,7 +160,7 @@ class MAPPOTrainer:
             perm = torch.randperm(n)
             for start in range(0, n, c.minibatch):
                 mb = perm[start:start + c.minibatch]
-                d = self.net.dist(obs[mb], agent[mb])
+                d = self.net.dist(obs[mb], agent[mb], state[mb])
                 ratio = torch.exp(d.log_prob(act[mb]) - logp_old[mb])
                 pg = -torch.min(ratio * adv_t[mb], torch.clamp(ratio, 1 - c.clip, 1 + c.clip) * adv_t[mb]).mean()
                 v_loss = (self.net.value(state[mb], obs[mb], agent[mb]) - ret_t[mb]).pow(2).mean()
@@ -164,7 +173,11 @@ class MAPPOTrainer:
                 stats.append((pg.item(), v_loss.item(), ent.item()))
         return np.mean(stats, axis=0)
 
-    def train(self, total_steps: int, rollout: int = 960, log=print):
+    def train(self, total_steps: int, rollout: int = 960, log=print, save_path: Path | None = None,
+              save_every: int = 10):
+        """Run PPO updates until ``total_steps``; if ``save_path`` is given the
+        checkpoint is also written every ``save_every`` updates, so an
+        interrupted run still leaves a usable model."""
         done_steps = 0
         while done_steps < total_steps:
             buf, last_val, ep_rets = self.collect(rollout)
@@ -174,6 +187,8 @@ class MAPPOTrainer:
             self.history.append({"steps": done_steps, "episode_return": mean_ret, "pg_loss": pg,
                                  "value_loss": vl, "entropy": ent})
             log(f"steps {done_steps:>8d}  return {mean_ret:8.1f}  entropy {ent:5.2f}  v_loss {vl:8.2f}")
+            if save_path is not None and len(self.history) % save_every == 0:
+                self.save(save_path)
         return self.history
 
     def save(self, path: Path = DEFAULT_CKPT):
@@ -212,7 +227,8 @@ class MAPPOPolicy:
     def act(self, env, obs) -> dict:
         names = env.possible_agents
         o = torch.as_tensor(np.stack([obs[a] for a in names]))
+        s = torch.as_tensor(env.state()).float().expand(len(names), -1)
         with torch.no_grad():
-            d = self.net.dist(o, torch.arange(len(names)))
+            d = self.net.dist(o, torch.arange(len(names)), s)
             a = d.probs.argmax(-1) if self.greedy else d.sample()
         return {n: int(a[i]) for i, n in enumerate(names) if n in env.agents}

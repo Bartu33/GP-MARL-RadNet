@@ -30,10 +30,15 @@ DEFAULTS = {
         "comm_drop_prob": 0.0,     # probability that a radar's reports are lost in a step
         "max_reports_per_radar": None,  # bandwidth cap (top-k reports by quality)
         "noise_scale": 1.0,        # multiplies measurement floors and k-factors
+        "outages": [],             # [[radar index | "all", t0_s, t1_s], ...]: no detections in the window
     },
     "interleaved_actions": False,   # add INTERLEAVED (search + track) actions per track slot
+    "share_actions": False,         # each action also decides whether the radar sends its reports to the centre
     "reward": {"w_track": 1.0, "w_miss": 1.0, "w_class": 0.5, "w_cost": 0.2, "w_false": 0.2,
                "w_fair": 0.0,       # optional load-equalisation term (1 - Jain fairness of tracking load)
+               "w_interrupt": 0.5,  # continuity: share of targets that lost their track after being tracked
+               "w_loss": 1.0,       # continuity: per fused track deleted by the tracker
+               "w_comm": 0.0,       # communication: reports sent to the fusion centre per radar and step
                "err_scale_m": 150.0},
 }
 

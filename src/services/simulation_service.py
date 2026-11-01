@@ -1,6 +1,7 @@
 """Run episodes, collect metrics and compare policies."""
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 import numpy as np
@@ -21,13 +22,44 @@ def load_classifier(path: Path = CLASSIFIER_PATH):
     return FlightProfileClassifier.load(path)
 
 
+def single_radar_summary(env: RadarNetEnv) -> dict:
+    """Structure A: each radar alone with its own local track, on the same
+    detections as the fused track.  Coverage uses the network's coverage mask
+    so that it is directly comparable with ``coverage_in_range``."""
+    if not env.local_eval:
+        return {}
+    net_cov = np.concatenate([np.asarray(c, bool) for c in env.evaluator.in_cov])
+    cov, longest, rmse = [], [], []
+    for ev in env.local_eval:
+        valid = np.concatenate([np.asarray(v, bool) for v in ev.valid])
+        cov.append(float(valid[net_cov].mean()) if net_cov.any() else np.nan)
+        s = ev.summary()
+        longest.append(s["longest_track_s"])
+        rmse.append(s["pos_rmse_m"])
+    return {
+        "single_best_coverage": float(np.nanmax(cov)),
+        "single_best_longest_s": float(np.nanmax(longest)),
+        "single_mean_rmse_m": float(np.nanmean(rmse)) if np.any(np.isfinite(rmse)) else np.nan,
+    }
+
+
+def per_radar_table(env: RadarNetEnv) -> pd.DataFrame:
+    """Local single-radar tracks next to the fused track (one row each)."""
+    rows = []
+    for p, ev in zip(env.radar_params, env.local_eval):
+        rows.append({"track": f"{p.name} (local)", **ev.summary()})
+    rows.append({"track": "Fused (network)", **env.evaluator.summary()})
+    cols = ["track", "coverage_in_range", "pos_rmse_m", "longest_track_s", "track_losses", "interruptions",
+            "reacquire_s", "correct_class_continuity"]
+    return pd.DataFrame(rows)[cols]
+
+
 def summarize(env: RadarNetEnv) -> dict:
     lg = env.log
-    tracked = np.array(lg["tracked"])
     return {
-        "pos_rmse_m": float(np.nanmean(lg["rmse"])) if np.any(np.isfinite(lg["rmse"])) else np.nan,
-        "track_coverage": float(tracked.mean()) if len(tracked) else 0.0,
-        "track_loss_rate": float(1 - tracked.mean()) if len(tracked) else 1.0,
+        # coverage, continuity, detection / track loss: see src/core/evaluation.py (METRIC_INFO)
+        **env.evaluator.summary(),
+        **single_radar_summary(env),
         "false_tracks_mean": float(np.mean(lg["false_tracks"])) if lg["false_tracks"] else 0.0,
         "class_accuracy": float(np.nanmean(lg["class_acc"])) if np.any(np.isfinite(lg["class_acc"])) else np.nan,
         "sensing_cost": float(np.mean(lg["energy"])) if lg["energy"] else 0.0,
@@ -44,13 +76,17 @@ def run_episode(scenario, policy_name: str = "central_greedy", seed: int | None 
     recorded frames for the 3-D viewer when ``record`` is True."""
     sc = load_scenario(scenario) if isinstance(scenario, str) else scenario
     clf = load_classifier() if classifier == "auto" else classifier
-    env = RadarNetEnv(sc, classifier=clf, record=record, seed=seed)
+    env = RadarNetEnv(sc, classifier=clf, record=record, seed=seed, local_tracks=True)
     obs, _ = env.reset(seed=seed)
     policy = make_policy(policy_name)
     policy.reset(env)
+    decide = []
     while env.agents:
-        obs, _, _, _, _ = env.step(policy.act(env, obs))
-    return env, summarize(env)
+        t0 = time.perf_counter()
+        actions = policy.act(env, obs)
+        decide.append(time.perf_counter() - t0)
+        obs, _, _, _, _ = env.step(actions)
+    return env, {**summarize(env), "decision_ms": float(np.mean(decide) * 1000) if decide else np.nan}
 
 
 def compare_policies(scenario, policies, seeds=(0, 1, 2), classifier="auto", progress=None) -> pd.DataFrame:

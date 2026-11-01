@@ -98,5 +98,6 @@ providers' terms before any public deployment.
 to run:
 "pip install -r requirements.txt
 python -m src.services.dataset_service --episodes 60 --train 
+python -m src.services.classifier_study --episodes 40
 streamlit run src/interfaces/app.py
 pytest"
