@@ -2,17 +2,161 @@
 from __future__ import annotations
 
 import time
+from copy import deepcopy
+import json
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from src.core.env import RadarNetEnv
+from src.core.env import REPORT_FINAL_STATUSES, RadarNetEnv
 from src.core.scenario import load_scenario
 from src.models.baselines.policies import make_policy
 
 ROOT = Path(__file__).resolve().parents[2]
 CLASSIFIER_PATH = ROOT / "models" / "checkpoints" / "flight_profile_gbm.joblib"
+
+# Column dtype and trailing shape. None denotes the fixed episode agent count.
+# v1 tables; v2 adds EPISODE_TRACE_FIELDS. Rows are sparse except states.
+EPISODE_FIELDS = {
+    "states": {"step_index": ("int64", ()), "t_s": ("float64", ())},
+    "truth": {
+        "step_index": ("int64", ()), "t_s": ("float64", ()),
+        "target_id": ("int64", ()), "class_label": ("int64", ()),
+        "p": ("float64", (3,)), "v": ("float64", (3,)), "orientation": ("float64", (3, 3)),
+    },
+    "reports": {
+        "step_index": ("int64", ()), "t_s": ("float64", ()),
+        "radar_id": ("int64", ()), "report_id": ("str", ()),
+        "z": ("float64", (4,)), "R": ("float64", (4, 4)),
+        "world_xyz": ("float64", (3,)), "snr_db": ("float64", ()),
+        "signal_quality": ("float64", ()), "detection_probability": ("float64", ()),
+        "doppler_hz": ("float64", ()), "detection_valid": ("int64", ()),
+    },
+    "annotations": {
+        "report_id": ("str", ()), "truth_id": ("int64", ()), "is_false_alarm": ("bool", ()),
+    },
+    "tracks": {
+        "step_index": ("int64", ()), "t_s": ("float64", ()),
+        "source": ("str", ()), "radar_id": ("int64", ()), "track_id": ("int64", ()),
+        "x": ("float64", (6,)), "P": ("float64", (6, 6)),
+        "confirmed": ("bool", ()), "status": ("str", ()), "hits": ("int64", ()),
+        "born_t_s": ("float64", ()), "last_update_t_s": ("float64", ()),
+    },
+    "transitions": {
+        "step_index": ("int64", ()), "start_t_s": ("float64", ()), "end_t_s": ("float64", ()),
+        "requested_actions": ("int64", None), "action_present": ("bool", None),
+        "rewards": ("float64", None), "terminations": ("bool", None), "truncations": ("bool", None),
+    },
+}
+
+EPISODE_TRACE_FIELDS = {
+    "communication": {
+        "step_index": ("int64", ()), "t_s": ("float64", ()),
+        "radar_id": ("int64", ()), "report_id": ("str", ()), "final_status": ("str", ()),
+    },
+    "deliveries": {
+        "step_index": ("int64", ()), "t_s": ("float64", ()),
+        "radar_id": ("int64", ()), "report_id": ("str", ()), "delivery_index": ("int64", ()),
+    },
+}
+
+
+def _episode_fields(version):
+    """v1 has no communication evidence; never infer delivery from raw reports."""
+    if type(version) is not int or version not in (1, 2):
+        raise ValueError(f"unsupported episode record schema version: {version!r}; supported: 1, 2")
+    return EPISODE_FIELDS if version == 1 else {**EPISODE_FIELDS, **EPISODE_TRACE_FIELDS}
+
+
+def _validate_report_trace(records):
+    reports = {row["report_id"]: row for row in records["reports"]}
+    traces = {row["report_id"]: row for row in records["communication"]}
+    if (len(reports) != len(records["reports"]) or len(traces) != len(records["communication"])
+            or reports.keys() != traces.keys()):
+        raise ValueError("communication: require exactly one trace per unique generated report")
+    for report_id, trace in traces.items():
+        if trace["final_status"] not in REPORT_FINAL_STATUSES:
+            raise ValueError(f"communication.{report_id}.final_status: unknown or unfinished status")
+        if any(trace[k] != reports[report_id][k] for k in ("step_index", "t_s", "radar_id")):
+            raise ValueError(f"communication.{report_id}: report timestamp or radar mismatch")
+    delivered = set()
+    indices = {}
+    for row in records["deliveries"]:
+        report_id, step = row["report_id"], row["step_index"]
+        if report_id in delivered or report_id not in reports:
+            raise ValueError("deliveries: duplicate or unknown report ID")
+        if (row["delivery_index"] != indices.get(step, 0)
+                or any(row[k] != reports[report_id][k] for k in ("step_index", "t_s", "radar_id"))):
+            raise ValueError(f"deliveries.{report_id}: invalid order, timestamp, or radar")
+        delivered.add(report_id)
+        indices[step] = indices.get(step, 0) + 1
+    if delivered != {key for key, row in traces.items() if row["final_status"] == "delivered"}:
+        raise ValueError("deliveries: IDs must match exactly the delivered final statuses")
+
+
+def export_episode_records(records: dict, directory: str | Path) -> tuple[Path, Path]:
+    """Explicit export of env.episode_records; never called by reset/step.
+
+    NPZ keys are '<table>_<field>'. Numeric arrays retain float64 precision;
+    variable-length tables use rows, not object arrays. Existing files at the
+    destination are replaced, so use a separate directory per episode.
+    """
+    if records is None:
+        raise ValueError("episode recording is disabled or reset has not been called")
+    metadata = deepcopy(records["metadata"])
+    fields_by_table = _episode_fields(metadata["record_schema_version"])
+    if metadata["record_schema_version"] == 2:
+        _validate_report_trace(records)
+    elif any(table in records for table in EPISODE_TRACE_FIELDS):
+        raise ValueError("schema v1 cannot contain communication/delivery tables; use v2")
+    # Serialize before creating output files; reject non-standard JSON values.
+    encoded = json.dumps(metadata, sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
+    arrays = {}
+    for table, fields in fields_by_table.items():
+        rows = records[table]
+        for field, (dtype, tail) in fields.items():
+            tail = (len(metadata["agent_ids"]),) if tail is None else tail
+            arrays[f"{table}_{field}"] = np.asarray([row[field] for row in rows], dtype=dtype).reshape(
+                (len(rows), *tail))
+    directory = Path(directory)
+    directory.mkdir(parents=True, exist_ok=True)
+    metadata_path, records_path = directory / "metadata.json", directory / "records.npz"
+    np.savez_compressed(records_path, **arrays)
+    metadata_path.write_text(encoded, encoding="utf-8")
+    return metadata_path, records_path
+
+
+def load_episode_records(directory: str | Path) -> dict:
+    """Read v1 unchanged (trace unavailable), or v2 with communication evidence.
+
+    Unsupported versions and metadata/NPZ layout mismatches are explicit errors.
+    """
+    directory = Path(directory)
+    metadata = json.loads((directory / "metadata.json").read_text(encoding="utf-8"))
+    fields_by_table = _episode_fields(metadata["record_schema_version"])
+    records = {"metadata": metadata}
+    with np.load(directory / "records.npz", allow_pickle=False) as arrays:
+        expected = {f"{table}_{field}" for table, fields in fields_by_table.items() for field in fields}
+        if set(arrays.files) != expected:
+            raise ValueError("records.npz: array layout does not match declared schema version")
+        for table, fields in fields_by_table.items():
+            columns = {field: arrays[f"{table}_{field}"] for field in fields}
+            count = len(columns["step_index"] if "step_index" in columns else columns["report_id"])
+            for field, (dtype, tail) in fields.items():
+                tail = (len(metadata["agent_ids"]),) if tail is None else tail
+                column = columns[field]
+                valid_dtype = column.dtype.kind == "U" if dtype == "str" else column.dtype == np.dtype(dtype)
+                if column.shape != (count, *tail) or not valid_dtype:
+                    raise ValueError(f"{table}.{field}: invalid shape or dtype")
+            records[table] = [
+                {field: column[i].copy() if column.ndim > 1 else column[i].item()
+                 for field, column in columns.items()}
+                for i in range(count)
+            ]
+    if metadata["record_schema_version"] == 2:
+        _validate_report_trace(records)
+    return records
 
 
 def load_classifier(path: Path = CLASSIFIER_PATH):
@@ -71,12 +215,13 @@ def summarize(env: RadarNetEnv) -> dict:
 
 
 def run_episode(scenario, policy_name: str = "central_greedy", seed: int | None = None,
-                classifier="auto", record: bool = True):
+                classifier="auto", record: bool = True, record_episode: bool = False):
     """Run one episode.  Returns (env, summary).  ``env.frames`` holds the
     recorded frames for the 3-D viewer when ``record`` is True."""
     sc = load_scenario(scenario) if isinstance(scenario, str) else scenario
     clf = load_classifier() if classifier == "auto" else classifier
-    env = RadarNetEnv(sc, classifier=clf, record=record, seed=seed, local_tracks=True)
+    env = RadarNetEnv(sc, classifier=clf, record=record, seed=seed, local_tracks=True,
+                      record_episode=record_episode)
     obs, _ = env.reset(seed=seed)
     policy = make_policy(policy_name)
     policy.reset(env)
