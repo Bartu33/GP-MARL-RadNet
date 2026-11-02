@@ -128,8 +128,11 @@ class RadarNetEnv(ParallelEnv):
         self.targets, self.motions = [], []
         for i, spec in enumerate(self.sc["targets"]):
             s, m = spawn_target(i, int(spec["label"]), self.rng_targets[i], self.sc["area_radius_m"],
-                                position=spec.get("position"))
+                                position=spec.get("position"), velocity=spec.get("velocity"),
+                                motion=spec.get("motion"))
             keep_above_ground(s, self.terrain)
+            if "motion" in spec:
+                s.update_attitude()   # clearance may change an explicit initial vertical velocity
             self.targets.append(s)
             self.motions.append(m)
         self.tracker = TrackManager()

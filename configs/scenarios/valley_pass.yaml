@@ -1,0 +1,31 @@
+name: valley_pass
+description: Two explicit Gaussian hills; a CV target crosses the valley with alternating radar terrain occlusion.
+dt: 0.5
+duration_s: 200
+
+site:
+  name: Controlled Valley
+  lat: 40.30
+  lon: -111.70
+
+terrain:
+  source: procedural
+  resolution: 512
+  hills:
+    - {center_m: [-2000, -1500], height_m: 800, sigma_m: 500}
+    - {center_m: [2000, 1500], height_m: 800, sigma_m: 500}
+
+radar_defaults:
+  fov_az_deg: 60
+  search_sector_deg: 120
+  false_alarms_per_beam: 0
+
+radars:
+  - {name: West, position: [-6000, 0, 15], heading_deg: 0}
+  - {name: East, position: [6000, 0, 15], heading_deg: 180}
+
+targets:
+  - label: 0
+    position: [0, -5000, 200]
+    velocity: [0, 50, 0]
+    motion: {model: CV}

@@ -13,7 +13,7 @@ import yaml
 
 from .detection import PD_MODELS
 from .radar import RadarParams
-from .targets import MOTION_BY_LABEL
+from .targets import MOTION_BY_LABEL, validate_motion
 
 ROOT = Path(__file__).resolve().parents[2]
 SCENARIO_DIR = ROOT / "configs" / "scenarios"
@@ -214,7 +214,7 @@ def validate_scenario(scenario: dict) -> dict:
     terrain = sc["terrain"]
     if isinstance(terrain, str):
         terrain = {"source": terrain, "resolution": 512}
-    _mapping(terrain, "terrain", DEFAULTS["terrain"])
+    _mapping(terrain, "terrain", (*DEFAULTS["terrain"], "hills"))
     source = terrain.get("source", "flat")
     if not isinstance(source, str) or source not in ("flat", "procedural", "tiles", "auto"):
         raise ValueError("terrain.source: expected flat, procedural, tiles, or auto")
@@ -222,6 +222,19 @@ def validate_scenario(scenario: dict) -> dict:
     _number(res, "terrain.resolution", minimum=2, integer=True)
     if source in ("tiles", "auto") and (res > 1024 or 1024 % res):
         raise ValueError("terrain.resolution: tiles/auto require a divisor of 1024 between 2 and 1024")
+    if "hills" in terrain:
+        if source != "procedural":
+            raise ValueError("terrain.hills: supported only with source procedural")
+        if not isinstance(terrain["hills"], list):
+            raise ValueError("terrain.hills: expected a list")
+        for i, hill in enumerate(terrain["hills"]):
+            path = f"terrain.hills[{i}]"
+            _mapping(hill, path, ("center_m", "height_m", "sigma_m"))
+            _sequence(hill.get("center_m"), f"{path}.center_m", 2)
+            for j, value in enumerate(hill["center_m"]):
+                _number(value, f"{path}.center_m[{j}]")
+            for key in ("height_m", "sigma_m"):
+                _number(hill.get(key), f"{path}.{key}", positive=True)
     for key in ("radars", "targets"):
         if not isinstance(sc[key], list):
             raise ValueError(f"{key}: expected a list")
@@ -238,7 +251,7 @@ def validate_scenario(scenario: dict) -> dict:
         _radar_spec(_merge(sc["radar_defaults"], spec), path)
     for i, target in enumerate(sc["targets"]):
         path = f"targets[{i}]"
-        _mapping(target, path, ("label", "position"))
+        _mapping(target, path, ("label", "position", "velocity", "motion"))
         if "label" not in target:
             raise ValueError(f"{path}.label: required field")
         _number(target["label"], f"{path}.label", integer=True)
@@ -248,6 +261,21 @@ def validate_scenario(scenario: dict) -> dict:
             _sequence(target["position"], f"{path}.position", 3)
             for j, v in enumerate(target["position"]):
                 _number(v, f"{path}.position[{j}]")
+        if "motion" in target:
+            total = validate_motion(target["motion"], f"{path}.motion")
+            for field in ("position", "velocity"):
+                if field not in target:
+                    raise ValueError(f"{path}.{field}: required with explicit motion")
+            _sequence(target["velocity"], f"{path}.velocity", 3)
+            for j, value in enumerate(target["velocity"]):
+                _number(value, f"{path}.velocity[{j}]")
+            effective_duration = int(round(ratio)) * sc["dt"]
+            if total is not None:
+                tolerance = 32 * np.finfo(float).eps * max(1.0, total, effective_duration)
+                if total + tolerance < effective_duration:
+                    raise ValueError(f"{path}.motion.segments: total duration must cover effective episode duration")
+        elif "velocity" in target:
+            raise ValueError(f"{path}.velocity: requires an explicit motion definition")
     stress = sc["stress"]
     _mapping(stress, "stress", DEFAULTS["stress"])
     _number(stress["noise_scale"], "stress.noise_scale", positive=True)

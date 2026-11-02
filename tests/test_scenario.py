@@ -19,6 +19,42 @@ def minimal():
     return {"terrain": {"source": "flat"}, "radars": [{}], "targets": [], "duration_s": 2}
 
 
+@pytest.mark.parametrize("hill,path", [
+    (None, "terrain.hills[0]"), ({}, "terrain.hills[0].center_m"),
+    ({"center_m": [0]}, "terrain.hills[0].center_m"),
+    ({"center_m": [0, True]}, "terrain.hills[0].center_m[1]"),
+    ({"center_m": [float("nan"), 0]}, "terrain.hills[0].center_m[0]"),
+    ({"center_m": [0, float("inf")]}, "terrain.hills[0].center_m[1]"),
+    ({"center_m": "0,0"}, "terrain.hills[0].center_m"),
+    ({"center_m": [0, 0]}, "terrain.hills[0].height_m"),
+    ({"center_m": [0, 0], "height_m": 0}, "terrain.hills[0].height_m"),
+    ({"center_m": [0, 0], "height_m": -1}, "terrain.hills[0].height_m"),
+    ({"center_m": [0, 0], "height_m": True}, "terrain.hills[0].height_m"),
+    ({"center_m": [0, 0], "height_m": float("inf")}, "terrain.hills[0].height_m"),
+    ({"center_m": [0, 0], "height_m": 800}, "terrain.hills[0].sigma_m"),
+    ({"center_m": [0, 0], "height_m": 800, "sigma_m": 0}, "terrain.hills[0].sigma_m"),
+    ({"center_m": [0, 0], "height_m": 800, "sigma_m": -1}, "terrain.hills[0].sigma_m"),
+    ({"center_m": [0, 0], "height_m": 800, "sigma_m": False}, "terrain.hills[0].sigma_m"),
+    ({"center_m": [0, 0], "height_m": 800, "sigma_m": float("nan")}, "terrain.hills[0].sigma_m"),
+    ({"center_m": [0, 0], "height_m": 800, "sigma_m": "500"}, "terrain.hills[0].sigma_m"),
+    ({"center_m": [0, 0], "height_m": 800, "sigma_m": 500, "typo": 1}, "terrain.hills[0].typo"),
+])
+def test_invalid_explicit_hills_have_full_paths(hill, path):
+    sc = minimal()
+    sc["terrain"] = {"source": "procedural", "hills": [hill]}
+    with pytest.raises(ValueError, match=re.escape(path)):
+        validate_scenario(sc)
+
+
+@pytest.mark.parametrize("source,hills", [("procedural", None), ("procedural", {}),
+                                        ("procedural", "hills"), ("flat", []), ("tiles", []), ("auto", [])])
+def test_invalid_hills_container_or_source(source, hills):
+    sc = minimal()
+    sc["terrain"] = {"source": source, "hills": hills}
+    with pytest.raises(ValueError, match="terrain.hills"):
+        validate_scenario(sc)
+
+
 @pytest.mark.parametrize("name", list_scenarios())
 def test_existing_scenarios_validate_without_terrain_io(name, monkeypatch):
     def no_terrain(*args, **kwargs):
@@ -27,7 +63,7 @@ def test_existing_scenarios_validate_without_terrain_io(name, monkeypatch):
     monkeypatch.setattr(env_module, "_cached_terrain", no_terrain)
     sc = load_scenario(name)
     assert validate_scenario(sc) == sc
-    assert len(build_radars(sc)) == 4
+    assert len(build_radars(sc)) == len(sc["radars"])
 
 
 @pytest.mark.parametrize("field,value", [
