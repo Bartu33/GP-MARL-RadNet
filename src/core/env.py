@@ -34,7 +34,7 @@ from src.core.evaluation import TrackEvaluator
 from src.core.modes import Mode
 from src.core.radar import RadarAction, RadarState, radar_step, resource_vector, snr_linear, antenna_gain
 from src.core.radar import los_status
-from src.core.scenario import build_radars
+from src.core.scenario import build_radars, scenario_snapshot, validate_scenario
 from src.core.targets import CLASS_NAMES, advance, keep_above_ground, spawn_target
 from src.core.terrain import build_terrain
 from src.models.classifier.classifier import accumulate
@@ -49,6 +49,10 @@ class RadarNetEnv(ParallelEnv):
 
     def __init__(self, scenario: dict, classifier=None, record: bool = False, seed: int | None = None,
                  local_tracks: bool = False):
+        scenario = validate_scenario(scenario)
+        if seed is not None:
+            # Check overrides before terrain loading or network access.
+            validate_scenario({**scenario, "seed": seed})
         self.sc = scenario
         self.classifier = classifier
         self.record = record
@@ -75,6 +79,11 @@ class RadarNetEnv(ParallelEnv):
         self.share = bool(scenario.get("share_actions", False))
         self.n_base_actions = 2 + self.K * (2 if self.interleaved else 1)
 
+    def config_snapshot(self) -> dict:
+        """Resolved inputs and actual radar parameters; never writes files."""
+        return scenario_snapshot(self.sc, episode_seed=self._seed,
+                                 radar_params=self.radar_params, terrain=self.terrain)
+
     # ------------------------------------------------------------------ spaces
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
@@ -92,6 +101,7 @@ class RadarNetEnv(ParallelEnv):
     # ------------------------------------------------------------------ reset
     def reset(self, seed=None, options=None):
         if seed is not None:
+            validate_scenario({**self.sc, "seed": seed})
             self._seed = seed
         # Stable namespaces: 0 target, 1 radar, 2 communication, 3 policy.
         # Derive by index rather than spawn order so population sizes do not
