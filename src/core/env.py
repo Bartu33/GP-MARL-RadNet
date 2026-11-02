@@ -93,14 +93,25 @@ class RadarNetEnv(ParallelEnv):
     def reset(self, seed=None, options=None):
         if seed is not None:
             self._seed = seed
-        self.rng = np.random.default_rng(self._seed)
+        # Stable namespaces: 0 target, 1 radar, 2 communication, 3 policy.
+        # Derive by index rather than spawn order so population sizes do not
+        # shift unrelated streams. Recreate every stream on every reset.
+        def make_rng(component, index=0):
+            return np.random.default_rng(np.random.SeedSequence(
+                self._seed, spawn_key=(component, index)))
+
+        self.rng_targets = [make_rng(0, i) for i in range(len(self.sc["targets"]))]
+        self.rng_radars = [make_rng(1, i) for i in range(self.n_radars)]
+        self.rng_comm = [make_rng(2, i) for i in range(self.n_radars)]
+        self.rng_policy = make_rng(3)
+        self.rng = self.rng_policy              # legacy policy RNG access
         self.agents = list(self.possible_agents)
         self.t = 0.0
         self.step_count = 0
         self.radar_states = [RadarState.initial(p) for p in self.radar_params]
         self.targets, self.motions = [], []
         for i, spec in enumerate(self.sc["targets"]):
-            s, m = spawn_target(i, int(spec["label"]), self.rng, self.sc["area_radius_m"],
+            s, m = spawn_target(i, int(spec["label"]), self.rng_targets[i], self.sc["area_radius_m"],
                                 position=spec.get("position"))
             keep_above_ground(s, self.terrain)
             self.targets.append(s)
@@ -144,7 +155,7 @@ class RadarNetEnv(ParallelEnv):
             a = int(actions.get(self.possible_agents[i], 1))
             shared = a < self.n_base_actions
             act = self._decode_action(i, a % self.n_base_actions)
-            reports, _ = radar_step(self.targets, act, st, p, self.dt, self.rng, radar_index=i,
+            reports, _ = radar_step(self.targets, act, st, p, self.dt, self.rng_radars[i], radar_index=i,
                                     terrain=self.terrain)
             if self._in_outage(i):
                 reports = []                     # radar transmits but detects nothing (e.g. jamming)
@@ -156,7 +167,7 @@ class RadarNetEnv(ParallelEnv):
             cap = stress.get("max_reports_per_radar")
             if cap is not None and len(reports) > cap:
                 reports = sorted(reports, key=lambda d: -d["signal_quality"])[:cap]
-            if self.rng.random() < stress.get("comm_drop_prob", 0.0):
+            if self.rng_comm[i].random() < stress.get("comm_drop_prob", 0.0):
                 reports = []
             if not shared:                       # radar keeps its reports (local track only)
                 self.withheld += len(reports)
