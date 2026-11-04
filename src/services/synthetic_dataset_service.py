@@ -227,3 +227,29 @@ def _generate(plan, root, policy_name, resume):
                   "cpu_time_s": time.process_time() - cpu})
     _atomic_json(manifest, manifest_path)
     return manifest
+
+
+def main():
+    import argparse
+    from src.services.scenario_planner import load_recipe, plan_episodes
+
+    parser = argparse.ArgumentParser(description="Generate synthetic dataset from scenario planner recipe.")
+    parser.add_argument("--recipe", default="configs/datasets/planner_100.yaml", help="Path to dataset recipe YAML")
+    parser.add_argument("--output", default="data/processed/synthetic_100", help="Output directory")
+    parser.add_argument("--policy", default="central_greedy", help="Policy name")
+    parser.add_argument("--episodes", type=int, default=None, help="Optional override for episode count")
+    parser.add_argument("--no-resume", dest="resume", action="store_false", help="Disable resume (fail if manifest exists)")
+    parser.set_defaults(resume=True)
+    args = parser.parse_args()
+
+    recipe = load_recipe(Path(args.recipe))
+    if args.episodes is not None:
+        recipe["episodes"] = args.episodes
+    plan = plan_episodes(recipe)
+    manifest = generate_dataset(plan, args.output, policy_name=args.policy, resume=args.resume)
+    print(f"Dataset generation finished: status={manifest['generation_status']}, episodes={len(manifest['episodes'])}")
+
+
+if __name__ == "__main__":
+    main()
+
