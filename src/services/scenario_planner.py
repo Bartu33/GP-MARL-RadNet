@@ -97,37 +97,81 @@ def terrain_group_id(terrain):
     return "terrain-" + _digest(surface)[:20]
 
 
-def _distribution(field, spec, base):
-    _mapping(spec, f"randomization.{field}", ("choice", "uniform"))
+def _validate_single_distribution(field, spec, base, path, target_label=None):
+    _mapping(spec, path, ("choice", "uniform"))
     if len(spec) != 1:
-        raise ValueError(f"randomization.{field}: supply exactly one choice or uniform")
+        raise ValueError(f"{path}: supply exactly one choice or uniform")
     if "choice" in spec:
         values = spec["choice"]
         if not isinstance(values, list) or not values:
-            raise ValueError(f"randomization.{field}.choice: expected a nonempty list")
+            raise ValueError(f"{path}.choice: expected a nonempty list")
     else:
         if field in ("targets[0].label", "targets[0].motion"):
-            raise ValueError(f"randomization.{field}: uniform is not supported for this field")
+            raise ValueError(f"{path}: uniform is not supported for this field")
         bounds = spec["uniform"]
-        _mapping(bounds, f"randomization.{field}.uniform", ("low", "high"))
+        _mapping(bounds, f"{path}.uniform", ("low", "high"))
         values = [bounds.get("low"), bounds.get("high")]
         for name, value in zip(("low", "high"), values):
-            path = f"randomization.{field}.uniform.{name}"
+            val_path = f"{path}.uniform.{name}"
             if field in ("targets[0].position", "targets[0].velocity"):
-                _sequence(value, path, 3)
+                _sequence(value, val_path, 3)
                 for i, v in enumerate(value):
-                    _number(v, f"{path}[{i}]")
+                    _number(v, f"{val_path}[{i}]")
             else:
-                _number(value, path)
+                _number(value, val_path)
         if np.any(np.asarray(values[1]) < np.asarray(values[0])):
-            raise ValueError(f"randomization.{field}.uniform: high must be >= low")
+            raise ValueError(f"{path}.uniform: high must be >= low")
     for value in values:
         probe = deepcopy(base)
+        if target_label is not None:
+            probe["targets"][0]["label"] = target_label
         _apply(probe, field, value)
         try:
             validate_scenario(probe)
         except ValueError as exc:
-            raise ValueError(f"randomization.{field}: {exc}") from exc
+            raise ValueError(f"{path}: {exc}") from exc
+
+
+def _distribution(field, spec, base):
+    path = f"randomization.{field}"
+    if field == "targets[0].label":
+        _mapping(spec, path, ("choice", "uniform", "balanced"))
+        if "uniform" in spec:
+            raise ValueError(f"{path}: uniform is not supported for this field")
+        if "choice" not in spec and "balanced" not in spec:
+            raise ValueError(f"{path}: supply choice or balanced")
+        values = spec.get("choice") if "choice" in spec else spec.get("balanced")
+        if not isinstance(values, list) or not values:
+            raise ValueError(f"{path}.choice: expected a nonempty list")
+        if "balanced" in spec and not isinstance(spec["balanced"], (bool, list)):
+            raise ValueError(f"{path}.balanced: expected boolean or list")
+        for value in values:
+            probe = deepcopy(base)
+            _apply(probe, field, value)
+            try:
+                validate_scenario(probe)
+            except ValueError as exc:
+                raise ValueError(f"{path}: {exc}") from exc
+        return
+
+    _mapping(spec, path, ("choice", "uniform", "by_label"))
+    if "by_label" in spec:
+        if len(spec) != 1:
+            raise ValueError(f"{path}: by_label cannot be combined with choice or uniform")
+        by_label = spec["by_label"]
+        if not isinstance(by_label, dict) or not by_label:
+            raise ValueError(f"{path}.by_label: expected a nonempty mapping")
+        for label_key, sub_spec in by_label.items():
+            try:
+                label_int = int(label_key)
+            except (ValueError, TypeError):
+                raise ValueError(f"{path}.by_label: keys must be integer class labels")
+            if label_int not in (0, 1, 2, 3):
+                raise ValueError(f"{path}.by_label: unsupported target class {label_int}")
+            _validate_single_distribution(field, sub_spec, base, f"{path}.by_label[{label_key}]", target_label=label_int)
+        return
+
+    _validate_single_distribution(field, spec, base, path)
 
 
 def _prepare(recipe):
@@ -222,13 +266,47 @@ def plan_episodes(recipe):
     master = int(recipe["master_seed"])
     def rng(namespace, index, field=0, attempt=0):
         return np.random.default_rng(np.random.SeedSequence(master, spawn_key=(namespace, 1, index, field, attempt)))
-    def sample(field, index, attempt=0):
+
+    def sample_dist(dist_spec, field, index, attempt=0):
         stream = rng(600, index, FIELDS[field][0], attempt)
-        distribution = distributions[field]
-        if "choice" in distribution:
-            return deepcopy(distribution["choice"][int(stream.integers(len(distribution["choice"])))])
-        bounds = distribution["uniform"]
+        if "choice" in dist_spec:
+            return deepcopy(dist_spec["choice"][int(stream.integers(len(dist_spec["choice"])))])
+        bounds = dist_spec["uniform"]
         return _json_value(stream.uniform(bounds["low"], bounds["high"]))
+
+    class_counts = {split: {} for split in SPLITS}
+
+    def sample(field, index, attempt=0, target_label=None, split=None):
+        dist = distributions[field]
+        if field == "targets[0].label":
+            stream = rng(600, index, FIELDS[field][0], attempt)
+            labels = dist.get("choice") if "choice" in dist else dist["balanced"]
+            is_balanced = dist.get("balanced") is True or (
+                "balanced" in dist and isinstance(dist["balanced"], list)
+            )
+            if not is_balanced:
+                return int(labels[int(stream.integers(len(labels)))])
+            counts_in_split = class_counts[split]
+            for lbl in labels:
+                counts_in_split.setdefault(lbl, 0)
+            min_count = min(counts_in_split[lbl] for lbl in labels)
+            candidates = [lbl for lbl in labels if counts_in_split[lbl] == min_count]
+            if len(candidates) == 1:
+                chosen = candidates[0]
+            else:
+                chosen = candidates[int(stream.integers(len(candidates)))]
+            counts_in_split[chosen] += 1
+            return int(chosen)
+
+        if "by_label" in dist:
+            by_label = dist["by_label"]
+            lbl_key = int(target_label) if int(target_label) in by_label else str(target_label)
+            if lbl_key not in by_label:
+                raise ValueError(f"no distribution for class label {target_label} in {field}.by_label")
+            return sample_dist(by_label[lbl_key], field, index, attempt)
+
+        return sample_dist(dist, field, index, attempt)
+
     counts = [0, 0, 0]
     episodes, route_owners = [], {}
     for index in range(int(recipe["episodes"])):
@@ -238,11 +316,21 @@ def plan_episodes(recipe):
         pool_index = int(rng(602, index).integers(len(pools[split])))
         terrain, terrain_seed, terrain_id, ground = pools[split][pool_index]
         episode_seed = int(rng(601, index).integers(0, 2 ** 63, dtype=np.int64))
-        values = {field: sample(field, index) for field in distributions}
+        target_label = (
+            sample("targets[0].label", index, split=split)
+            if "targets[0].label" in distributions
+            else int(base["targets"][0]["label"])
+        )
+        values = {}
+        for field in distributions:
+            if field == "targets[0].label":
+                values[field] = target_label
+            else:
+                values[field] = sample(field, index, 0, target_label=target_label)
         rejected = []
         for attempt in range(max_attempts):
             if attempt and "targets[0].position" in distributions:
-                values["targets[0].position"] = sample("targets[0].position", index, attempt)
+                values["targets[0].position"] = sample("targets[0].position", index, attempt, target_label=target_label)
             sc = deepcopy(base)
             sc["terrain"], sc["seed"] = deepcopy(terrain), terrain_seed
             for field, value in values.items():

@@ -214,3 +214,137 @@ def test_planning_never_constructs_or_steps_environment(monkeypatch):
     monkeypatch.setattr(RadarNetEnv, "__init__", forbidden)
     monkeypatch.setattr(RadarNetEnv, "step", forbidden)
     assert len(plan_episodes(recipe())["episodes"]) == 10
+
+
+def test_class_conditioned_profile_recipe_loads_and_plans_deterministically():
+    recipe_path = ROOT / "configs" / "datasets" / "planner_profiles_100.yaml"
+    raw = load_recipe(recipe_path)
+    before = deepcopy(raw)
+    a, b = plan_episodes(raw), plan_episodes(raw)
+    assert a == b and raw == before
+    assert a["split_counts"] == {"train": 70, "validation": 15, "test": 15}
+    assert len(a["episodes"]) == 100
+
+    # Verify balanced class distribution across every split
+    by_split = {split: [] for split in ("train", "validation", "test")}
+    for ep in a["episodes"]:
+        by_split[ep["split"]].append(ep["sampled_values"]["targets[0].label"])
+
+    for split, labels in by_split.items():
+        assert len(labels) == a["split_counts"][split]
+        # In validation (15) and test (15), every class must appear at least 3 times
+        for label in range(4):
+            count = labels.count(label)
+            assert count >= 3, f"Class {label} has count {count} in {split}"
+
+
+def test_class_conditioned_sampling_respects_per_class_bounds():
+    recipe_path = ROOT / "configs" / "datasets" / "planner_profiles_100.yaml"
+    raw = load_recipe(recipe_path)
+    plan = plan_episodes(raw)
+
+    for ep in plan["episodes"]:
+        label = ep["sampled_values"]["targets[0].label"]
+        pos = ep["sampled_values"]["targets[0].position"]
+        vel = ep["sampled_values"]["targets[0].velocity"]
+        motion = ep["sampled_values"]["targets[0].motion"]
+
+        speed = float(np.hypot(vel[0], vel[1]))
+
+        if label == 0:
+            # Class 0: Fast cruise (high altitude, high speed, wide turn / CV / CA)
+            assert 1000.0 <= pos[2] <= 2000.0
+            assert speed >= 130.0
+            if "model" in motion and motion["model"] == "CT":
+                assert abs(motion["turn_rate_rad_s"]) == pytest.approx(0.02)
+        elif label == 1:
+            # Class 1: Agile hover drone (low altitude, agile speed, tight turn / sprint)
+            assert 60.0 <= pos[2] <= 300.0
+            assert speed <= 20.0
+            if "model" in motion and motion["model"] == "CT":
+                assert abs(motion["turn_rate_rad_s"]) == pytest.approx(0.08)
+        elif label == 2:
+            # Class 2: Erratic slow (low-medium altitude, slow speed)
+            assert 60.0 <= pos[2] <= 650.0
+            assert speed <= 16.0
+            if "model" in motion and motion["model"] == "CT":
+                assert abs(motion["turn_rate_rad_s"]) == pytest.approx(0.04)
+        elif label == 3:
+            # Class 3: Drift (medium altitude, low speed passive drift)
+            assert 400.0 <= pos[2] <= 1400.0
+            assert speed <= 10.0
+            assert motion.get("model") in ("CV", "CA")
+
+
+def test_trajectory_speed_and_agl_bounds_over_30s():
+    from src.core.targets import spawn_target, advance
+    from src.core.terrain import build_terrain
+    recipe_path = ROOT / "configs" / "datasets" / "planner_profiles_100.yaml"
+    raw = load_recipe(recipe_path)
+    plan = plan_episodes(raw)
+
+    for ep in plan["episodes"]:
+        sc = ep["resolved_scenario"]
+        c = sc["targets"][0]["label"]
+        ground = build_terrain(sc["site"], sc["terrain"], sc["seed"])
+        s, m = spawn_target(0, c, np.random.default_rng(ep["episode_seed"]), 6500,
+                            position=sc["targets"][0]["position"],
+                            velocity=sc["targets"][0]["velocity"],
+                            motion=sc["targets"][0]["motion"])
+        for _ in range(60):
+            advance(s, m, 0.5, terrain=ground)
+            vh = float(np.hypot(s.v[0], s.v[1]))
+            agl = float(s.p[2] - ground.height(s.p[0], s.p[1]))
+            assert agl >= 30.0, f"Terrain clearance violated: AGL={agl}"
+            if c == 0:
+                assert 110.0 <= vh <= 230.0, f"Class 0 speed out of bounds: {vh}"
+            elif c == 1:
+                assert vh <= 26.0, f"Class 1 speed out of bounds: {vh}"
+            elif c == 2:
+                assert vh <= 22.0, f"Class 2 speed out of bounds: {vh}"
+            elif c == 3:
+                assert vh <= 10.0, f"Class 3 speed out of bounds: {vh}"
+
+
+def test_by_label_validation_and_error_handling():
+    raw = recipe()
+    # Invalid: Combining by_label with choice
+    raw["randomization"]["targets[0].velocity"] = {
+        "choice": [[10, 0, 0]],
+        "by_label": {"0": {"choice": [[10, 0, 0]]}}
+    }
+    with pytest.raises(ValueError, match="by_label cannot be combined"):
+        plan_episodes(raw)
+
+    # Invalid: unsupported class label in by_label
+    raw["randomization"]["targets[0].velocity"] = {
+        "by_label": {"99": {"choice": [[10, 0, 0]]}}
+    }
+    with pytest.raises(ValueError, match="unsupported target class"):
+        plan_episodes(raw)
+
+    # Invalid: non-integer key in by_label
+    raw["randomization"]["targets[0].velocity"] = {
+        "by_label": {"not_a_number": {"choice": [[10, 0, 0]]}}
+    }
+    with pytest.raises(ValueError, match="keys must be integer"):
+        plan_episodes(raw)
+
+    # Invalid: empty by_label
+    raw["randomization"]["targets[0].velocity"] = {"by_label": {}}
+    with pytest.raises(ValueError, match="expected a nonempty mapping"):
+        plan_episodes(raw)
+
+
+def test_smoke_cpu_generate_dataset_with_profiles(tmp_path):
+    from src.services.synthetic_dataset_service import generate_dataset
+    recipe_path = ROOT / "configs" / "datasets" / "planner_profiles_100.yaml"
+    raw = load_recipe(recipe_path)
+    raw["episodes"] = 4  # small 4-episode smoke run
+    plan = plan_episodes(raw)
+    manifest = generate_dataset(plan, tmp_path)
+    assert manifest["generation_status"] == "completed"
+    assert len(manifest["episodes"]) == 4
+    for ep in manifest["episodes"]:
+        assert ep["generation_status"] == "completed"
+

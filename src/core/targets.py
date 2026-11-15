@@ -349,6 +349,53 @@ class Drift(MotionModel):
 MOTION_BY_LABEL = {0: FastCruise, 1: AgileHover, 2: ErraticSlow, 3: Drift}
 ALT_RANGE = {0: (700, 2200), 1: (40, 350), 2: (40, 700), 3: (300, 1600)}
 
+CLASS_PROFILES = {
+    0: {
+        "name": "A_fast_cruise",
+        "description": "High-speed fixed-wing cruise flight with coordinated bank-to-turn maneuvers",
+        "speed_range_mps": (110.0, 230.0),
+        "world_z_range_m": (1000.0, 2000.0),
+        "min_agl_m": 30.0,
+        "allowed_motion_models": ("CV", "CT", "CA"),
+        "max_lateral_accel_mps2": 25.0,
+        "swerling_case": 1,
+        "rcs_type": "ellipsoid",
+    },
+    1: {
+        "name": "B_agile_hover",
+        "description": "Rotary-wing / quadcopter UAV with hover and short agile dashes",
+        "speed_range_mps": (0.0, 26.0),
+        "world_z_range_m": (60.0, 300.0),
+        "min_agl_m": 30.0,
+        "allowed_motion_models": ("CV", "CT", "CA", "SegmentedMotion"),
+        "max_linear_accel_mps2": 6.0,
+        "swerling_case": 1,
+        "rcs_type": "ellipsoid",
+    },
+    2: {
+        "name": "C_erratic_slow",
+        "description": "Slow erratic flight with random-walk heading and vertical oscillation",
+        "speed_range_mps": (2.0, 22.0),
+        "world_z_range_m": (60.0, 650.0),
+        "min_agl_m": 30.0,
+        "allowed_motion_models": ("CV", "CT", "CA", "SegmentedMotion"),
+        "max_turn_rate_rad_s": 0.35,
+        "swerling_case": 1,
+        "rcs_type": "constant",
+    },
+    3: {
+        "name": "D_drift",
+        "description": "Passive aerodynamic drift with wind vector, slow climb and turbulence",
+        "speed_range_mps": (0.5, 10.0),
+        "world_z_range_m": (400.0, 1400.0),
+        "min_agl_m": 30.0,
+        "allowed_motion_models": ("CV", "CA"),
+        "max_gust_mps": 3.0,
+        "swerling_case": 0,
+        "rcs_type": "lookup",
+    },
+}
+
 
 def default_rcs(label: int, rng: np.random.Generator) -> tuple[RCSModel, int]:
     """Synthetic RCS model and Swerling case for each archetype."""
