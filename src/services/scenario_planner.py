@@ -23,15 +23,18 @@ from src.core.terrain import build_terrain
 
 SPLITS = ("train", "validation", "test")
 # Explicit IDs are part of planner v1's RNG contract; never enumerate recipe keys.
+MAX_TARGETS = 8
 FIELDS = {
-    "targets[0].label": (0, ("targets", 0, "label")),
-    "targets[0].position": (1, ("targets", 0, "position")),
-    "targets[0].velocity": (2, ("targets", 0, "velocity")),
-    "targets[0].motion": (3, ("targets", 0, "motion")),
     "stress.noise_scale": (4, ("stress", "noise_scale")),
     "stress.comm_drop_prob": (5, ("stress", "comm_drop_prob")),
-    "targets[0].target_type": (6, ("targets", 0, "target_type")),
 }
+for i in range(MAX_TARGETS):
+    base_id = 10 * i if i > 0 else 0
+    FIELDS[f"targets[{i}].label"] = (base_id + 0, ("targets", i, "label"))
+    FIELDS[f"targets[{i}].position"] = (base_id + 1, ("targets", i, "position"))
+    FIELDS[f"targets[{i}].velocity"] = (base_id + 2, ("targets", i, "velocity"))
+    FIELDS[f"targets[{i}].motion"] = (base_id + 3, ("targets", i, "motion"))
+    FIELDS[f"targets[{i}].target_type"] = (base_id + 6, ("targets", i, "target_type"))
 
 
 def _canonical(value):
@@ -69,6 +72,9 @@ def _apply(sc, field, value):
     target = sc
     *parents, key = FIELDS[field][1]
     for part in parents:
+        if isinstance(part, int) and isinstance(target, list):
+            while len(target) <= part:
+                target.append({})
         target = target[part]
     target[key] = deepcopy(value)
 
@@ -108,14 +114,14 @@ def _validate_single_distribution(field, spec, base, path, target_label=None, ta
         if not isinstance(values, list) or not values:
             raise ValueError(f"{path}.choice: expected a nonempty list")
     else:
-        if field in ("targets[0].label", "targets[0].target_type", "targets[0].motion"):
+        if field.endswith(".label") or field.endswith(".target_type") or field.endswith(".motion"):
             raise ValueError(f"{path}: uniform is not supported for this field")
         bounds = spec["uniform"]
         _mapping(bounds, f"{path}.uniform", ("low", "high"))
         values = [bounds.get("low"), bounds.get("high")]
         for name, value in zip(("low", "high"), values):
             val_path = f"{path}.uniform.{name}"
-            if field in ("targets[0].position", "targets[0].velocity"):
+            if field.endswith(".position") or field.endswith(".velocity"):
                 _sequence(value, val_path, 3)
                 for i, v in enumerate(value):
                     _number(v, f"{val_path}[{i}]")
@@ -123,14 +129,19 @@ def _validate_single_distribution(field, spec, base, path, target_label=None, ta
                 _number(value, val_path)
         if np.any(np.asarray(values[1]) < np.asarray(values[0])):
             raise ValueError(f"{path}.uniform: high must be >= low")
+    target_idx = 0
+    if field.startswith("targets[") and "]" in field:
+        target_idx = int(field[field.index("[") + 1 : field.index("]")])
     for value in values:
         probe = deepcopy(base)
+        while len(probe["targets"]) <= target_idx:
+            probe["targets"].append(deepcopy(probe["targets"][0]))
         if target_label is not None:
-            probe["targets"][0]["label"] = target_label
+            probe["targets"][target_idx]["label"] = target_label
         if target_type is not None:
-            probe["targets"][0]["target_type"] = target_type
-            if "label" not in probe["targets"][0] or probe["targets"][0]["label"] is None:
-                probe["targets"][0]["label"] = TARGET_TYPE_PROFILES[target_type].get("legacy_label_compat", 0)
+            probe["targets"][target_idx]["target_type"] = target_type
+            if "label" not in probe["targets"][target_idx] or probe["targets"][target_idx]["label"] is None:
+                probe["targets"][target_idx]["label"] = TARGET_TYPE_PROFILES[target_type].get("legacy_label_compat", 0)
         _apply(probe, field, value)
         try:
             validate_scenario(probe)
@@ -140,7 +151,10 @@ def _validate_single_distribution(field, spec, base, path, target_label=None, ta
 
 def _distribution(field, spec, base):
     path = f"randomization.{field}"
-    if field in ("targets[0].label", "targets[0].target_type"):
+    if field.endswith(".label") or field.endswith(".target_type"):
+        target_idx = 0
+        if field.startswith("targets[") and "]" in field:
+            target_idx = int(field[field.index("[") + 1 : field.index("]")])
         _mapping(spec, path, ("choice", "uniform", "balanced"))
         if "uniform" in spec:
             raise ValueError(f"{path}: uniform is not supported for this field")
@@ -153,12 +167,14 @@ def _distribution(field, spec, base):
             raise ValueError(f"{path}.balanced: expected boolean or list")
         for value in values:
             probe = deepcopy(base)
-            if field == "targets[0].target_type":
+            while len(probe["targets"]) <= target_idx:
+                probe["targets"].append(deepcopy(probe["targets"][0]))
+            if field.endswith(".target_type"):
                 if value not in TARGET_TYPE_PROFILES:
                     raise ValueError(f"{path}: unknown target type {value!r}")
-                probe["targets"][0]["target_type"] = value
-                if "label" not in probe["targets"][0] or probe["targets"][0]["label"] is None:
-                    probe["targets"][0]["label"] = TARGET_TYPE_PROFILES[value].get("legacy_label_compat", 0)
+                probe["targets"][target_idx]["target_type"] = value
+                if "label" not in probe["targets"][target_idx] or probe["targets"][target_idx]["label"] is None:
+                    probe["targets"][target_idx]["label"] = TARGET_TYPE_PROFILES[value].get("legacy_label_compat", 0)
             else:
                 _apply(probe, field, value)
             try:
@@ -216,8 +232,8 @@ def _prepare(recipe):
     if not isinstance(overrides, dict):
         raise ValueError("overrides: expected a mapping")
     base = validate_scenario(_merge(base, overrides))
-    if len(base["targets"]) != 1 or "motion" not in base["targets"][0]:
-        raise ValueError("targets: planner v1 requires exactly one explicit-motion target")
+    if len(base["targets"]) < 1 or any("motion" not in t for t in base["targets"]):
+        raise ValueError("targets: planner requires at least one explicit-motion target")
     family = recipe.get("scenario_family", base["name"])
     if not isinstance(family, str) or not family:
         raise ValueError("scenario_family: expected a nonempty string")
@@ -275,10 +291,11 @@ def _geometry(sc, ground):
         inside(p, f"radars[{i}].position")
         if p[2] < 0:
             raise ValueError(f"radars[{i}].position[2]: mast is below local ground")
-    p = sc["targets"][0]["position"]
-    inside(p, "targets[0].position")
-    if p[2] < float(ground.height(p[0], p[1])) + 30:
-        raise ValueError("targets[0].position[2]: initial AGL must be >= 30 m without clearance clamping")
+    for i, target in enumerate(sc["targets"]):
+        p = target["position"]
+        inside(p, f"targets[{i}].position")
+        if p[2] < float(ground.height(p[0], p[1])) + 30:
+            raise ValueError(f"targets[{i}].position[2]: initial AGL must be >= 30 m without clearance clamping")
 
 
 def plan_episodes(recipe):
@@ -301,12 +318,12 @@ def plan_episodes(recipe):
         bounds = dist_spec["uniform"]
         return _json_value(stream.uniform(bounds["low"], bounds["high"]))
 
-    class_counts = {split: {} for split in SPLITS}
-    type_counts = {split: {} for split in SPLITS}
+    class_counts = {}
+    type_counts = {}
 
-    def sample(field, index, attempt=0, target_label=None, target_type=None, split=None):
+    def sample(field, index, attempt=0, target_label=None, target_type=None, split=None, target_idx=0):
         dist = distributions[field]
-        if field == "targets[0].label":
+        if field.endswith(".label"):
             stream = rng(600, index, FIELDS[field][0], attempt)
             labels = dist.get("choice") if "choice" in dist else dist["balanced"]
             is_balanced = dist.get("balanced") is True or (
@@ -314,7 +331,7 @@ def plan_episodes(recipe):
             )
             if not is_balanced:
                 return int(labels[int(stream.integers(len(labels)))])
-            counts_in_split = class_counts[split]
+            counts_in_split = class_counts.setdefault((target_idx, split), {})
             for lbl in labels:
                 counts_in_split.setdefault(lbl, 0)
             min_count = min(counts_in_split[lbl] for lbl in labels)
@@ -326,7 +343,7 @@ def plan_episodes(recipe):
             counts_in_split[chosen] += 1
             return int(chosen)
 
-        if field == "targets[0].target_type":
+        if field.endswith(".target_type"):
             stream = rng(600, index, FIELDS[field][0], attempt)
             types = dist.get("choice") if "choice" in dist else dist["balanced"]
             is_balanced = dist.get("balanced") is True or (
@@ -334,7 +351,7 @@ def plan_episodes(recipe):
             )
             if not is_balanced:
                 return str(types[int(stream.integers(len(types)))])
-            counts_in_split = type_counts[split]
+            counts_in_split = type_counts.setdefault((target_idx, split), {})
             for tt in types:
                 counts_in_split.setdefault(tt, 0)
             min_count = min(counts_in_split[tt] for tt in types)
@@ -361,6 +378,10 @@ def plan_episodes(recipe):
 
         return sample_dist(dist, field, index, attempt)
 
+    # Determine number of targets
+    target_indices = {int(f[f.index("[") + 1 : f.index("]")]) for f in distributions if f.startswith("targets[")}
+    n_targets = max(len(base["targets"]), max(target_indices) + 1) if target_indices else len(base["targets"])
+
     counts = [0, 0, 0]
     episodes, route_owners = [], {}
     for index in range(int(recipe["episodes"])):
@@ -370,37 +391,62 @@ def plan_episodes(recipe):
         pool_index = int(rng(602, index).integers(len(pools[split])))
         terrain, terrain_seed, terrain_id, ground = pools[split][pool_index]
         episode_seed = int(rng(601, index).integers(0, 2 ** 63, dtype=np.int64))
-        target_type = (
-            sample("targets[0].target_type", index, split=split)
-            if "targets[0].target_type" in distributions
-            else base["targets"][0].get("target_type")
-        )
-        if "targets[0].label" in distributions:
-            target_label = sample("targets[0].label", index, split=split)
-        elif target_type is not None and target_type in TARGET_TYPE_PROFILES:
-            target_label = TARGET_TYPE_PROFILES[target_type].get(
-                "legacy_label_compat", int(base["targets"][0].get("label", 0))
-            )
-        else:
-            target_label = int(base["targets"][0].get("label", 0))
+
+        target_types = {}
+        target_labels = {}
+        for i in range(n_targets):
+            f_type = f"targets[{i}].target_type"
+            if f_type in distributions:
+                target_types[i] = sample(f_type, index, split=split, target_idx=i)
+            elif i < len(base["targets"]):
+                target_types[i] = base["targets"][i].get("target_type")
+            else:
+                target_types[i] = None
+
+            f_lbl = f"targets[{i}].label"
+            if f_lbl in distributions:
+                target_labels[i] = sample(f_lbl, index, split=split, target_idx=i)
+            elif f_type in distributions and target_types[i] in TARGET_TYPE_PROFILES:
+                compat = TARGET_TYPE_PROFILES[target_types[i]].get("legacy_label_compat")
+                default_lbl = int(base["targets"][i].get("label", 0)) if i < len(base["targets"]) else 0
+                target_labels[i] = compat if compat is not None else default_lbl
+            elif i < len(base["targets"]):
+                target_labels[i] = int(base["targets"][i].get("label", 0))
+            elif target_types[i] is not None and target_types[i] in TARGET_TYPE_PROFILES:
+                compat = TARGET_TYPE_PROFILES[target_types[i]].get("legacy_label_compat")
+                target_labels[i] = compat if compat is not None else 0
+            else:
+                target_labels[i] = 0
 
         values = {}
         for field in distributions:
-            if field == "targets[0].label":
-                values[field] = target_label
-            elif field == "targets[0].target_type":
-                values[field] = target_type
+            if field.endswith(".label"):
+                idx = int(field[field.index("[") + 1 : field.index("]")])
+                values[field] = target_labels[idx]
+            elif field.endswith(".target_type"):
+                idx = int(field[field.index("[") + 1 : field.index("]")])
+                values[field] = target_types[idx]
+            elif field.startswith("targets["):
+                idx = int(field[field.index("[") + 1 : field.index("]")])
+                values[field] = sample(field, index, 0, target_label=target_labels[idx], target_type=target_types[idx], target_idx=idx)
             else:
-                values[field] = sample(field, index, 0, target_label=target_label, target_type=target_type)
+                values[field] = sample(field, index, 0)
+
         rejected = []
         for attempt in range(max_attempts):
-            if attempt and "targets[0].position" in distributions:
-                values["targets[0].position"] = sample("targets[0].position", index, attempt, target_label=target_label, target_type=target_type)
+            if attempt:
+                for field in distributions:
+                    if field.endswith(".position"):
+                        idx = int(field[field.index("[") + 1 : field.index("]")])
+                        values[field] = sample(field, index, attempt, target_label=target_labels[idx], target_type=target_types[idx], target_idx=idx)
             sc = deepcopy(base)
             sc["terrain"], sc["seed"] = deepcopy(terrain), terrain_seed
-            if target_type is not None:
-                sc["targets"][0]["target_type"] = target_type
-            sc["targets"][0]["label"] = target_label
+            while len(sc["targets"]) < n_targets:
+                sc["targets"].append(deepcopy(sc["targets"][0]))
+            for i in range(n_targets):
+                if target_types[i] is not None:
+                    sc["targets"][i]["target_type"] = target_types[i]
+                sc["targets"][i]["label"] = target_labels[i]
             for field, value in values.items():
                 _apply(sc, field, value)
             sc = validate_scenario(sc)
@@ -412,9 +458,14 @@ def plan_episodes(recipe):
             break
         else:
             raise ValueError(f"episode_index={index}: geometry failed after {max_attempts} attempts: {_canonical(rejected)}")
-        target = sc["targets"][0]
-        route_id = "route-" + _digest(_physical_numbers(
-            {k: target[k] for k in ("position", "velocity")}))[:20]
+
+        if len(sc["targets"]) == 1:
+            target = sc["targets"][0]
+            route_id = "route-" + _digest(_physical_numbers(
+                {k: target[k] for k in ("position", "velocity")}))[:20]
+        else:
+            fingerprint = [{k: t[k] for k in ("position", "velocity")} for t in sc["targets"]]
+            route_id = "route-" + _digest(_physical_numbers(fingerprint))[:20]
         if route_id in route_owners and route_owners[route_id] != split:
             raise ValueError(f"episode_index={index}: route group already belongs to {route_owners[route_id]}; "
                              "vary initial position/velocity; split leakage")

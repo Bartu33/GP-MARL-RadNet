@@ -64,8 +64,8 @@ def _validate_plan(plan):
             raise ValueError("dataset_episode_id: invalid or duplicate ID")
         ids.add(key)
         sc = validate_scenario(episode["resolved_scenario"])
-        if len(sc["targets"]) != 1:
-            raise ValueError(f"{key}: generation v1 requires one target")
+        if len(sc["targets"]) < 1:
+            raise ValueError(f"{key}: generation requires at least one target")
         snapshot = scenario_snapshot(sc, episode_seed=episode["episode_seed"])
         if (_digest(snapshot) != episode["resolved_configuration_hash"]
                 or snapshot != episode["config_snapshot"]):
@@ -104,11 +104,24 @@ def _inspect(directory, episode, binding, expected=None):
             or snapshot["episode_seed"] != episode["episode_seed"]):
         raise ValueError("episode completion/configuration/provenance mismatch")
     steps = episode["config_snapshot"]["simulation_steps"]
+    n_targets = len(snapshot["scenario"]["targets"])
+    expected_truth = (steps + 1) * n_targets
     if (metadata["recorded_steps"] != steps or len(records["states"]) != steps + 1
-            or len(records["transitions"]) != steps or len(records["truth"]) != steps + 1):
+            or len(records["transitions"]) != steps or len(records["truth"]) != expected_truth):
         raise ValueError("episode state/transition/truth counts mismatch")
     if [row["step_index"] for row in records["states"]] != list(range(steps + 1)):
         raise ValueError("episode state indices mismatch")
+    expected_target_ids = set(range(n_targets))
+    truth_by_step = {}
+    for row in records["truth"]:
+        s_idx = row["step_index"]
+        truth_by_step.setdefault(s_idx, []).append(row["target_id"])
+    if len(truth_by_step) != steps + 1:
+        raise ValueError("truth records missing steps")
+    for s_idx in range(steps + 1):
+        step_ids = truth_by_step.get(s_idx, [])
+        if len(step_ids) != n_targets or set(step_ids) != expected_target_ids:
+            raise ValueError(f"truth step {s_idx} does not contain unique complete target IDs")
     for row in records["states"]:
         if not np.isclose(row["t_s"], row["step_index"] * snapshot["scenario"]["dt"], rtol=0, atol=1e-9):
             raise ValueError("episode timestamps mismatch")
