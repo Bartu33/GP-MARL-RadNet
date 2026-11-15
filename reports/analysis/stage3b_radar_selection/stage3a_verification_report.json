@@ -1,0 +1,21 @@
+{
+  "packet_loss_reconciliation": {
+    "dataset_total_packet_lost": 533,
+    "false_alarms_lost": 117,
+    "target_detections_lost": 416,
+    "target_lost_inside_nominal_fov_los": 390,
+    "target_lost_at_edge_of_fov": 26,
+    "mathematical_identity": "533 total = 117 false alarms + 390 in-FOV target lost + 26 edge-FOV target lost",
+    "proof_valid": true
+  },
+  "coasting_covariance_reconciliation": {
+    "finding": "Stage 3A prose cited the Stage 2E missile ground-truth tracking error table rather than EKF P covariance.",
+    "actual_ekf_covariance_pos_std_m": {
+      "0_steps": 37.23,
+      "5_steps": 204.9,
+      "10_steps": 455.52,
+      "20_steps": 256.3
+    },
+    "explanation": "Kalman filter process noise Q=40.0 integrates analytically as O(t^3), producing sigma_pos = 37.8m (0s), 204.7m (2.5s), 453.6m (5.0s), and 850m+ (10s). In contrast, the ground-truth kinematic error grew as 31.2m, 125.7m, 273.4m, 750.3m due to 1.5g circular maneuver geometric divergence from a linear CV extrapolation."
+  }
+}
