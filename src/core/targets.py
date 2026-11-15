@@ -47,6 +47,7 @@ class TargetState:
     swerling: int = 1
     a_lat: float = 0.0
     R_WT: np.ndarray = field(default_factory=lambda: np.eye(3))
+    target_type: str | None = None
 
     def update_attitude(self):
         self.R_WT = body_rotation(self.v, self.a_lat)
@@ -396,6 +397,147 @@ CLASS_PROFILES = {
     },
 }
 
+TARGET_TYPE_PROFILES = {
+    "aircraft_like": {
+        "profile_id": "aircraft_like",
+        "name": "Aircraft-like",
+        "version": "1.0.0",
+        "legacy_label_compat": 0,
+        "description": "Simplified synthetic fixed-wing aircraft regime (subsonic cruise, wide coordinated bank-to-turn maneuvers, steady altitude)",
+        "units": {
+            "position": "m (World ENU)",
+            "altitude": "m (World ENU Z; minimum clearance >= 30m AGL)",
+            "velocity": "m/s",
+            "acceleration": "m/s²",
+            "turn_rate": "rad/s",
+            "rcs": "m²",
+        },
+        "initial_velocity_sampling": {
+            "speed_range_mps": (120.0, 250.0),
+            "climb_rate_range_mps": (-5.0, 5.0),
+        },
+        "initial_altitude_sampling": {
+            "world_z_range_m": (1000.0, 4500.0),
+            "min_agl_m": 50.0,
+            "altitude_reference": "World ENU Z (pz), with terrain clearance AGL(t) = pz(t) - ground.height(px, py) >= min_agl_m",
+        },
+        "allowed_motion_models": ("CV", "CT", "CA", "SegmentedMotion"),
+        "maneuver_and_speed_limits": {
+            "min_horizontal_speed_mps": 100.0,
+            "max_horizontal_speed_mps": 260.0,
+            "max_turn_rate_rad_s": 0.05,
+            "max_acceleration_mps2": 10.0,
+        },
+        "rcs_selection": {
+            "type": "ellipsoid",
+            "semi_axes_m": "a in [3.0, 5.0], b in [1.0, 1.8], c in [0.5, 0.9]",
+            "aspect_dependence": "Optical ellipsoid formulation, high broadside specular, low nose-on signature",
+            "swerling_case": 1,
+        },
+        "swerling_assumption": {
+            "swerling_case": 1,
+            "description": "Swerling-1: scan-to-scan decorrelation, Rayleigh amplitude fluctuation (exponential RCS power)",
+        },
+        "physical_limitations": (
+            "Simplified synthetic point-mass 3-DOF kinematic profile designed for multi-agent radar resource management research. "
+            "Does not model 6-DOF aerodynamic roll/pitch/yaw coupling, stall aerodynamics, engine thrust curves, seeker dynamics, "
+            "or operational performance of real military or civilian aircraft."
+        ),
+    },
+    "uav_like": {
+        "profile_id": "uav_like",
+        "name": "UAV-like",
+        "version": "1.0.0",
+        "legacy_label_compat": 1,
+        "description": "Simplified synthetic tactical / multirotor UAV regime (low altitude, low-to-medium speed, rapid agile heading turns, hover and sprint)",
+        "units": {
+            "position": "m (World ENU)",
+            "altitude": "m (World ENU Z; minimum clearance >= 30m AGL)",
+            "velocity": "m/s",
+            "acceleration": "m/s²",
+            "turn_rate": "rad/s",
+            "rcs": "m²",
+        },
+        "initial_velocity_sampling": {
+            "speed_range_mps": (0.0, 35.0),
+            "climb_rate_range_mps": (-3.0, 3.0),
+        },
+        "initial_altitude_sampling": {
+            "world_z_range_m": (50.0, 500.0),
+            "min_agl_m": 30.0,
+            "altitude_reference": "World ENU Z (pz), with terrain clearance AGL(t) = pz(t) - ground.height(px, py) >= min_agl_m",
+        },
+        "allowed_motion_models": ("CV", "CT", "CA", "SegmentedMotion"),
+        "maneuver_and_speed_limits": {
+            "min_horizontal_speed_mps": 0.0,
+            "max_horizontal_speed_mps": 35.0,
+            "max_turn_rate_rad_s": 0.25,
+            "max_acceleration_mps2": 6.0,
+        },
+        "rcs_selection": {
+            "type": "ellipsoid",
+            "semi_axes_m": "a in [0.25, 0.40], b in [0.25, 0.40], c in [0.08, 0.15]",
+            "aspect_dependence": "Small optical ellipsoid formulation",
+            "swerling_case": 1,
+        },
+        "swerling_assumption": {
+            "swerling_case": 1,
+            "description": "Swerling-1: scan-to-scan decorrelation, Rayleigh amplitude fluctuation (exponential RCS power)",
+        },
+        "physical_limitations": (
+            "Simplified synthetic point-mass 3-DOF kinematic profile designed for multi-agent radar resource management research. "
+            "Does not model rotor micro-Doppler modulation, ground effect turbulence, battery discharge curves, "
+            "or operational performance of real drone systems."
+        ),
+    },
+    "missile_like": {
+        "profile_id": "missile_like",
+        "name": "Missile-like",
+        "version": "1.0.0",
+        "legacy_label_compat": 2,
+        "description": "Simplified synthetic high-speed cruise / anti-ship missile-like regime (high transonic/supersonic speed, low terrain penetration, high longitudinal acceleration, tight evasive turns)",
+        "units": {
+            "position": "m (World ENU)",
+            "altitude": "m (World ENU Z; minimum clearance >= 30m AGL)",
+            "velocity": "m/s",
+            "acceleration": "m/s²",
+            "turn_rate": "rad/s",
+            "rcs": "m²",
+        },
+        "initial_velocity_sampling": {
+            "speed_range_mps": (180.0, 550.0),
+            "climb_rate_range_mps": (-5.0, 5.0),
+        },
+        "initial_altitude_sampling": {
+            "world_z_range_m": (60.0, 800.0),
+            "min_agl_m": 30.0,
+            "altitude_reference": "World ENU Z (pz), with terrain clearance AGL(t) = pz(t) - ground.height(px, py) >= min_agl_m",
+        },
+        "allowed_motion_models": ("CV", "CT", "CA", "SegmentedMotion"),
+        "maneuver_and_speed_limits": {
+            "min_horizontal_speed_mps": 180.0,
+            "max_horizontal_speed_mps": 600.0,
+            "max_turn_rate_rad_s": 0.12,
+            "max_acceleration_mps2": 25.0,
+        },
+        "rcs_selection": {
+            "type": "ellipsoid",
+            "semi_axes_m": "a in [2.0, 3.5], b in [0.18, 0.25], c in [0.18, 0.25]",
+            "aspect_dependence": "Slender body ellipsoid, minimal nose-on signature, sharp broadside specular",
+            "swerling_case": 1,
+        },
+        "swerling_assumption": {
+            "swerling_case": 1,
+            "description": "Swerling-1: scan-to-scan decorrelation, Rayleigh amplitude fluctuation (exponential RCS power)",
+        },
+        "physical_limitations": (
+            "Simplified synthetic point-mass 3-DOF kinematic profile designed for multi-agent radar resource management research. "
+            "Does not model rocket/air-breathing propulsion stages, thermal aerothermal ablation, seeker sensor gimbal, "
+            "or operational guidance algorithms (e.g. PN/APN)."
+        ),
+    },
+}
+
 
 def default_rcs(label: int, rng: np.random.Generator) -> tuple[RCSModel, int]:
     """Synthetic RCS model and Swerling case for each archetype."""
@@ -408,19 +550,39 @@ def default_rcs(label: int, rng: np.random.Generator) -> tuple[RCSModel, int]:
     return LookupTableRCS.synthetic(nose_dbsm=-8, side_dbsm=-2, tail_dbsm=-6, top_dbsm=0), 0
 
 
+def default_target_type_rcs(target_type: str, rng: np.random.Generator) -> tuple[RCSModel, int]:
+    """Synthetic RCS model and Swerling case for each explicit target type."""
+    if target_type not in TARGET_TYPE_PROFILES:
+        raise ValueError(f"unknown target type {target_type!r}; supported: {list(TARGET_TYPE_PROFILES)}")
+    if target_type == "aircraft_like":
+        return EllipsoidRCS(rng.uniform(3.0, 5.0), rng.uniform(1.0, 1.8), rng.uniform(0.5, 0.9)), 1
+    elif target_type == "uav_like":
+        return EllipsoidRCS(rng.uniform(0.25, 0.40), rng.uniform(0.25, 0.40), rng.uniform(0.08, 0.15)), 1
+    elif target_type == "missile_like":
+        return EllipsoidRCS(rng.uniform(2.0, 3.5), rng.uniform(0.18, 0.25), rng.uniform(0.18, 0.25)), 1
+    raise ValueError(f"unhandled target type {target_type}")
+
+
 def spawn_target(tid: int, label: int, rng: np.random.Generator, area_radius: float,
-                 center=(0.0, 0.0), position=None, *, velocity=None, motion=None) -> tuple[TargetState, MotionModel]:
+                 center=(0.0, 0.0), position=None, *, velocity=None, motion=None,
+                 target_type: str | None = None) -> tuple[TargetState, MotionModel]:
     """Spawn a legacy behavior, or explicit motion with required position/velocity.
 
-    Class still chooses the default RCS. Explicit motion is deterministic and
-    independent of class; the legacy branch retains its original RNG order.
+    Class still chooses the default RCS if target_type is not given. Explicit motion
+    is deterministic; the legacy branch retains its original RNG order.
     """
+    if target_type is not None and target_type not in TARGET_TYPE_PROFILES:
+        raise ValueError(f"unknown target type {target_type!r}; supported: {list(TARGET_TYPE_PROFILES)}")
+
     if motion is not None:
         p = _motion_vector(position, "position")
         v = _motion_vector(velocity, "velocity")
         model = build_motion(motion, rng, area_radius, center)
-        rcs, sw = default_rcs(label, rng)
-        s = TargetState(id=tid, label=label, p=p.copy(), v=v.copy(), rcs=rcs, swerling=sw)
+        if target_type is not None:
+            rcs, sw = default_target_type_rcs(target_type, rng)
+        else:
+            rcs, sw = default_rcs(label, rng)
+        s = TargetState(id=tid, label=label, p=p.copy(), v=v.copy(), rcs=rcs, swerling=sw, target_type=target_type)
         model.step(s, 0.0)
         s.update_attitude()
         return s, model
@@ -435,10 +597,13 @@ def spawn_target(tid: int, label: int, rng: np.random.Generator, area_radius: fl
     motion = MOTION_BY_LABEL[label](rng, area_radius, center)
     psi = rng.uniform(-np.pi, np.pi)
     speed0 = getattr(motion, "speed", 5.0)
-    rcs, sw = default_rcs(label, rng)
+    if target_type is not None:
+        rcs, sw = default_target_type_rcs(target_type, rng)
+    else:
+        rcs, sw = default_rcs(label, rng)
     s = TargetState(id=tid, label=label, p=np.asarray(position, float),
                     v=np.array([speed0 * np.cos(psi), speed0 * np.sin(psi), 0.0]),
-                    rcs=rcs, swerling=sw)
+                    rcs=rcs, swerling=sw, target_type=target_type)
     s.update_attitude()
     return s, motion
 

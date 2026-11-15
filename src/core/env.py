@@ -129,7 +129,7 @@ class RadarNetEnv(ParallelEnv):
         for i, spec in enumerate(self.sc["targets"]):
             s, m = spawn_target(i, int(spec["label"]), self.rng_targets[i], self.sc["area_radius_m"],
                                 position=spec.get("position"), velocity=spec.get("velocity"),
-                                motion=spec.get("motion"))
+                                motion=spec.get("motion"), target_type=spec.get("target_type"))
             keep_above_ground(s, self.terrain)
             if "motion" in spec:
                 s.update_attitude()   # clearance may change an explicit initial vertical velocity
@@ -170,6 +170,7 @@ class RadarNetEnv(ParallelEnv):
                     "state_order": ["px_m", "py_m", "pz_m", "vx_mps", "vy_mps", "vz_mps"],
                     "measurement_order": ["range_m", "azimuth_rad", "elevation_rad", "radial_velocity_mps"],
                     "sentinels": {"fused_radar_id": -1, "missing_truth_id": -1},
+                    "target_types": [s.target_type for s in self.targets],
                 },
                 **{key: [] for key in ("states", "truth", "reports", "annotations", "tracks", "transitions",
                                        "communication", "deliveries")},

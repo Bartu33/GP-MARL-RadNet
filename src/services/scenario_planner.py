@@ -18,6 +18,7 @@ from src.core.scenario import (
     _check_yaml_keys, _json_value, _mapping, _merge, _number, _sequence,
     load_scenario, scenario_snapshot, validate_scenario,
 )
+from src.core.targets import TARGET_TYPE_PROFILES
 from src.core.terrain import build_terrain
 
 SPLITS = ("train", "validation", "test")
@@ -29,6 +30,7 @@ FIELDS = {
     "targets[0].motion": (3, ("targets", 0, "motion")),
     "stress.noise_scale": (4, ("stress", "noise_scale")),
     "stress.comm_drop_prob": (5, ("stress", "comm_drop_prob")),
+    "targets[0].target_type": (6, ("targets", 0, "target_type")),
 }
 
 
@@ -97,7 +99,7 @@ def terrain_group_id(terrain):
     return "terrain-" + _digest(surface)[:20]
 
 
-def _validate_single_distribution(field, spec, base, path, target_label=None):
+def _validate_single_distribution(field, spec, base, path, target_label=None, target_type=None):
     _mapping(spec, path, ("choice", "uniform"))
     if len(spec) != 1:
         raise ValueError(f"{path}: supply exactly one choice or uniform")
@@ -106,7 +108,7 @@ def _validate_single_distribution(field, spec, base, path, target_label=None):
         if not isinstance(values, list) or not values:
             raise ValueError(f"{path}.choice: expected a nonempty list")
     else:
-        if field in ("targets[0].label", "targets[0].motion"):
+        if field in ("targets[0].label", "targets[0].target_type", "targets[0].motion"):
             raise ValueError(f"{path}: uniform is not supported for this field")
         bounds = spec["uniform"]
         _mapping(bounds, f"{path}.uniform", ("low", "high"))
@@ -125,6 +127,10 @@ def _validate_single_distribution(field, spec, base, path, target_label=None):
         probe = deepcopy(base)
         if target_label is not None:
             probe["targets"][0]["label"] = target_label
+        if target_type is not None:
+            probe["targets"][0]["target_type"] = target_type
+            if "label" not in probe["targets"][0] or probe["targets"][0]["label"] is None:
+                probe["targets"][0]["label"] = TARGET_TYPE_PROFILES[target_type].get("legacy_label_compat", 0)
         _apply(probe, field, value)
         try:
             validate_scenario(probe)
@@ -134,7 +140,7 @@ def _validate_single_distribution(field, spec, base, path, target_label=None):
 
 def _distribution(field, spec, base):
     path = f"randomization.{field}"
-    if field == "targets[0].label":
+    if field in ("targets[0].label", "targets[0].target_type"):
         _mapping(spec, path, ("choice", "uniform", "balanced"))
         if "uniform" in spec:
             raise ValueError(f"{path}: uniform is not supported for this field")
@@ -147,14 +153,23 @@ def _distribution(field, spec, base):
             raise ValueError(f"{path}.balanced: expected boolean or list")
         for value in values:
             probe = deepcopy(base)
-            _apply(probe, field, value)
+            if field == "targets[0].target_type":
+                if value not in TARGET_TYPE_PROFILES:
+                    raise ValueError(f"{path}: unknown target type {value!r}")
+                probe["targets"][0]["target_type"] = value
+                if "label" not in probe["targets"][0] or probe["targets"][0]["label"] is None:
+                    probe["targets"][0]["label"] = TARGET_TYPE_PROFILES[value].get("legacy_label_compat", 0)
+            else:
+                _apply(probe, field, value)
             try:
                 validate_scenario(probe)
             except ValueError as exc:
                 raise ValueError(f"{path}: {exc}") from exc
         return
 
-    _mapping(spec, path, ("choice", "uniform", "by_label"))
+    _mapping(spec, path, ("choice", "uniform", "by_label", "by_target_type"))
+    if "by_label" in spec and "by_target_type" in spec:
+        raise ValueError(f"{path}: by_label and by_target_type cannot be combined")
     if "by_label" in spec:
         if len(spec) != 1:
             raise ValueError(f"{path}: by_label cannot be combined with choice or uniform")
@@ -169,6 +184,18 @@ def _distribution(field, spec, base):
             if label_int not in (0, 1, 2, 3):
                 raise ValueError(f"{path}.by_label: unsupported target class {label_int}")
             _validate_single_distribution(field, sub_spec, base, f"{path}.by_label[{label_key}]", target_label=label_int)
+        return
+
+    if "by_target_type" in spec:
+        if len(spec) != 1:
+            raise ValueError(f"{path}: by_target_type cannot be combined with choice or uniform")
+        by_target_type = spec["by_target_type"]
+        if not isinstance(by_target_type, dict) or not by_target_type:
+            raise ValueError(f"{path}.by_target_type: expected a nonempty mapping")
+        for type_key, sub_spec in by_target_type.items():
+            if type_key not in TARGET_TYPE_PROFILES:
+                raise ValueError(f"{path}.by_target_type: unsupported target type {type_key}")
+            _validate_single_distribution(field, sub_spec, base, f"{path}.by_target_type[{type_key}]", target_type=type_key)
         return
 
     _validate_single_distribution(field, spec, base, path)
@@ -275,8 +302,9 @@ def plan_episodes(recipe):
         return _json_value(stream.uniform(bounds["low"], bounds["high"]))
 
     class_counts = {split: {} for split in SPLITS}
+    type_counts = {split: {} for split in SPLITS}
 
-    def sample(field, index, attempt=0, target_label=None, split=None):
+    def sample(field, index, attempt=0, target_label=None, target_type=None, split=None):
         dist = distributions[field]
         if field == "targets[0].label":
             stream = rng(600, index, FIELDS[field][0], attempt)
@@ -298,12 +326,38 @@ def plan_episodes(recipe):
             counts_in_split[chosen] += 1
             return int(chosen)
 
+        if field == "targets[0].target_type":
+            stream = rng(600, index, FIELDS[field][0], attempt)
+            types = dist.get("choice") if "choice" in dist else dist["balanced"]
+            is_balanced = dist.get("balanced") is True or (
+                "balanced" in dist and isinstance(dist["balanced"], list)
+            )
+            if not is_balanced:
+                return str(types[int(stream.integers(len(types)))])
+            counts_in_split = type_counts[split]
+            for tt in types:
+                counts_in_split.setdefault(tt, 0)
+            min_count = min(counts_in_split[tt] for tt in types)
+            candidates = [tt for tt in types if counts_in_split[tt] == min_count]
+            if len(candidates) == 1:
+                chosen = candidates[0]
+            else:
+                chosen = candidates[int(stream.integers(len(candidates)))]
+            counts_in_split[chosen] += 1
+            return str(chosen)
+
         if "by_label" in dist:
             by_label = dist["by_label"]
             lbl_key = int(target_label) if int(target_label) in by_label else str(target_label)
             if lbl_key not in by_label:
                 raise ValueError(f"no distribution for class label {target_label} in {field}.by_label")
             return sample_dist(by_label[lbl_key], field, index, attempt)
+
+        if "by_target_type" in dist:
+            by_target_type = dist["by_target_type"]
+            if target_type not in by_target_type:
+                raise ValueError(f"no distribution for target type {target_type} in {field}.by_target_type")
+            return sample_dist(by_target_type[target_type], field, index, attempt)
 
         return sample_dist(dist, field, index, attempt)
 
@@ -316,23 +370,37 @@ def plan_episodes(recipe):
         pool_index = int(rng(602, index).integers(len(pools[split])))
         terrain, terrain_seed, terrain_id, ground = pools[split][pool_index]
         episode_seed = int(rng(601, index).integers(0, 2 ** 63, dtype=np.int64))
-        target_label = (
-            sample("targets[0].label", index, split=split)
-            if "targets[0].label" in distributions
-            else int(base["targets"][0]["label"])
+        target_type = (
+            sample("targets[0].target_type", index, split=split)
+            if "targets[0].target_type" in distributions
+            else base["targets"][0].get("target_type")
         )
+        if "targets[0].label" in distributions:
+            target_label = sample("targets[0].label", index, split=split)
+        elif target_type is not None and target_type in TARGET_TYPE_PROFILES:
+            target_label = TARGET_TYPE_PROFILES[target_type].get(
+                "legacy_label_compat", int(base["targets"][0].get("label", 0))
+            )
+        else:
+            target_label = int(base["targets"][0].get("label", 0))
+
         values = {}
         for field in distributions:
             if field == "targets[0].label":
                 values[field] = target_label
+            elif field == "targets[0].target_type":
+                values[field] = target_type
             else:
-                values[field] = sample(field, index, 0, target_label=target_label)
+                values[field] = sample(field, index, 0, target_label=target_label, target_type=target_type)
         rejected = []
         for attempt in range(max_attempts):
             if attempt and "targets[0].position" in distributions:
-                values["targets[0].position"] = sample("targets[0].position", index, attempt, target_label=target_label)
+                values["targets[0].position"] = sample("targets[0].position", index, attempt, target_label=target_label, target_type=target_type)
             sc = deepcopy(base)
             sc["terrain"], sc["seed"] = deepcopy(terrain), terrain_seed
+            if target_type is not None:
+                sc["targets"][0]["target_type"] = target_type
+            sc["targets"][0]["label"] = target_label
             for field, value in values.items():
                 _apply(sc, field, value)
             sc = validate_scenario(sc)

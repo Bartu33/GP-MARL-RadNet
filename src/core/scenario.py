@@ -13,7 +13,7 @@ import yaml
 
 from .detection import PD_MODELS
 from .radar import RadarParams
-from .targets import MOTION_BY_LABEL, validate_motion
+from .targets import MOTION_BY_LABEL, TARGET_TYPE_PROFILES, validate_motion
 
 ROOT = Path(__file__).resolve().parents[2]
 SCENARIO_DIR = ROOT / "configs" / "scenarios"
@@ -251,12 +251,16 @@ def validate_scenario(scenario: dict) -> dict:
         _radar_spec(_merge(sc["radar_defaults"], spec), path)
     for i, target in enumerate(sc["targets"]):
         path = f"targets[{i}]"
-        _mapping(target, path, ("label", "position", "velocity", "motion"))
+        _mapping(target, path, ("label", "position", "velocity", "motion", "target_type"))
         if "label" not in target:
             raise ValueError(f"{path}.label: required field")
         _number(target["label"], f"{path}.label", integer=True)
         if target["label"] not in MOTION_BY_LABEL:
             raise ValueError(f"{path}.label: unsupported target class")
+        if "target_type" in target:
+            _text(target["target_type"], f"{path}.target_type")
+            if target["target_type"] not in TARGET_TYPE_PROFILES:
+                raise ValueError(f"{path}.target_type: unknown target type {target['target_type']!r}")
         if "position" in target:
             _sequence(target["position"], f"{path}.position", 3)
             for j, v in enumerate(target["position"]):
