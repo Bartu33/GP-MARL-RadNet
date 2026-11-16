@@ -109,3 +109,49 @@ def trajectories_3d(trajs, title="Sample trajectories") -> go.Figure:
             xaxis_title="E (m)", yaxis_title="N (m)", zaxis_title="alt (m)", aspectmode="cube")})
     fig.update_layout(**DARK, height=420, title=title)
     return fig
+
+
+def plot_action_distribution(radars_summary: dict, title: str = "Radar Action Allocation (Search vs Track vs Idle)") -> go.Figure:
+    fig = go.Figure()
+    r_names = list(radars_summary.keys())
+    search_vals = [radars_summary[r].get("search_pct", radars_summary[r].get("search_ratio_pct", 0.0)) for r in r_names]
+    track_vals = [radars_summary[r].get("track_pct", radars_summary[r].get("track_ratio_pct", 0.0)) for r in r_names]
+    idle_vals = [radars_summary[r].get("idle_pct", radars_summary[r].get("idle_ratio_pct", 0.0)) for r in r_names]
+
+    fig.add_trace(go.Bar(name="Search", x=r_names, y=search_vals, marker_color="#38BDF8"))
+    fig.add_trace(go.Bar(name="Track", x=r_names, y=track_vals, marker_color="#A855F7"))
+    fig.add_trace(go.Bar(name="Idle", x=r_names, y=idle_vals, marker_color="#F59E0B"))
+
+    fig.update_layout(**DARK, barmode="stack", height=320, title=title,
+                      xaxis_title="Radar", yaxis_title="Percentage of Steps (%)")
+    return fig
+
+
+def plot_detection_timeline(timeline_data: dict, title: str = "Detection Activity & Packet Delivery Over Time") -> go.Figure:
+    fig = go.Figure()
+    centers = timeline_data.get("bin_centers_s", [])
+    gen = timeline_data.get("generated_counts", [])
+    deliv = timeline_data.get("delivered_counts", [])
+    lost = [max(0, g - d) for g, d in zip(gen, deliv)]
+
+    fig.add_trace(go.Bar(name="Delivered to Fusion", x=centers, y=deliv, marker_color="#10B981"))
+    if any(l > 0 for l in lost):
+        fig.add_trace(go.Bar(name="Packet Lost", x=centers, y=lost, marker_color="#EF4444"))
+
+    fig.update_layout(**DARK, barmode="stack", height=320, title=title,
+                      xaxis_title="Time (s)", yaxis_title="Detections per Second")
+    return fig
+
+
+def plot_uncertainty_vs_aoi(aoi_data: dict, title: str = "Track Position Uncertainty vs Age of Information (AoI)") -> go.Figure:
+    fig = go.Figure()
+    aoi_s = sorted([float(k) for k in aoi_data.keys() if float(k) <= 10.0])
+    stds = [float(np.mean(aoi_data[k])) if isinstance(aoi_data[k], (list, np.ndarray)) else float(aoi_data[k]) for k in aoi_s]
+
+    fig.add_trace(go.Bar(x=aoi_s, y=stds, marker_color="#F59E0B", name="Mean Position Std"))
+    fig.add_hline(y=150.0, line_dash="dash", line_color="#EF4444",
+                  annotation_text="Greedy Revisit Due Threshold (150 m)", annotation_position="top left")
+
+    fig.update_layout(**DARK, height=320, title=title,
+                      xaxis_title="Age of Information (s)", yaxis_title="Position Uncertainty (m)")
+    return fig

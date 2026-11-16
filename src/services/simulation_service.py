@@ -11,6 +11,7 @@ import pandas as pd
 
 from src.core.env import REPORT_FINAL_STATUSES, RadarNetEnv
 from src.core.scenario import load_scenario
+from src.core.terrain import build_terrain
 from src.models.baselines.policies import make_policy
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -282,6 +283,141 @@ def viewer_payload(env: RadarNetEnv) -> dict:
         } for p in env.radar_params],
         "classes": ["A · fast", "B · agile", "C · erratic", "D · drift"],
         "frames": env.frames,
+    }
+
+
+def records_to_viewer_payload(records: dict) -> dict:
+    """Builds a viewer payload from Canonical Episode Records v2 for replay."""
+    metadata = records.get("metadata", {})
+    cfg = metadata.get("config_snapshot", {})
+    sc = cfg.get("scenario", {})
+    eff_radars = cfg.get("effective_radars", [])
+
+    site = sc.get("site", {"name": "Utah Valley · US", "lat": 40.30, "lon": -111.70})
+    seed = sc.get("seed", 0)
+    terrain_spec = sc.get("terrain", {"kind": "procedural", "roughness": 0.5})
+    terrain = build_terrain(site, terrain_spec, seed=seed)
+
+    dt = float(sc.get("dt", 0.5))
+    area_radius = float(sc.get("area_radius_m", 10000.0))
+
+    radars_payload = []
+    radars_spec = sc.get("radars", [])
+    for i, r in enumerate(radars_spec):
+        eff = eff_radars[i] if i < len(eff_radars) else {}
+        hd_deg = float(r.get("heading_deg", 0.0))
+        fov_deg = float(eff.get("fov_az_deg", r.get("fov_az_deg", 60.0)))
+        rmax = float(eff.get("r_max_m", r.get("r_max_m", 14000.0)))
+        bw_az_deg = float(eff.get("beamwidth_az_deg", 3.0))
+        bw_el_deg = float(eff.get("beamwidth_el_deg", 6.0))
+        radars_payload.append({
+            "name": r.get("name", f"R{i+1}"),
+            "pos": [float(x) for x in r["position"]],
+            "heading": float(np.deg2rad(hd_deg)),
+            "fov": float(np.deg2rad(fov_deg)),
+            "rmax": rmax,
+            "bw_az": float(np.deg2rad(bw_az_deg)),
+            "bw_el": float(np.deg2rad(bw_el_deg)),
+        })
+
+    truth_by_step = {}
+    for row in records.get("truth", []):
+        truth_by_step.setdefault(row["step_index"], []).append(row)
+
+    reports_by_step = {}
+    ann_map = {a["report_id"]: a for a in records.get("annotations", [])}
+    for rep in records.get("reports", []):
+        reports_by_step.setdefault(rep["step_index"], []).append(rep)
+
+    fused_tracks_by_step = {}
+    for tr in records.get("tracks", []):
+        if tr["source"] == "fused":
+            fused_tracks_by_step.setdefault(tr["step_index"], []).append(tr)
+
+    trans_by_step = {}
+    for tr in records.get("transitions", []):
+        trans_by_step[tr["step_index"]] = tr
+
+    max_steps = max(truth_by_step.keys()) if truth_by_step else 60
+    frames = []
+
+    for s_idx in range(max_steps + 1):
+        step_truth = truth_by_step.get(s_idx, [])
+        step_reports = reports_by_step.get(s_idx, [])
+        step_tracks = fused_tracks_by_step.get(s_idx, [])
+        step_trans = trans_by_step.get(s_idx, {})
+        actions = step_trans.get("requested_actions", [1] * len(radars_spec))
+
+        radars_frame = []
+        for i, r_spec in enumerate(radars_spec):
+            act = int(actions[i]) if i < len(actions) else 1
+            mode = 0 if act == 0 else (1 if act == 1 else 2)
+            r_pos = np.array(r_spec["position"], float)
+            los_list = []
+            for tgt_row in step_truth:
+                los_ok = terrain.line_of_sight(r_pos, tgt_row["p"])
+                los_list.append(1 if los_ok else 2)
+
+            radars_frame.append({
+                "len": None,
+                "mode": mode,
+                "online": True,
+                "beams": [],
+                "energy": 1.0,
+                "heat": 1.0,
+                "los": los_list,
+            })
+
+        tracks_frame = []
+        for tr in step_tracks:
+            pos_std = float(np.sqrt(max(0.0, np.trace(tr["P"][:3, :3]) / 3.0)))
+            tracks_frame.append({
+                "id": tr["track_id"],
+                "p": [round(float(x), 1) for x in tr["x"][:3]],
+                "v": [round(float(x), 1) for x in tr["x"][3:]],
+                "sig": round(pos_std, 1),
+                "conf": bool(tr["confirmed"]),
+                "cls": -1,
+                "pc": 0.0,
+            })
+
+        dets_frame = []
+        for rep in step_reports:
+            ann = ann_map.get(rep["report_id"], {})
+            fa = 1 if ann.get("is_false_alarm", False) else 0
+            dets_frame.append([round(float(x), 1) for x in rep["world_xyz"]] + [fa])
+
+        targets_frame = [
+            {
+                "id": tgt_row["target_id"],
+                "label": tgt_row["class_label"],
+                "p": [round(float(x), 1) for x in tgt_row["p"]],
+                "v": [round(float(x), 1) for x in tgt_row["v"]],
+            }
+            for tgt_row in step_truth
+        ]
+
+        frames.append({
+            "t": round(s_idx * dt, 2),
+            "radars": radars_frame,
+            "targets": targets_frame,
+            "dets": dets_frame,
+            "tracks": tracks_frame,
+        })
+
+    return {
+        "site": site,
+        "sites": [site] + [s for s in MAP_SITES if s["name"] != site["name"]],
+        "terrain": terrain.to_payload(),
+        "dt": dt,
+        "area_radius": area_radius,
+        "radars": radars_payload,
+        "classes": ["A · fast", "B · agile", "C · erratic", "D · drift"],
+        "frames": frames,
+        "replay_metadata": {
+            "source": "canonical_records_v2",
+            "unrecorded_notice": "Beam ray traces are omitted during replay because exact micro-dwell angles are not stored in records.",
+        }
     }
 
 
