@@ -1,0 +1,135 @@
+recipe_version: 1
+master_seed: 20261115
+episodes: 100
+base_scenario: nominal
+scenario_family: explicit_target_types
+max_attempts: 10
+split_ratios: {train: 0.70, validation: 0.15, test: 0.15}
+
+overrides:
+  duration_s: 30
+  targets:
+    - label: 0
+      target_type: aircraft_like
+      position: [0, 0, 1500]
+      velocity: [150, 0, 0]
+      motion: {model: CV}
+
+terrain_pools:
+  train:
+    - seed: 11
+      terrain:
+        source: procedural
+        resolution: 128
+        hills:
+          - {center_m: [-2500, -1500], height_m: 300, sigma_m: 600}
+  validation:
+    - seed: 22
+      terrain:
+        source: procedural
+        resolution: 128
+        hills:
+          - {center_m: [2500, 1500], height_m: 400, sigma_m: 700}
+  test:
+    - seed: 33
+      terrain:
+        source: procedural
+        resolution: 128
+        hills:
+          - {center_m: [-2500, 1500], height_m: 500, sigma_m: 800}
+
+randomization:
+  "targets[0].target_type":
+    choice: ["aircraft_like", "uav_like", "missile_like"]
+    balanced: true
+  "targets[0].position":
+    by_target_type:
+      # Note: position values are World ENU [px, py, pz] (m).
+      # Initial clearance requires pz >= ground.height(px, py) + 30m.
+      aircraft_like:
+        uniform: {low: [-1500, -1500, 1200], high: [1500, 1500, 3500]}
+      uav_like:
+        uniform: {low: [-1000, -1000, 60], high: [1000, 1000, 250]}
+      missile_like:
+        uniform: {low: [-2000, -2000, 100], high: [2000, 2000, 600]}
+  "targets[0].velocity":
+    by_target_type:
+      # Initial velocity [vx, vy, vz] in m/s.
+      aircraft_like:
+        # Aircraft cruise speed ~ 150-160 m/s across diverse headings
+        choice:
+          - [150.0, 0.0, 0.0]
+          - [-150.0, 0.0, 0.0]
+          - [0.0, 150.0, 0.0]
+          - [0.0, -150.0, 0.0]
+          - [110.0, 110.0, 0.0]
+          - [-110.0, 110.0, 0.0]
+          - [110.0, -110.0, 0.0]
+          - [-110.0, -110.0, 0.0]
+          - [140.0, 50.0, 1.0]
+          - [-140.0, -50.0, -1.0]
+          - [50.0, 140.0, 1.0]
+          - [-50.0, -140.0, -1.0]
+      uav_like:
+        # Tactical / multirotor UAV speed 0 - 17 m/s (allows hover and agile sprint)
+        uniform: {low: [-12.0, -12.0, -1.0], high: [12.0, 12.0, 1.0]}
+      missile_like:
+        # Transonic / high-speed cruise ~ 300 m/s across diverse headings
+        choice:
+          - [300.0, 0.0, 0.0]
+          - [-300.0, 0.0, 0.0]
+          - [0.0, 300.0, 0.0]
+          - [0.0, -300.0, 0.0]
+          - [212.0, 212.0, 0.0]
+          - [-212.0, 212.0, 0.0]
+          - [212.0, -212.0, 0.0]
+          - [-212.0, -212.0, 0.0]
+          - [270.0, 100.0, 0.0]
+          - [-270.0, -100.0, 0.0]
+          - [100.0, 270.0, 0.0]
+          - [-100.0, -270.0, 0.0]
+  "targets[0].motion":
+    by_target_type:
+      aircraft_like:
+        choice:
+          - model: "CV"
+          - model: "CT"
+            turn_rate_rad_s: 0.02
+          - model: "CT"
+            turn_rate_rad_s: -0.02
+          - segments:
+              - model: "CV"
+                duration_s: 10.0
+              - model: "CT"
+                turn_rate_rad_s: 0.03
+                duration_s: 10.0
+              - model: "CV"
+                duration_s: 10.0
+      uav_like:
+        choice:
+          - model: "CV"
+          - model: "CT"
+            turn_rate_rad_s: 0.12
+          - model: "CT"
+            turn_rate_rad_s: -0.12
+          - segments:
+              - model: "CA"
+                acceleration_mps2: [1.2, 0.0, 0.0]
+                duration_s: 6.0
+              - model: "CV"
+                duration_s: 24.0
+      missile_like:
+        choice:
+          - model: "CV"
+          - model: "CT"
+            turn_rate_rad_s: 0.06
+          - model: "CT"
+            turn_rate_rad_s: -0.06
+          - segments:
+              - model: "CV"
+                duration_s: 10.0
+              - model: "CT"
+                turn_rate_rad_s: 0.08
+                duration_s: 10.0
+              - model: "CV"
+                duration_s: 10.0

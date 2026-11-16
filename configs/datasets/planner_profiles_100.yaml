@@ -1,0 +1,118 @@
+recipe_version: 1
+master_seed: 2026
+episodes: 100
+base_scenario: nominal
+scenario_family: class_conditioned_profiles
+max_attempts: 5
+split_ratios: {train: 0.70, validation: 0.15, test: 0.15}
+
+overrides:
+  duration_s: 30
+  targets:
+    - label: 0
+      position: [0, 0, 700]
+      velocity: [40, 0, 0]
+      motion: {model: CV}
+
+terrain_pools:
+  train:
+    - seed: 11
+      terrain:
+        source: procedural
+        resolution: 128
+        hills:
+          - {center_m: [-2500, -1500], height_m: 300, sigma_m: 600}
+  validation:
+    - seed: 22
+      terrain:
+        source: procedural
+        resolution: 128
+        hills:
+          - {center_m: [2500, 1500], height_m: 400, sigma_m: 700}
+  test:
+    - seed: 33
+      terrain:
+        source: procedural
+        resolution: 128
+        hills:
+          - {center_m: [-2500, 1500], height_m: 500, sigma_m: 800}
+
+randomization:
+  "targets[0].label":
+    choice: [0, 1, 2, 3]
+    balanced: true
+  "targets[0].position":
+    by_label:
+      # Note: position values are World ENU [px, py, pz] (m).
+      # Initial clearance requires pz >= ground.height(px, py) + 30m.
+      "0":
+        uniform: {low: [-1000, -1000, 1000], high: [1000, 1000, 2000]}
+      "1":
+        uniform: {low: [-1000, -1000, 60], high: [1000, 1000, 300]}
+      "2":
+        uniform: {low: [-1000, -1000, 60], high: [1000, 1000, 650]}
+      "3":
+        uniform: {low: [-1000, -1000, 400], high: [1000, 1000, 1400]}
+  "targets[0].velocity":
+    by_label:
+      "0":
+        # Class 0: Fast cruise (130-160 m/s) across diverse headings
+        choice:
+          - [150.0, 0.0, 0.0]
+          - [-150.0, 0.0, 0.0]
+          - [0.0, 150.0, 0.0]
+          - [0.0, -150.0, 0.0]
+          - [110.0, 110.0, 0.0]
+          - [-110.0, 110.0, 0.0]
+          - [110.0, -110.0, 0.0]
+          - [-110.0, -110.0, 0.0]
+          - [140.0, 50.0, 0.0]
+          - [-140.0, -50.0, 0.0]
+          - [50.0, 140.0, 0.0]
+          - [-50.0, -140.0, 0.0]
+      "1":
+        # Class 1: Agile drone (initial horizontal speed <= 17 m/s)
+        uniform: {low: [-12.0, -12.0, -1.0], high: [12.0, 12.0, 1.0]}
+      "2":
+        # Class 2: Slow erratic flight (initial horizontal speed <= 14.1 m/s)
+        uniform: {low: [-10.0, -10.0, -1.0], high: [10.0, 10.0, 1.0]}
+      "3":
+        # Class 3: Passive wind drift (initial horizontal speed <= 8.5 m/s)
+        uniform: {low: [-6.0, -6.0, -0.2], high: [6.0, 6.0, 1.2]}
+  "targets[0].motion":
+    by_label:
+      "0":
+        # Class 0: CV, wide CT (0.02 rad/s), mild CA cruise acceleration
+        choice:
+          - {model: CV}
+          - {model: CT, turn_rate_rad_s: 0.02}
+          - {model: CT, turn_rate_rad_s: -0.02}
+          - {model: CA, acceleration_mps2: [0.8, 0.0, 0.0]}
+      "1":
+        # Class 1: CV, tight agile CT (0.08 rad/s), bounded sprint dash / braking
+        choice:
+          - {model: CV}
+          - {model: CT, turn_rate_rad_s: 0.08}
+          - {model: CT, turn_rate_rad_s: -0.08}
+          - segments:
+              - {model: CA, acceleration_mps2: [1.2, 0.0, 0.0], duration_s: 6.0}
+              - {model: CV, duration_s: 24.0}
+          - segments:
+              - {model: CA, acceleration_mps2: [-1.2, 0.0, 0.0], duration_s: 6.0}
+              - {model: CV, duration_s: 24.0}
+      "2":
+        # Class 2: CV, erratic winding CT (0.04 rad/s), bounded mild acceleration
+        choice:
+          - {model: CV}
+          - {model: CT, turn_rate_rad_s: 0.04}
+          - {model: CT, turn_rate_rad_s: -0.04}
+          - segments:
+              - {model: CA, acceleration_mps2: [0.25, 0.25, 0.0], duration_s: 8.0}
+              - {model: CV, duration_s: 22.0}
+      "3":
+        # Class 3: Pure drift (CV) and very mild wind gust drift
+        choice:
+          - {model: CV}
+          - {model: CA, acceleration_mps2: [0.05, 0.05, 0.0]}
+  "stress.noise_scale": {uniform: {low: 0.75, high: 2.0}}
+  "stress.comm_drop_prob": {uniform: {low: 0.0, high: 0.4}}

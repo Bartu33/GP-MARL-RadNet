@@ -1,0 +1,180 @@
+{
+  "analysis_title": "Stage 3A: Radar Information, Communication, and Tracking Estimation Audit",
+  "dataset": "multi_target_v1",
+  "total_episodes": 100,
+  "category_a_radar_measurements": {
+    "R1": {
+      "total_reports": 1473,
+      "delivered": 1351,
+      "packet_lost": 122,
+      "delivery_rate_pct": 91.72,
+      "snr_db": {
+        "mean": 19.04,
+        "median": 14.56,
+        "std": 10.54,
+        "min": 7.8,
+        "max": 65.7
+      },
+      "range_m": {
+        "mean": 6585.8,
+        "median": 6214.86,
+        "min": 311.75,
+        "max": 13969.41
+      },
+      "radial_velocity_mps": {
+        "mean": -0.15,
+        "median": 0.07,
+        "min": -284.78,
+        "max": 275.92
+      },
+      "mean_sigma_range_m": 21.74
+    },
+    "R2": {
+      "total_reports": 1941,
+      "delivered": 1746,
+      "packet_lost": 195,
+      "delivery_rate_pct": 89.95,
+      "snr_db": {
+        "mean": 23.75,
+        "median": 21.14,
+        "std": 11.91,
+        "min": 5.83,
+        "max": 67.52
+      },
+      "range_m": {
+        "mean": 6344.2,
+        "median": 6111.03,
+        "min": 301.73,
+        "max": 13982.02
+      },
+      "radial_velocity_mps": {
+        "mean": 2.66,
+        "median": -0.24,
+        "min": -299.54,
+        "max": 280.13
+      },
+      "mean_sigma_range_m": 15.73
+    },
+    "R3": {
+      "total_reports": 2347,
+      "delivered": 2131,
+      "packet_lost": 216,
+      "delivery_rate_pct": 90.8,
+      "snr_db": {
+        "mean": 26.6,
+        "median": 25.87,
+        "std": 11.42,
+        "min": 6.9,
+        "max": 77.59
+      },
+      "range_m": {
+        "mean": 5207.68,
+        "median": 4965.28,
+        "min": 306.54,
+        "max": 13975.5
+      },
+      "radial_velocity_mps": {
+        "mean": 1.46,
+        "median": 0.93,
+        "min": -294.36,
+        "max": 265.44
+      },
+      "mean_sigma_range_m": 12.36
+    }
+  },
+  "category_b_tracker_estimates": {
+    "total_fused_steps": 35033,
+    "confirmed_step_ratio_pct": 37.31,
+    "position_uncertainty_m": {
+      "mean": 240.303,
+      "std": 246.493,
+      "median": 149.226,
+      "min": 1.354,
+      "max": 967.067,
+      "p90": 645.326
+    },
+    "coasting_duration_s": {
+      "mean": 2.872,
+      "std": 2.661,
+      "median": 2.0,
+      "min": 0.0,
+      "max": 15.0,
+      "p90": 7.0
+    }
+  },
+  "category_c_visibility_ground_truth": {
+    "overall_sensing_breakdown": {
+      "total_looks": 73200,
+      "out_of_range": 236,
+      "out_of_fov": 6276,
+      "terrain_blocked": 9151,
+      "los_clear_unilluminated": 53378,
+      "formed_lost": 390,
+      "delivered": 3769
+    },
+    "per_target_breakdown": {
+      "0": {
+        "looks": 18300,
+        "out_of_range": 0,
+        "out_of_fov": 1769,
+        "terrain_blocked": 22,
+        "los_clear_no_det": 15502,
+        "formed_lost": 87,
+        "delivered": 920
+      },
+      "1": {
+        "looks": 18300,
+        "out_of_range": 0,
+        "out_of_fov": 0,
+        "terrain_blocked": 3341,
+        "los_clear_no_det": 13545,
+        "formed_lost": 133,
+        "delivered": 1281
+      },
+      "2": {
+        "looks": 18300,
+        "out_of_range": 0,
+        "out_of_fov": 0,
+        "terrain_blocked": 3721,
+        "los_clear_no_det": 13185,
+        "formed_lost": 132,
+        "delivered": 1262
+      },
+      "3": {
+        "looks": 18300,
+        "out_of_range": 236,
+        "out_of_fov": 4507,
+        "terrain_blocked": 2067,
+        "los_clear_no_det": 11146,
+        "formed_lost": 38,
+        "delivered": 306
+      }
+    }
+  },
+  "information_categorization_reference": {
+    "category_a_direct_radar_outputs": [
+      "Range (r_m), Azimuth (azimuth_rad), Elevation (elevation_rad)",
+      "Radial Doppler Velocity (radial_velocity_mps), Doppler Shift (doppler_hz)",
+      "Signal-to-Noise Ratio (snr_db), Signal Quality (signal_quality), Detection Probability (detection_probability)",
+      "Measurement Covariance Matrix R (diag: sigma_r^2, sigma_az^2, sigma_el^2, sigma_rdot^2)",
+      "Derived ENU Cartesian Coordinates (world_xyz) from radar mounting location and heading",
+      "Communication transit status (delivered, packet_lost)"
+    ],
+    "category_b_tracker_estimates": [
+      "Filtered & Predicted Cartesian 3D State x = [x, y, z, vx, vy, vz]",
+      "State Estimation Covariance Matrix P (position variance, velocity variance)",
+      "Track Identity & Continuity (track_id, hits, status: confirmed/tentative/coasting)",
+      "Coasting duration / absence of recent measurements (t - last_update_t_s)",
+      "Target class likelihoods P(class | track history) estimated from kinematic features"
+    ],
+    "category_c_simulation_ground_truth": [
+      "Actual Target Identity (target_id) - Never present in operational reports",
+      "Target Archetype (target_type: aircraft_like, uav_like, missile_like)",
+      "True Cartesian Kinematics (p_true, v_true) and true body orientation R_WT",
+      "True Dynamic Maneuvers (CV, CT, segmented motion boundaries, 1.5g turn parameters)",
+      "True Radar Cross Section (sigma_true, aspect angle u_b, Swerling draw)",
+      "True Line-of-Sight Terrain Occlusion (line_of_sight)",
+      "False Alarm Label (is_false_alarm)"
+    ]
+  }
+}

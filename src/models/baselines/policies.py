@@ -143,7 +143,7 @@ class RandomPolicy(Policy):
     name = "random"
 
     def act(self, env, obs):
-        return {a: int(env.rng.integers(env.action_space(a).n)) for a in env.agents}
+        return {a: int(env.rng_policy.integers(env.action_space(a).n)) for a in env.agents}
 
 
 POLICIES = {cls.name: cls for cls in (FixedScan, RoundRobin, NearestSensor, GreedyCentral, InterleavedGreedy,

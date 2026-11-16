@@ -24,6 +24,7 @@ Team reward (same for every agent), following the project brief:
 from __future__ import annotations
 
 import functools
+import time
 
 import numpy as np
 from gymnasium import spaces
@@ -34,7 +35,7 @@ from src.core.evaluation import TrackEvaluator
 from src.core.modes import Mode
 from src.core.radar import RadarAction, RadarState, radar_step, resource_vector, snr_linear, antenna_gain
 from src.core.radar import los_status
-from src.core.scenario import build_radars
+from src.core.scenario import build_radars, scenario_snapshot, validate_scenario
 from src.core.targets import CLASS_NAMES, advance, keep_above_ground, spawn_target
 from src.core.terrain import build_terrain
 from src.models.classifier.classifier import accumulate
@@ -42,16 +43,25 @@ from src.models.tracking.tracker import TrackManager
 
 SLOT_FEATURES = 12
 OWN_FEATURES = 6 + 4 + 2           # resources + mode one-hot + (online, time fraction)
+REPORT_FINAL_STATUSES = ("outage_suppressed", "bandwidth_dropped", "packet_lost",
+                         "sharing_withheld", "delivered")
 
 
 class RadarNetEnv(ParallelEnv):
     metadata = {"name": "radar_net_v0", "render_modes": []}
 
     def __init__(self, scenario: dict, classifier=None, record: bool = False, seed: int | None = None,
-                 local_tracks: bool = False):
+                 local_tracks: bool = False, record_episode: bool = False):
+        scenario = validate_scenario(scenario)
+        if seed is not None:
+            # Check overrides before terrain loading or network access.
+            validate_scenario({**scenario, "seed": seed})
         self.sc = scenario
         self.classifier = classifier
         self.record = record
+        self.record_episode = record_episode
+        self.episode_records = None
+        self._episode_number = 0
         # local_tracks: every radar also runs its own single-radar tracker on its own
         # detections (structure A of the evaluation); off during training for speed
         self.local_tracks = local_tracks
@@ -75,6 +85,11 @@ class RadarNetEnv(ParallelEnv):
         self.share = bool(scenario.get("share_actions", False))
         self.n_base_actions = 2 + self.K * (2 if self.interleaved else 1)
 
+    def config_snapshot(self) -> dict:
+        """Resolved inputs and actual radar parameters; never writes files."""
+        return scenario_snapshot(self.sc, episode_seed=self._seed,
+                                 radar_params=self.radar_params, terrain=self.terrain)
+
     # ------------------------------------------------------------------ spaces
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
@@ -92,17 +107,32 @@ class RadarNetEnv(ParallelEnv):
     # ------------------------------------------------------------------ reset
     def reset(self, seed=None, options=None):
         if seed is not None:
+            validate_scenario({**self.sc, "seed": seed})
             self._seed = seed
-        self.rng = np.random.default_rng(self._seed)
+        # Stable namespaces: 0 target, 1 radar, 2 communication, 3 policy.
+        # Derive by index rather than spawn order so population sizes do not
+        # shift unrelated streams. Recreate every stream on every reset.
+        def make_rng(component, index=0):
+            return np.random.default_rng(np.random.SeedSequence(
+                self._seed, spawn_key=(component, index)))
+
+        self.rng_targets = [make_rng(0, i) for i in range(len(self.sc["targets"]))]
+        self.rng_radars = [make_rng(1, i) for i in range(self.n_radars)]
+        self.rng_comm = [make_rng(2, i) for i in range(self.n_radars)]
+        self.rng_policy = make_rng(3)
+        self.rng = self.rng_policy              # legacy policy RNG access
         self.agents = list(self.possible_agents)
         self.t = 0.0
         self.step_count = 0
         self.radar_states = [RadarState.initial(p) for p in self.radar_params]
         self.targets, self.motions = [], []
         for i, spec in enumerate(self.sc["targets"]):
-            s, m = spawn_target(i, int(spec["label"]), self.rng, self.sc["area_radius_m"],
-                                position=spec.get("position"))
+            s, m = spawn_target(i, int(spec["label"]), self.rng_targets[i], self.sc["area_radius_m"],
+                                position=spec.get("position"), velocity=spec.get("velocity"),
+                                motion=spec.get("motion"), target_type=spec.get("target_type"))
             keep_above_ground(s, self.terrain)
+            if "motion" in spec:
+                s.update_attitude()   # clearance may change an explicit initial vertical velocity
             self.targets.append(s)
             self.motions.append(m)
         self.tracker = TrackManager()
@@ -120,10 +150,37 @@ class RadarNetEnv(ParallelEnv):
         self._obs = {a: self._observe(i) for i, a in enumerate(self.possible_agents)}
         if self.record:
             self._record_frame([])
+        self.episode_records = None
+        if self.record_episode:
+            self._episode_number += 1
+            self.episode_records = {
+                "metadata": {
+                    # Clock + instance + reset counter: identity without RNG draws.
+                    "episode_id": f"{time.time_ns():x}-{id(self):x}-{self._episode_number}",
+                    "record_schema_version": 2,
+                    "config_snapshot": self.config_snapshot(),
+                    "agent_ids": list(self.possible_agents),
+                    "local_tracks_enabled": self.local_tracks,
+                    "completed": False,
+                    "recorded_steps": 0,
+                    "report_scope": "radar_generated_before_outage_and_communication",
+                    "communication_order": ["outage", "bandwidth", "packet_loss", "sharing", "delivery"],
+                    "time_convention": "transition step_index identifies its ending state; reports are at end_t_s",
+                    "coordinates": "ENU metres; orientation R_WT maps body to world",
+                    "state_order": ["px_m", "py_m", "pz_m", "vx_mps", "vy_mps", "vz_mps"],
+                    "measurement_order": ["range_m", "azimuth_rad", "elevation_rad", "radial_velocity_mps"],
+                    "sentinels": {"fused_radar_id": -1, "missing_truth_id": -1},
+                    "target_types": [s.target_type for s in self.targets],
+                },
+                **{key: [] for key in ("states", "truth", "reports", "annotations", "tracks", "transitions",
+                                       "communication", "deliveries")},
+            }
+            self._record_episode_state()
         return dict(self._obs), {a: {} for a in self.agents}
 
     # ------------------------------------------------------------------ step
     def step(self, actions: dict):
+        start_t = self.t
         self.t += self.dt
         self.step_count += 1
         stress = self.sc["stress"]
@@ -139,14 +196,19 @@ class RadarNetEnv(ParallelEnv):
             self.radar_states[int(fail)].online = False
 
         all_reports, energy, at_radar = [], 0.0, {}
+        step_traces = {} if self.record_episode else None
         self.withheld = 0
         for i, (p, st) in enumerate(zip(self.radar_params, self.radar_states)):
             a = int(actions.get(self.possible_agents[i], 1))
             shared = a < self.n_base_actions
             act = self._decode_action(i, a % self.n_base_actions)
-            reports, _ = radar_step(self.targets, act, st, p, self.dt, self.rng, radar_index=i,
+            reports, _ = radar_step(self.targets, act, st, p, self.dt, self.rng_radars[i], radar_index=i,
                                     terrain=self.terrain)
+            traces = self._record_episode_reports(i, reports) if self.record_episode else None
+            if step_traces is not None:
+                step_traces.update(traces)
             if self._in_outage(i):
+                _finish_reports(traces, reports, "outage_suppressed")
                 reports = []                     # radar transmits but detects nothing (e.g. jamming)
             at_radar[i] = reports
             energy += st.last_energy_used_j / p.e_max_j
@@ -155,19 +217,31 @@ class RadarNetEnv(ParallelEnv):
             # communication model: bandwidth cap then random packet loss
             cap = stress.get("max_reports_per_radar")
             if cap is not None and len(reports) > cap:
-                reports = sorted(reports, key=lambda d: -d["signal_quality"])[:cap]
-            if self.rng.random() < stress.get("comm_drop_prob", 0.0):
+                ranked = sorted(reports, key=lambda d: -d["signal_quality"])
+                _finish_reports(traces, ranked[cap:], "bandwidth_dropped")
+                reports = ranked[:cap]
+            if self.rng_comm[i].random() < stress.get("comm_drop_prob", 0.0):
+                _finish_reports(traces, reports, "packet_lost")
                 reports = []
             if not shared:                       # radar keeps its reports (local track only)
                 self.withheld += len(reports)
+                _finish_reports(traces, reports, "sharing_withheld")
                 reports = []
             all_reports.extend(reports)
         self._last_reports = all_reports
         self.evaluator.detections(self.targets, self.radar_params, self.radar_states, at_radar, self.terrain)
 
-        self.tracker.process(self.t, all_reports, self.radar_params)
+        if self.record_episode:
+            _finish_reports(step_traces, all_reports, "delivered")
+            for index, report in enumerate(all_reports):
+                trace = step_traces[id(report)]
+                self.episode_records["deliveries"].append({
+                    "step_index": self.step_count, "t_s": self.t, "radar_id": trace["radar_id"],
+                    "report_id": trace["report_id"], "delivery_index": index,
+                })
+        self.tracker.process(self.t, _tracker_reports(all_reports), self.radar_params)
         for i, lt in enumerate(self.local_trackers):        # at the radar: before communication loss
-            lt.process(self.t, at_radar[i], self.radar_params)
+            lt.process(self.t, _tracker_reports(at_radar[i]), self.radar_params)
         self._update_channels()
         if self.classifier is not None and self.step_count % 4 == 0:      # every 2 s
             probs = self.classifier.classify_tracks(self.tracker.tracks)
@@ -196,9 +270,67 @@ class RadarNetEnv(ParallelEnv):
         infos = {a: {"metrics": metrics} for a in self.agents}
         if self.record:
             self._record_frame(all_reports)
+        if self.record_episode:
+            self._record_episode_state()
+            names = self.possible_agents
+            self.episode_records["transitions"].append({
+                "step_index": self.step_count, "start_t_s": start_t, "end_t_s": self.t,
+                "requested_actions": np.array([int(actions.get(a, 1)) for a in names], dtype=np.int64).copy(),
+                "action_present": np.array([a in actions for a in names], dtype=bool).copy(),
+                "rewards": np.array([rewards[a] for a in names], dtype=np.float64).copy(),
+                "terminations": np.array([terms[a] for a in names], dtype=bool).copy(),
+                "truncations": np.array([truncs[a] for a in names], dtype=bool).copy(),
+            })
+            self.episode_records["metadata"].update(completed=done, recorded_steps=self.step_count)
         if done:
             self.agents = []
         return dict(self._obs), rewards, terms, truncs, infos
+
+    def _record_episode_reports(self, radar_id, reports):
+        traces = {}
+        for index, report in enumerate(reports):
+            report_id = f"{self.step_count}:{radar_id}:{index}"
+            self.episode_records["reports"].append({
+                "step_index": self.step_count, "t_s": self.t,
+                "radar_id": radar_id, "report_id": report_id,
+                "z": report["z"].copy(), "R": report["measurement_covariance"].copy(),
+                "world_xyz": report["world_xyz"].copy(),
+                **{k: report[k] for k in ("snr_db", "signal_quality", "detection_probability",
+                                         "doppler_hz", "detection_valid")},
+            })
+            self.episode_records["annotations"].append({
+                "report_id": report_id,
+                "truth_id": report["truth_id"] if report["truth_id"] is not None else -1,
+                "is_false_alarm": bool(report["is_false_alarm"]),
+            })
+            trace = {"step_index": self.step_count, "t_s": self.t,
+                     "radar_id": radar_id, "report_id": report_id, "final_status": "pending"}
+            self.episode_records["communication"].append(trace)
+            # Sidecar lookup only: never add record IDs or labels to sensor inputs.
+            traces[id(report)] = trace
+        return traces
+
+    def _record_episode_state(self):
+        stamp = {"step_index": self.step_count, "t_s": self.t}
+        self.episode_records["states"].append(dict(stamp))
+        for target in self.targets:
+            self.episode_records["truth"].append({
+                **stamp, "target_id": target.id, "class_label": target.label,
+                "p": target.p.copy(), "v": target.v.copy(), "orientation": target.R_WT.copy(),
+            })
+        sources = [("fused", -1, self.tracker)] + [
+            ("local", i, tracker) for i, tracker in enumerate(self.local_trackers)]
+        for source, radar_id, tracker in sources:
+            for track in tracker.tracks:
+                status = "confirmed" if track.confirmed else "tentative"
+                if track.last_update_t < self.t:
+                    status += "_coasting"
+                self.episode_records["tracks"].append({
+                    **stamp, "source": source, "radar_id": radar_id, "track_id": track.id,
+                    "x": track.x.copy(), "P": track.P.copy(), "confirmed": bool(track.confirmed),
+                    "status": status, "hits": track.hits,
+                    "born_t_s": track.born_t, "last_update_t_s": track.last_update_t,
+                })
 
     # ------------------------------------------------------------------ helpers
     def _in_outage(self, i: int) -> bool:
@@ -351,6 +483,22 @@ class RadarNetEnv(ParallelEnv):
             # confirmed local (single-radar) tracks per radar, for per-radar displays
             "ltracks": [[{"id": tr.id, "p": r1(tr.x[:3])} for tr in lt.confirmed] for lt in self.local_trackers],
         })
+
+
+def _finish_reports(traces, reports, status):
+    """Only surviving reports reach the next filter; finish each exactly once."""
+    if traces is not None:
+        for report in reports:
+            trace = traces[id(report)]
+            if trace["final_status"] != "pending":
+                raise ValueError(f"report {trace['report_id']} already has a final status")
+            trace["final_status"] = status
+
+
+def _tracker_reports(reports):
+    """Estimator inputs exclude simulation-only labels; scoring keeps originals."""
+    return [{k: v for k, v in report.items() if k not in ("truth_id", "is_false_alarm")}
+            for report in reports]
 
 
 _TERRAIN_CACHE: dict = {}

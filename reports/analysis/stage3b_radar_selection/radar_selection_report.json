@@ -1,0 +1,93 @@
+{
+  "analysis_title": "Stage 3B: Radar Selection, Action Distribution, and Handover Analysis",
+  "dataset": "multi_target_v1",
+  "total_episodes": 100,
+  "radar_action_distribution_100ep": {
+    "R1": {
+      "idle_steps": 0,
+      "search_steps": 2370,
+      "track_steps": 3630,
+      "total_steps": 6000,
+      "search_pct": 39.5,
+      "track_pct": 60.5,
+      "idle_pct": 0.0,
+      "slot_track_breakdown": {
+        "0": 592,
+        "1": 508,
+        "2": 744,
+        "3": 1018,
+        "4": 588,
+        "5": 180
+      }
+    },
+    "R2": {
+      "idle_steps": 347,
+      "search_steps": 764,
+      "track_steps": 4889,
+      "total_steps": 6000,
+      "search_pct": 12.73,
+      "track_pct": 81.48,
+      "idle_pct": 5.78,
+      "slot_track_breakdown": {
+        "0": 838,
+        "1": 816,
+        "2": 1035,
+        "3": 1201,
+        "4": 714,
+        "5": 285
+      }
+    },
+    "R3": {
+      "idle_steps": 398,
+      "search_steps": 592,
+      "track_steps": 5010,
+      "total_steps": 6000,
+      "search_pct": 9.87,
+      "track_pct": 83.5,
+      "idle_pct": 6.63,
+      "slot_track_breakdown": {
+        "0": 1357,
+        "1": 1039,
+        "2": 935,
+        "3": 801,
+        "4": 647,
+        "5": 231
+      }
+    }
+  },
+  "handover_architectural_evaluation": {
+    "explicit_handover_protocol_exists": false,
+    "handover_mechanism_nature": "NO explicit handover handshake or state transfer protocol exists in the codebase. The system uses opportunistic centralized GreedyCentral assignment over a shared blackboard (slots table). Transitions between radars occur statelessly on each step if candidate suitability changes.",
+    "total_opportunistic_transitions_100ep": 866,
+    "mean_transitions_per_episode": 8.66,
+    "transition_pairs": {
+      "R1->R2": 103,
+      "R1->R3": 131,
+      "R2->R1": 117,
+      "R2->R3": 188,
+      "R3->R1": 138,
+      "R3->R2": 189
+    }
+  },
+  "stage3a_reconciliation": {
+    "packet_loss_reconciliation": {
+      "dataset_total_packet_lost": 533,
+      "false_alarms_lost": 117,
+      "target_detections_lost": 416,
+      "target_lost_inside_nominal_fov_los": 390,
+      "target_lost_at_edge_of_fov": 26,
+      "mathematical_identity": "533 total = 117 false alarms + 390 in-FOV target lost + 26 edge-FOV target lost",
+      "proof_valid": true
+    },
+    "coasting_covariance_reconciliation": {
+      "finding": "Stage 3A prose cited the Stage 2E missile ground-truth tracking error table rather than EKF P covariance.",
+      "actual_ekf_covariance_pos_std_m": {
+        "0_steps": 37.23,
+        "5_steps": 204.9,
+        "10_steps": 455.52,
+        "20_steps": 256.3
+      },
+      "explanation": "Kalman filter process noise Q=40.0 integrates analytically as O(t^3), producing sigma_pos = 37.8m (0s), 204.7m (2.5s), 453.6m (5.0s), and 850m+ (10s). In contrast, the ground-truth kinematic error grew as 31.2m, 125.7m, 273.4m, 750.3m due to 1.5g circular maneuver geometric divergence from a linear CV extrapolation."
+    }
+  }
+}

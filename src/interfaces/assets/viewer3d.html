@@ -95,8 +95,8 @@ const MODE = ['IDLE', 'SEARCH', 'TRACK', 'OFFLINE', 'INTERLEAVED'];
 const MODE_COL = [0x8DA2AC, 0x4FD1C5, 0x7FB3FF, 0xff5c5c, 0xC39BFF];
 const MODE_CSS = ['#8DA2AC', '#4FD1C5', '#7FB3FF', '#ff5c5c', '#C39BFF'];
 const EXAG = 1.5;                       // vertical exaggeration of terrain and altitudes
-document.getElementById('clsLegend').innerHTML = D.classes.map((c, i) =>
-  `<span style="margin-right:10px"><i style="background:${CLS_CSS[i]};border-radius:50%"></i>${c}</span>`).join('');
+document.getElementById('clsLegend').innerHTML = (D.target_legend || D.classes).map((c, i) =>
+  `<span style="margin-right:10px"><i style="background:${CLS_CSS[i % CLS_CSS.length]};border-radius:50%"></i>${c}</span>`).join('');
 
 /* ------------------------------------------------------------------ terrain tiles
    Terrain = DEM tiles (AWS Terrain Tiles, "terrarium" encoding) draped with
@@ -337,7 +337,8 @@ function apply(fi) {
     const hist = []; for (let k = Math.max(0, i0 - 60); k <= i0; k++) { const q = F[k].targets.find(z => z.id === t.id); if (q) hist.push(scenePos(q.p)); }
     hist.push(P); setLine(o.trail, hist);
     o.lb.pos.copy(P).add(new THREE.Vector3(0, 0.14, 0)); o.lb.on = groups.truth.visible;
-    o.lb.el.textContent = `truth · ${D.classes[t.label]}`;
+    const tDisplayName = t.display_name || (D.target_labels && D.target_labels[t.id]) || `truth · ${D.classes[t.label]}`;
+    o.lb.el.textContent = tDisplayName;
   });
   // radar -> target line of sight (computed by the simulator, incl. terrain occlusion)
   A.radars.forEach((rs, i) => {
@@ -437,7 +438,8 @@ function updateFollow(A) {
       let trk = null, best = 1e9;
       A.tracks.forEach(tr => { if (!tr.conf) return; const e = Math.hypot(tr.p[0] - t.p[0], tr.p[1] - t.p[1], tr.p[2] - t.p[2]);
         if (e < best && e < 3 * tr.sig + 500) { best = e; trk = tr; } });
-      fBody.innerHTML = head(`truth · ${D.classes[t.label]}`, CLS_CSS[t.label]) + kv([
+      const tDisplayName = t.display_name || (D.target_labels && D.target_labels[t.id]) || `truth · ${D.classes[t.label]}`;
+      fBody.innerHTML = head(tDisplayName, CLS_CSS[t.label]) + kv([
         ['altitude', `${Math.round(t.p[2])} m`], ['speed', `${Math.hypot(...t.v).toFixed(1)} m/s`],
         ['line of sight', `${nLos} radar(s)` + (nHid ? ` · ${nHid} hidden by terrain` : '')],
         ['tracked by', trk ? `T${trk.id} · error ${Math.round(best)} m` : 'no confirmed track']]);

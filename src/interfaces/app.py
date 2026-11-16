@@ -20,11 +20,13 @@ from src.core.evaluation import METRIC_INFO
 from src.core.modes import Mode
 from src.core.radar import RadarParams, antenna_gain, measurement_sigmas, snr_linear
 from src.core.rcs import EllipsoidRCS, LookupTableRCS, m2_to_dbsm
-from src.core.scenario import list_scenarios, load_scenario
+from src.core.scenario import list_scenarios, load_scenario, validate_scenario
 from src.core.targets import CLASS_NAMES, CLASS_SHORT, advance, spawn_target
 from src.interfaces import plots, viewer3d
 from src.models.baselines.policies import LEARNED, POLICIES
 from src.services import simulation_service as sim
+from src.services import radar_information_service as r_info_srv
+from src.services import radar_selection_service as r_sel_srv
 
 st.set_page_config(page_title="GP-MARL-RadNet", layout="wide", page_icon="📡")
 st.markdown("""<style>
@@ -36,8 +38,8 @@ st.title("GP-MARL-RadNet")
 st.caption("Cooperative multi-agent radar network · research and educational simulation "
            "(abstract models, synthetic targets, non-operational parameters)")
 
-tab_sim, tab_lab, tab_cls, tab_exp, tab_about = st.tabs(
-    ["3-D Simulation", "Radar Model Lab", "Classifier", "Experiments", "About"])
+tab_scen, tab_sim, tab_lab, tab_cls, tab_exp, tab_about = st.tabs(
+    ["Scenario Management", "3-D Simulation", "Radar Model Lab", "Classifier", "Experiments", "About"])
 
 POLICY_NAMES = [p for p in POLICIES if p != "random"] + ["random"]
 CKPT_DIR = ROOT / "models" / "checkpoints"
@@ -67,6 +69,280 @@ def cached_episode(scenario: str, policy: str, seed: int, use_clf: bool, site_na
     env, summary = sim.run_episode(sc, policy, seed=seed, classifier="auto" if use_clf else None)
     return (sim.viewer_payload(env), summary, {k: list(map(float, v)) for k, v in env.log.items()},
             sim.per_radar_table(env))
+
+
+# ============================================================== Scenario Management
+with tab_scen:
+    st.subheader("Scenario Management & Operational Analysis")
+    st.caption("Interactive scenario configuration, live simulation / dataset replay, "
+               "physics-informed radar observations, and explainable radar coordination.")
+
+    scen_col1, scen_col2 = st.columns([3, 4])
+    op_mode = scen_col1.radio("Operation Mode", ["Live Simulation (CPU)", "Dataset Replay (multi_target_v1)"], horizontal=True, key="scen_op_mode")
+
+    if op_mode == "Live Simulation (CPU)":
+        st.markdown("##### A. Scenario Configuration")
+        c_base, c_site, c_pol = st.columns([2, 2, 2])
+        scen_list = list_scenarios()
+        default_idx = scen_list.index("nominal") if "nominal" in scen_list else 0
+        base_scen_name = c_base.selectbox("Base Scenario Template", scen_list, index=default_idx, key="scen_base_name")
+
+        base_scen = load_scenario(base_scen_name)
+        site_names = [base_scen["site"]["name"]] + [s["name"] for s in sim.MAP_SITES if s["name"] != base_scen["site"]["name"]]
+        selected_site = c_site.selectbox("Map / Terrain Location", site_names, key="scen_site_sel")
+        selected_policy = c_pol.selectbox("Coordination Policy", POLICY_NAMES,
+                                          index=POLICY_NAMES.index("central_greedy") if "central_greedy" in POLICY_NAMES else 0,
+                                          key="scen_pol_sel")
+
+        c_dur, c_dt, c_seed = st.columns(3)
+        duration_s = c_dur.slider("Duration (s)", 10.0, 60.0, float(base_scen.get("duration_s", 30.0)), 5.0, key="scen_dur_slider")
+        dt_s = c_dt.selectbox("Time Step dt (s)", [0.5, 0.25, 1.0], index=0, key="scen_dt_sel")
+        seed_val = c_seed.number_input("Episode Seed", 0, 99999999, int(base_scen.get("seed", 42)), key="scen_seed_inp")
+
+        with st.expander("Detailed Radar Configuration (R1, R2, R3)", expanded=False):
+            st.caption("Radars in this scenario. Positions are in ENU coordinates (meters relative to site origin).")
+            radars_conf = [dict(r) for r in base_scen.get("radars", [])]
+            for ri, r in enumerate(radars_conf):
+                r_col1, r_col2, r_col3, r_col4 = st.columns([1, 2, 1, 2])
+                r_name = r_col1.text_input(f"Radar {ri+1} Name", value=r.get("name", f"R{ri+1}"), key=f"r_name_{ri}")
+                pos_x = r_col2.number_input(f"Pos X (m) #{ri+1}", value=float(r["position"][0]), step=500.0, key=f"r_x_{ri}")
+                pos_y = r_col2.number_input(f"Pos Y (m) #{ri+1}", value=float(r["position"][1]), step=500.0, key=f"r_y_{ri}")
+                pos_z = r_col3.number_input(f"Mast Z (m) #{ri+1}", value=float(r["position"][2]), step=5.0, key=f"r_z_{ri}")
+                hd = r_col4.slider(f"Heading Azimuth (deg) #{ri+1}", 0.0, 360.0, float(r.get("heading_deg", 90.0)), step=5.0, key=f"r_hd_{ri}")
+                r["name"] = r_name
+                r["position"] = [pos_x, pos_y, pos_z]
+                r["heading_deg"] = hd
+
+        with st.expander("Detailed Target Configuration (Archetypes & Motion)", expanded=False):
+            st.caption("Target archetypes, legacy labels, and kinematic motion models. Optionally specify explicit initial positions and velocities.")
+            targets_conf = [dict(t) for t in base_scen.get("targets", [])]
+            for ti, tgt in enumerate(targets_conf):
+                st.markdown(f"**Target #{ti}**")
+                t_col1, t_col2, t_col3 = st.columns(3)
+                tt_options = ["aircraft_like", "uav_like", "missile_like"]
+                curr_tt = tgt.get("target_type", "aircraft_like" if tgt.get("label", 0) == 0 else "uav_like")
+                if curr_tt not in tt_options:
+                    tt_options.append(curr_tt)
+                tt_selected = t_col1.selectbox(f"Archetype #{ti}", tt_options, index=tt_options.index(curr_tt), key=f"tgt_tt_{ti}")
+                lbl_val = t_col2.selectbox(f"Legacy Class #{ti} [Ground Truth]", [0, 1, 2, 3], index=int(tgt.get("label", 0)),
+                                           format_func=lambda l: f"Class {l} ({CLASS_NAMES[l]})", key=f"tgt_lbl_{ti}")
+                mot_dict = tgt.get("motion", {})
+                mot_model = mot_dict.get("model", "CV") if isinstance(mot_dict, dict) else "CV"
+                mot_selected = t_col3.selectbox(f"Motion Model #{ti}", ["CV", "CA", "CT", "SegmentedMotion"],
+                                                index=["CV", "CA", "CT", "SegmentedMotion"].index(mot_model) if mot_model in ["CV", "CA", "CT", "SegmentedMotion"] else 0,
+                                                key=f"tgt_mot_{ti}")
+                tgt["target_type"] = tt_selected
+                tgt["label"] = lbl_val
+
+                # Explicit initial position & velocity kinematics
+                has_explicit_init = "position" in tgt and "velocity" in tgt
+                k_col1, k_col2, k_col3, k_col4 = st.columns(4)
+                use_custom = k_col1.checkbox(f"Explicit Initial Pos/Vel #{ti}", value=has_explicit_init, key=f"tgt_custom_{ti}")
+                if use_custom:
+                    def_pos = tgt.get("position", [0.0 + ti * 1000.0, 0.0 + ti * 1000.0, 500.0 + ti * 200.0])
+                    px = k_col2.number_input(f"Pos X (m) #{ti}", value=float(def_pos[0]), step=250.0, key=f"tgt_px_{ti}")
+                    py = k_col3.number_input(f"Pos Y (m) #{ti}", value=float(def_pos[1]), step=250.0, key=f"tgt_py_{ti}")
+                    pz = k_col4.number_input(f"Alt Z (m) #{ti}", value=float(def_pos[2]), step=50.0, key=f"tgt_pz_{ti}")
+                    s_col1, s_col2 = st.columns(2)
+                    def_vel = tgt.get("velocity", [150.0 if ti == 0 else (20.0 if ti in (1, 3) else 280.0), 0.0, 0.0])
+                    def_speed = float(np.hypot(def_vel[0], def_vel[1]))
+                    spd = s_col1.number_input(f"Speed (m/s) #{ti}", value=def_speed, step=10.0, key=f"tgt_spd_{ti}")
+                    hdg = s_col2.slider(f"Heading Azimuth (deg) #{ti}", 0.0, 360.0, 0.0, step=5.0, key=f"tgt_hdg_{ti}")
+                    vx = spd * np.cos(np.radians(hdg))
+                    vy = spd * np.sin(np.radians(hdg))
+                    tgt["position"] = [float(px), float(py), float(pz)]
+                    tgt["velocity"] = [float(vx), float(vy), 0.0]
+                    tgt["motion"] = {"model": mot_selected}
+                else:
+                    tgt.pop("position", None)
+                    tgt.pop("velocity", None)
+                    if isinstance(tgt.get("motion"), dict) and mot_selected != "SegmentedMotion":
+                        tgt["motion"]["model"] = mot_selected
+
+        with st.expander("Channel & Environment Parameters", expanded=False):
+            ch_col1, ch_col2 = st.columns(2)
+            pkt_loss = ch_col1.slider("Packet Loss Probability (stress.comm_drop_prob)", 0.0, 0.5,
+                                      float(base_scen.get("stress", {}).get("comm_drop_prob", 0.0)), 0.01, key="scen_pkt_loss")
+            noise_scale = ch_col2.slider("Measurement Noise Scale (stress.noise_scale)", 0.5, 3.0,
+                                         float(base_scen.get("stress", {}).get("noise_scale", 1.0)), 0.1, key="scen_ns")
+
+        # Assemble live scenario dict
+        live_sc = dict(base_scen)
+        live_sc["duration_s"] = duration_s
+        live_sc["dt"] = dt_s
+        live_sc["seed"] = int(seed_val)
+        site_obj = next((s for s in sim.MAP_SITES if s["name"] == selected_site), None)
+        if site_obj is not None:
+            live_sc["site"] = dict(site_obj)
+        live_sc["radars"] = radars_conf
+        live_sc["targets"] = targets_conf
+        if "stress" not in live_sc:
+            live_sc["stress"] = dict(base_scen.get("stress", {}))
+        else:
+            live_sc["stress"] = dict(live_sc["stress"])
+        live_sc["stress"]["comm_drop_prob"] = float(pkt_loss)
+        live_sc["stress"]["noise_scale"] = float(noise_scale)
+
+        b_val, b_run, _ = st.columns([1, 1, 3])
+        if b_val.button("Validate Scenario", key="scen_btn_val"):
+            try:
+                validate_scenario(live_sc)
+                st.success("Scenario validated successfully! All parameters, limits, and terrain bounds are consistent.")
+            except Exception as e:
+                st.error(f"Scenario Validation Error: {e}")
+
+        if b_run.button("Run Simulation", type="primary", key="scen_btn_run"):
+            try:
+                validate_scenario(live_sc)
+                with st.spinner("Running CPU simulation episode with Canonical Records export..."):
+                    env_res, summ_res = sim.run_episode(live_sc, policy_name=selected_policy, seed=int(seed_val),
+                                                         record_episode=True)
+                    st.session_state["scen_records"] = env_res.episode_records
+                    st.session_state["scen_payload"] = sim.viewer_payload(env_res)
+                    st.session_state["scen_summary"] = summ_res
+                    st.session_state["scen_mode_active"] = "live"
+                st.success("Simulation finished! See panels below for 3D visualization, Radar Information, and Radar Selection.")
+            except Exception as e:
+                st.error(f"Simulation Execution Failed: {e}")
+
+    else:
+        # Replay Mode
+        st.markdown("##### A. Episode Replay Selection")
+        ds_root = ROOT / "data" / "processed" / "multi_target_v1"
+        if not ds_root.is_dir():
+            st.warning(f"multi_target_v1 dataset directory not found at {ds_root}.")
+        else:
+            rep_c1, rep_c2 = st.columns([1, 2])
+            split_choice = rep_c1.selectbox("Dataset Split", ["train", "validation", "test"], index=0, key="rep_split_sel")
+            split_dir = ds_root / split_choice
+            ep_dirs = sorted([d.name for d in split_dir.glob("ep-*")]) if split_dir.is_dir() else []
+            selected_ep = rep_c2.selectbox("Episode Directory", ep_dirs, index=0 if ep_dirs else None, key="rep_ep_sel")
+            st.caption(f"Aktif split: **{split_choice}** ({len(ep_dirs)} episode). "
+                       f"Bölünme: Prefix-stable largest-deficit tahsisi (Train: 70, Validation: 15, Test: 15).")
+
+            if selected_ep:
+                ep_full_path = split_dir / selected_ep
+                if st.button("Load Replay Episode", type="primary", key="rep_load_btn"):
+                    with st.spinner("Loading Canonical Episode Records v2 from disk..."):
+                        recs = sim.load_episode_records(ep_full_path)
+                        payload_conv = sim.records_to_viewer_payload(recs)
+                        st.session_state["scen_records"] = recs
+                        st.session_state["scen_payload"] = payload_conv
+                        st.session_state["scen_mode_active"] = "replay"
+                        st.session_state["scen_ep_name"] = selected_ep
+                    st.success(f"Episode {selected_ep} loaded successfully ({len(recs['reports'])} reports, {len(recs['tracks'])} tracks).")
+
+    records_data = st.session_state.get("scen_records")
+    viewer_payload_data = st.session_state.get("scen_payload")
+
+    st.markdown("---")
+    st.markdown("##### B. Simulation & Visualization")
+    if viewer_payload_data is None or records_data is None:
+        st.info("Run a Live Simulation or load an Episode Replay above to view 3-D visualization and operational radar analytics.")
+    else:
+        # Metrics summary row
+        sm_c = st.columns(6)
+        n_truth = len(records_data.get("truth", []))
+        n_reps = len(records_data.get("reports", []))
+        n_comm = records_data.get("communication", [])
+        n_deliv = sum(1 for c in n_comm if c.get("final_status") == "delivered")
+        n_lost = sum(1 for c in n_comm if c.get("final_status") == "packet_lost")
+        deliv_pct = (n_deliv / n_reps * 100.0) if n_reps > 0 else 0.0
+        fused_tracks_all = [tr for tr in records_data.get("tracks", []) if tr.get("source") == "fused"]
+        unique_fused_ids = set(tr["track_id"] for tr in fused_tracks_all)
+        confirmed_fused_ids = set(tr["track_id"] for tr in fused_tracks_all if tr.get("confirmed") or tr.get("status") == "confirmed")
+        n_conf_tracks = len(confirmed_fused_ids)
+        n_cumul_tracks = len(unique_fused_ids)
+
+        n_states = len(records_data.get("states", []))
+        n_steps = len(records_data.get("transitions", []))
+        sm_c[0].metric("Simülasyon Adımları", f"{n_steps} ad / {n_states} drm",
+                       help=f"{n_steps} eylem ve simülasyon geçiş adımı (transitions), {n_states} ayrık zaman durumu (states; t=0..T)")
+        sm_c[1].metric("Ground Truth Rows", n_truth)
+        sm_c[2].metric("Reports Generated", n_reps)
+        sm_c[3].metric("Reports Delivered", f"{n_deliv} ({deliv_pct:.1f}%)")
+        sm_c[4].metric("Packet Loss", f"{n_lost}")
+        sm_c[5].metric("Füzyon İzleri (Onaylı/Kümülatif)", f"{n_conf_tracks} / {n_cumul_tracks}",
+                       help=f"Doğrulanan (confirmed) iz sayısı: {n_conf_tracks}. Episode boyunca başlatılan toplam tekil iz (track ID) sayısı: {n_cumul_tracks}. "
+                            f"Fiziksel hedeflere ek olarak clutter, yanlış alarm ve track fragmentation sonucu geçici (tentative) izler başlatılabilir.")
+
+        v_opt = st.radio("Visualization Mode", ["3-D WebGL View", "2-D Kuşbakışı (Plotly)"], horizontal=True, key="scen_v_opt")
+        if v_opt == "3-D WebGL View":
+            viewer3d.render(viewer_payload_data, height=620)
+            st.caption("3-D Etkileşimli Görünüm: Sol tık sürükle = döndür · Sağ tık = kaydır · Tekerlek = yakınlaştır. "
+                       "Replay modunda tespitler ve izler doğrudan kayıtlardan oynatılır.")
+        else:
+            fr_slider = st.slider("Zaman Adımı (Frame)", 0, len(viewer_payload_data["frames"]) - 1, 0, key="scen_fr_slider")
+            st.plotly_chart(plots.map_2d(viewer_payload_data, fr_slider), width="stretch")
+
+        st.markdown("---")
+        st.markdown("##### C. Radar Information (Kategori A & B Operasyonel Analiz)")
+
+        info_r_col, info_t_col = st.columns([2, 4])
+        sel_radar_name = info_r_col.selectbox("Radar Seçimi", ["Tüm Radarlar (R1+R2+R3)", "Radar 1 (R1)", "Radar 2 (R2)", "Radar 3 (R3)"], key="scen_info_r")
+        rid_filter = None if "Tüm Radarlar" in sel_radar_name else (0 if "R1" in sel_radar_name else (1 if "R2" in sel_radar_name else 2))
+
+        t_max_scen = float(records_data["states"][-1]["t_s"]) if records_data.get("states") else 30.0
+        sel_t_range = info_t_col.slider("Zaman Penceresi (s)", 0.0, t_max_scen, (0.0, t_max_scen), 0.5, key="scen_t_slider")
+
+        meas_summary = r_info_srv.summarize_radar_measurements(records_data, radar_id=rid_filter, t_range=sel_t_range)
+        comm_summary = r_info_srv.summarize_communication(records_data, radar_id=rid_filter, t_range=sel_t_range)
+        track_summary = r_info_srv.summarize_tracker_estimates(records_data, source="fused", t_range=sel_t_range)
+
+        ic = st.columns(6)
+        ic[0].metric("Seçili Rapor", meas_summary["total_reports"])
+        deliv_stat = f"{comm_summary.get('delivered', 0)} ({comm_summary.get('delivery_rate_pct', 0.0):.1f}%)" if comm_summary.get("delivered") is not None else "—"
+        ic[1].metric("Teslim Oranı", deliv_stat)
+        ic[2].metric("Ort. SNR", f"{meas_summary['snr_db']['mean']} dB" if meas_summary.get("snr_db") else "—")
+        ic[3].metric("Ort. Menzil", f"{meas_summary['range_m']['mean']:.0f} m" if meas_summary.get("range_m") else "—")
+        ic[4].metric("Ölçüm Gürültüsü σ_r", f"{meas_summary['measurement_uncertainty']['sigma_range_m']['mean']:.1f} m" if meas_summary.get("measurement_uncertainty") else "—",
+                     help="Sensör seviyesi menzil ölçüm gürültüsü standart sapması (Measurement Covariance R)")
+        ic[5].metric("Filtre Belirsizliği σ_pos", f"{track_summary['position_uncertainty_m']['mean']:.1f} m" if track_summary.get("position_uncertainty_m") else "—",
+                     help="Merkezi EKF durum kestirim kovaryansı (State Estimation Covariance P)")
+
+        st_bk = track_summary.get("status_breakdown", {})
+        n_conf = st_bk.get("confirmed", 0)
+        n_tent = st_bk.get("tentative", 0)
+        n_coast = st_bk.get("coasted", 0)
+        st.caption(f"Füzyon İz Durum Dağılımı: **{n_conf} doğrulanmış (confirmed)** iz adımı (%{track_summary.get('confirmed_steps_pct', 0.0):.1f}), "
+                   f"**{n_tent} geçici (tentative)** iz adımı, **{n_coast} serbest seyir (coasted)** iz adımı.")
+
+        # Detection Timeline Plotly Chart
+        det_timeline_data = r_info_srv.get_detection_timeline(records_data, radar_id=rid_filter, bin_width_s=1.0)
+        st.plotly_chart(plots.plot_detection_timeline(det_timeline_data), width="stretch")
+
+        st.info("**Kategori C Ground Truth İzolasyonu:** Operasyonel radar ölçümlerinde hedefin gerçek kimliği (`target_id`) veya türü (`target_type`) yer almaz. Yukarıdaki metrikler yalnızca radarların fiziksel RF sinyal ve EKF kovaryans çıktısıdır.")
+
+        st.markdown("---")
+        st.markdown("##### D. Radar Selection & Decision Analysis")
+
+        act_summary = r_sel_srv.analyze_radar_actions(records_data)
+        st.plotly_chart(plots.plot_action_distribution(act_summary["radars"]), width="stretch")
+
+        st.markdown("###### Karar Açıklayıcı (Decision Inspector)")
+        st.caption("Herhangi bir zaman adımında seçilen radarın neden arama yaptığı veya neden belirli bir hedef slotunu takip ettiğini inceleyin.")
+
+        di_c1, di_c2 = st.columns([3, 1])
+        insp_step = di_c1.slider("İncelenecek Zaman Adımı (Step)", 0, len(records_data.get("transitions", [])) - 1, min(15, len(records_data.get("transitions", [])) - 1), key="scen_insp_step")
+        insp_rid = di_c2.selectbox("İncelenecek Radar", [0, 1, 2], format_func=lambda r: f"Radar {r+1} (R{r+1})", key="scen_insp_rid")
+
+        decision_data = r_sel_srv.explain_radar_selection_decision(records_data, insp_step, insp_rid)
+
+        d_box1, d_box2 = st.columns(2)
+        with d_box1:
+            st.markdown(f"**Alınan Aksiyon:** `{decision_data.get('mode')} (Aksiyon {decision_data.get('action')})`")
+            st.markdown(f"🟢 **Politika Kuralı (Rule-Based Fact):**  \n{decision_data.get('justification')}")
+        with d_box2:
+            st.markdown(f"**Adım Bilgisi:** Step {decision_data.get('step_index')} (t = {insp_step * 0.5:.1f} s)")
+            st.markdown(f"🟡 **Analitik Çıkarsama (Post-Hoc Context):**  \n{decision_data.get('explanation')}")
+
+        st.markdown("###### Çoklu Sensör İz Geçişleri (Sensor Transitions)")
+        trans_res = r_sel_srv.analyze_track_radar_transitions(records_data)
+        st.caption(f"Bu episode'da toplam **{trans_res['total_opportunistic_transitions']} adet** radarlar arası iz güncelleme geçişi gerçekleşmiştir.")
+        if trans_res["transitions"]:
+            df_trans = pd.DataFrame(trans_res["transitions"])[["time_s", "track_id", "from_radar", "to_radar", "time_since_last_update_s", "sigma_pos_before_m", "sigma_pos_after_m"]]
+            st.dataframe(df_trans.head(15), width="stretch", hide_index=True)
+        st.warning("**Not:** Bu geçişler merkezi kara tahta (slots) üzerinden fırsatçı sensör atamasıdır (Centralized Opportunistic Sensor Transition). Kod tabanında dağıtık otonom el sıkışma protokolü (Handover Protocol) bulunmamaktadır.")
 
 
 # ============================================================== 3-D simulation
