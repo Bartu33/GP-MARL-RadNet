@@ -11,6 +11,7 @@ import pandas as pd
 
 from src.core.env import REPORT_FINAL_STATUSES, RadarNetEnv
 from src.core.scenario import load_scenario
+from src.core.targets import CLASS_SHORT
 from src.core.terrain import build_terrain
 from src.models.baselines.policies import make_policy
 
@@ -267,9 +268,66 @@ MAP_SITES = [
 ]
 
 
+def format_target_label(target_id: int, label: int, target_type: str | None = None, ground_truth_tag: bool = True) -> str:
+    """Format human-readable target label using explicit target_type with legacy fallback.
+
+    If target_type is provided:
+      - 'aircraft_like': T{id} — Aircraft-like
+      - 'uav_like': T{id} — UAV-like (Agile) if label==1 else T{id} — UAV-like (Drift) if label==3 else T{id} — UAV-like
+      - 'missile_like': T{id} — Missile-like
+      - other: T{id} — {target_type}
+    If target_type is absent (legacy dataset):
+      - Fallback to CLASS_SHORT[label]: truth {CLASS_SHORT[label]}
+    """
+    tag = " [Ground Truth]" if ground_truth_tag else ""
+    if target_type:
+        tt = str(target_type).lower().strip()
+        if "aircraft" in tt:
+            type_str = "Aircraft-like"
+        elif "missile" in tt:
+            type_str = "Missile-like"
+        elif "uav" in tt or "drone" in tt:
+            if label == 1:
+                type_str = "UAV-like (Agile)"
+            elif label == 3:
+                type_str = "UAV-like (Drift)"
+            else:
+                type_str = "UAV-like"
+        else:
+            type_str = target_type.replace("_", "-").title()
+        return f"T{target_id} — {type_str}{tag}"
+    legacy_name = CLASS_SHORT[label] if 0 <= label < len(CLASS_SHORT) else f"Class {label}"
+    return f"truth {legacy_name}"
+
+
 def viewer_payload(env: RadarNetEnv) -> dict:
     """Static scene description + frames, consumed by the 3-D viewer."""
     sc = env.sc
+    target_labels = {}
+    target_type_map = {}
+    for s in env.targets:
+        tt = getattr(s, "target_type", None)
+        if not tt and s.id < len(sc.get("targets", [])):
+            tt = sc["targets"][s.id].get("target_type")
+        target_type_map[s.id] = (s.label, tt)
+        target_labels[s.id] = format_target_label(s.id, s.label, tt)
+
+    # Attach display_name to targets in env.frames
+    frames = []
+    for fr in env.frames:
+        fr_copy = dict(fr)
+        fr_copy["targets"] = [
+            {
+                **t,
+                "target_type": target_type_map.get(t["id"], (t.get("label", 0), None))[1],
+                "display_name": target_labels.get(t["id"], f"truth {CLASS_SHORT[t.get('label', 0)]}"),
+            }
+            for t in fr.get("targets", [])
+        ]
+        frames.append(fr_copy)
+
+    target_legend = [target_labels[tid] for tid in sorted(target_labels.keys())] if target_labels else ["A · fast", "B · agile", "C · erratic", "D · drift"]
+
     return {
         "site": sc["site"],
         "sites": [sc["site"]] + [s for s in MAP_SITES if s["name"] != sc["site"]["name"]],
@@ -282,7 +340,9 @@ def viewer_payload(env: RadarNetEnv) -> dict:
             "bw_az": float(np.deg2rad(p.beamwidth_az_deg)), "bw_el": float(np.deg2rad(p.beamwidth_el_deg)),
         } for p in env.radar_params],
         "classes": ["A · fast", "B · agile", "C · erratic", "D · drift"],
-        "frames": env.frames,
+        "target_labels": target_labels,
+        "target_legend": target_legend,
+        "frames": frames,
     }
 
 
@@ -338,6 +398,24 @@ def records_to_viewer_payload(records: dict) -> dict:
     for tr in records.get("transitions", []):
         trans_by_step[tr["step_index"]] = tr
 
+    # Extract target types from metadata / config_snapshot
+    target_types_meta = metadata.get("target_types", [])
+    cfg_targets = sc.get("targets", [])
+    target_type_map = {}
+    for row in records.get("truth", []):
+        tid = row["target_id"]
+        if tid not in target_type_map:
+            tt = None
+            if tid < len(target_types_meta) and target_types_meta[tid]:
+                tt = target_types_meta[tid]
+            elif tid < len(cfg_targets) and cfg_targets[tid].get("target_type"):
+                tt = cfg_targets[tid]["target_type"]
+            target_type_map[tid] = (row["class_label"], tt)
+
+    target_labels = {}
+    for tid, (lbl, tt) in target_type_map.items():
+        target_labels[tid] = format_target_label(tid, lbl, tt)
+
     max_steps = max(truth_by_step.keys()) if truth_by_step else 60
     frames = []
 
@@ -391,6 +469,8 @@ def records_to_viewer_payload(records: dict) -> dict:
             {
                 "id": tgt_row["target_id"],
                 "label": tgt_row["class_label"],
+                "target_type": target_type_map.get(tgt_row["target_id"], (tgt_row["class_label"], None))[1],
+                "display_name": target_labels.get(tgt_row["target_id"], f"truth {CLASS_SHORT[tgt_row['class_label']]}"),
                 "p": [round(float(x), 1) for x in tgt_row["p"]],
                 "v": [round(float(x), 1) for x in tgt_row["v"]],
             }
@@ -405,6 +485,8 @@ def records_to_viewer_payload(records: dict) -> dict:
             "tracks": tracks_frame,
         })
 
+    target_legend = [target_labels[tid] for tid in sorted(target_labels.keys())] if target_labels else ["A · fast", "B · agile", "C · erratic", "D · drift"]
+
     return {
         "site": site,
         "sites": [site] + [s for s in MAP_SITES if s["name"] != site["name"]],
@@ -413,6 +495,8 @@ def records_to_viewer_payload(records: dict) -> dict:
         "area_radius": area_radius,
         "radars": radars_payload,
         "classes": ["A · fast", "B · agile", "C · erratic", "D · drift"],
+        "target_labels": target_labels,
+        "target_legend": target_legend,
         "frames": frames,
         "replay_metadata": {
             "source": "canonical_records_v2",

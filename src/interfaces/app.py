@@ -248,7 +248,11 @@ with tab_scen:
         n_deliv = sum(1 for c in n_comm if c.get("final_status") == "delivered")
         n_lost = sum(1 for c in n_comm if c.get("final_status") == "packet_lost")
         deliv_pct = (n_deliv / n_reps * 100.0) if n_reps > 0 else 0.0
-        n_tracks = len(set(tr["track_id"] for tr in records_data.get("tracks", []) if tr["source"] == "fused"))
+        fused_tracks_all = [tr for tr in records_data.get("tracks", []) if tr.get("source") == "fused"]
+        unique_fused_ids = set(tr["track_id"] for tr in fused_tracks_all)
+        confirmed_fused_ids = set(tr["track_id"] for tr in fused_tracks_all if tr.get("confirmed") or tr.get("status") == "confirmed")
+        n_conf_tracks = len(confirmed_fused_ids)
+        n_cumul_tracks = len(unique_fused_ids)
 
         n_states = len(records_data.get("states", []))
         n_steps = len(records_data.get("transitions", []))
@@ -258,7 +262,9 @@ with tab_scen:
         sm_c[2].metric("Reports Generated", n_reps)
         sm_c[3].metric("Reports Delivered", f"{n_deliv} ({deliv_pct:.1f}%)")
         sm_c[4].metric("Packet Loss", f"{n_lost}")
-        sm_c[5].metric("Active Fused Tracks", n_tracks)
+        sm_c[5].metric("Füzyon İzleri (Onaylı/Kümülatif)", f"{n_conf_tracks} / {n_cumul_tracks}",
+                       help=f"Doğrulanan (confirmed) iz sayısı: {n_conf_tracks}. Episode boyunca başlatılan toplam tekil iz (track ID) sayısı: {n_cumul_tracks}. "
+                            f"Fiziksel hedeflere ek olarak clutter, yanlış alarm ve track fragmentation sonucu geçici (tentative) izler başlatılabilir.")
 
         v_opt = st.radio("Visualization Mode", ["3-D WebGL View", "2-D Kuşbakışı (Plotly)"], horizontal=True, key="scen_v_opt")
         if v_opt == "3-D WebGL View":

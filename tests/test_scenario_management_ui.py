@@ -288,3 +288,97 @@ def test_streamlit_apptest_live_and_replay_execution():
     at.button(key="rep_load_btn").click().run(timeout=30)
     assert len(at.exception) == 0
     assert at.session_state.get("scen_mode_active") == "replay"
+
+
+def test_format_target_label_explicit_and_fallback():
+    """Verify target labeling with explicit archetypes and legacy fallbacks."""
+    from src.services.simulation_service import format_target_label
+
+    # Explicit archetypes
+    assert "Aircraft-like" in format_target_label(0, 0, "aircraft_like")
+    assert "UAV-like (Agile)" in format_target_label(1, 1, "uav_like")
+    assert "UAV-like (Drift)" in format_target_label(2, 3, "uav_like")
+    assert "Missile-like" in format_target_label(3, 2, "missile_like")
+    assert "[Ground Truth]" in format_target_label(0, 0, "aircraft_like", ground_truth_tag=True)
+    assert "[Ground Truth]" not in format_target_label(0, 0, "aircraft_like", ground_truth_tag=False)
+
+    # Legacy fallbacks
+    assert format_target_label(0, 0, None) == "truth A · fast"
+    assert format_target_label(1, 1, None) == "truth B · agile"
+    assert format_target_label(2, 2, None) == "truth C · erratic"
+    assert format_target_label(3, 3, None) == "truth D · drift"
+
+
+@pytest.mark.skipif(SAMPLE_EPISODE is None, reason="multi_target_v1 dataset not found")
+def test_target_labels_in_records_and_viewer_payload():
+    """Verify 3D and 2D payloads contain consistent target labels and types."""
+    records = load_episode_records(SAMPLE_EPISODE)
+    payload = records_to_viewer_payload(records)
+
+    assert "target_labels" in payload
+    labels = payload["target_labels"]
+    assert 0 in labels and "Aircraft-like" in labels[0]
+    assert 1 in labels and "UAV-like (Agile)" in labels[1]
+    assert 2 in labels and "UAV-like (Drift)" in labels[2]
+    assert 3 in labels and "Missile-like" in labels[3]
+
+    # Verify every frame target has display_name and target_type
+    for fr in payload["frames"]:
+        for t in fr["targets"]:
+            assert "display_name" in t
+            assert "target_type" in t
+            assert t["display_name"] == labels[t["id"]]
+
+
+@pytest.mark.skipif(SAMPLE_EPISODE is None, reason="multi_target_v1 dataset not found")
+def test_map_2d_auto_zoom_and_equal_aspect_ratio_and_slider_stability():
+    """Verify 2D map auto-zoom encloses active area, keeps equal aspect ratio and does not jump."""
+    from src.interfaces.plots import map_2d
+
+    records = load_episode_records(SAMPLE_EPISODE)
+    payload = records_to_viewer_payload(records)
+
+    # Generate figure for frame 0, frame 30, and frame 60
+    fig0 = map_2d(payload, 0)
+    fig30 = map_2d(payload, 30)
+    fig60 = map_2d(payload, 60)
+
+    # 1. Slider stability: range MUST be identical across frames
+    assert fig0.layout.xaxis.range == fig30.layout.xaxis.range == fig60.layout.xaxis.range
+    assert fig0.layout.yaxis.range == fig30.layout.yaxis.range == fig60.layout.yaxis.range
+
+    # 2. Equal physical scale: yaxis scaleanchor must be 'x' and scaleratio 1
+    assert fig0.layout.yaxis.scaleanchor == "x"
+    assert fig0.layout.yaxis.scaleratio == 1
+
+    # Equal axis span
+    x_range = fig0.layout.xaxis.range
+    y_range = fig0.layout.yaxis.range
+    x_span = x_range[1] - x_range[0]
+    y_span = y_range[1] - y_range[0]
+    assert pytest.approx(x_span, rel=1e-3) == y_span
+
+    # 3. Enclose all radars and targets
+    for r in payload["radars"]:
+        assert x_range[0] <= r["pos"][0] <= x_range[1]
+        assert y_range[0] <= r["pos"][1] <= y_range[1]
+
+    for fr in payload["frames"]:
+        for t in fr["targets"]:
+            assert x_range[0] <= t["p"][0] <= x_range[1]
+            assert y_range[0] <= t["p"][1] <= y_range[1]
+
+
+@pytest.mark.skipif(SAMPLE_EPISODE is None, reason="multi_target_v1 dataset not found")
+def test_fused_tracks_metric_confirmed_vs_cumulative():
+    """Verify distinct confirmed vs cumulative track ID counts from records."""
+    records = load_episode_records(SAMPLE_EPISODE)
+    fused = [tr for tr in records["tracks"] if tr.get("source") == "fused"]
+    cumul_ids = set(tr["track_id"] for tr in fused)
+    conf_ids = set(tr["track_id"] for tr in fused if tr.get("confirmed") or tr.get("status") == "confirmed")
+
+    # Confirmed tracks matches the 4 physical targets
+    assert len(conf_ids) == 4
+    # Cumulative track IDs is larger due to tentative clutter / initialization
+    assert len(cumul_ids) >= len(conf_ids)
+    assert len(cumul_ids) in (17, 18)
