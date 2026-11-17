@@ -22,7 +22,7 @@ from src.services.simulation_service import (
     export_episode_records, load_episode_records, run_episode,
 )
 
-MAX_TERRAINS = 16
+MAX_TERRAINS = 4096
 FILES = ("metadata.json", "records.npz")
 IDENTITY = ("dataset_episode_id", "episode_index", "split", "scenario_family",
             "terrain_group_id", "master_seed", "episode_seed",

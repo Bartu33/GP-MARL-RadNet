@@ -22,6 +22,7 @@ RNG_LAYOUT_VERSION = 1
 DEFAULTS = {
     "name": "unnamed",
     "description": "",
+    "difficulty_level": None,       # None | easy | medium | hard
     "site": {"name": "Utah Valley · US", "lat": 40.30, "lon": -111.70},
     "dt": 0.5,
     "duration_s": 120.0,
@@ -197,6 +198,8 @@ def validate_scenario(scenario: dict) -> dict:
     sc = _merge(DEFAULTS, scenario)
     for key in ("name", "description"):
         _text(sc[key], key)
+    if sc.get("difficulty_level") is not None and sc["difficulty_level"] not in ("easy", "medium", "hard"):
+        raise ValueError("difficulty_level: expected one of ['easy', 'medium', 'hard']")
     for key in ("dt", "duration_s", "area_radius_m"):
         _number(sc[key], key, positive=True)
     ratio = sc["duration_s"] / sc["dt"]
@@ -214,7 +217,11 @@ def validate_scenario(scenario: dict) -> dict:
     terrain = sc["terrain"]
     if isinstance(terrain, str):
         terrain = {"source": terrain, "resolution": 512}
-    _mapping(terrain, "terrain", (*DEFAULTS["terrain"], "hills"))
+    _mapping(terrain, "terrain", (*DEFAULTS["terrain"], "hills", "family", "valley_width_m",
+                                  "relief_height_m", "obstacle_profile", "parameters", "seed", "texture_family",
+                                  "generator_version"))
+    if "generator_version" in terrain:
+        _number(terrain["generator_version"], "terrain.generator_version", minimum=1, integer=True)
     source = terrain.get("source", "flat")
     if not isinstance(source, str) or source not in ("flat", "procedural", "tiles", "auto"):
         raise ValueError("terrain.source: expected flat, procedural, tiles, or auto")
@@ -235,6 +242,29 @@ def validate_scenario(scenario: dict) -> dict:
                 _number(value, f"{path}.center_m[{j}]")
             for key in ("height_m", "sigma_m"):
                 _number(hill.get(key), f"{path}.{key}", positive=True)
+    if "family" in terrain:
+        if source != "procedural":
+            raise ValueError("terrain.family: supported only with source procedural")
+        from .procedural_terrain import SUPPORTED_TERRAIN_FAMILIES, SUPPORTED_OBSTACLE_PROFILES
+        fam = terrain["family"]
+        if not isinstance(fam, str) or fam not in SUPPORTED_TERRAIN_FAMILIES:
+            raise ValueError(f"terrain.family: expected one of {list(SUPPORTED_TERRAIN_FAMILIES)}")
+        if "obstacle_profile" in terrain:
+            prof = terrain["obstacle_profile"]
+            if not isinstance(prof, str) or prof not in SUPPORTED_OBSTACLE_PROFILES:
+                raise ValueError(f"terrain.obstacle_profile: expected one of {list(SUPPORTED_OBSTACLE_PROFILES)}")
+        if "texture_family" in terrain:
+            from .procedural_terrain import SUPPORTED_TEXTURE_FAMILIES
+            tf = terrain["texture_family"]
+            if not isinstance(tf, str) or tf not in SUPPORTED_TEXTURE_FAMILIES:
+                raise ValueError(f"terrain.texture_family: expected one of {list(SUPPORTED_TEXTURE_FAMILIES)}")
+        for num_k in ("valley_width_m", "relief_height_m"):
+            if num_k in terrain:
+                _number(terrain[num_k], f"terrain.{num_k}", positive=True)
+        if "parameters" in terrain and not isinstance(terrain["parameters"], dict):
+            raise ValueError("terrain.parameters: expected a mapping")
+        if "seed" in terrain:
+            _number(terrain["seed"], "terrain.seed", minimum=0, integer=True)
     for key in ("radars", "targets"):
         if not isinstance(sc[key], list):
             raise ValueError(f"{key}: expected a list")

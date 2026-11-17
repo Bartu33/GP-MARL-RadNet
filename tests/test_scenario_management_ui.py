@@ -283,7 +283,7 @@ def test_streamlit_apptest_live_and_replay_execution():
     assert at.session_state.get("scen_mode_active") == "live"
 
     # 2. Test switching to replay mode and loading episode
-    at.radio(key="scen_op_mode").set_value("Dataset Replay (multi_target_v1)").run(timeout=30)
+    at.radio(key="scen_op_mode").set_value("Dataset Replay").run(timeout=30)
     assert len(at.exception) == 0
     at.button(key="rep_load_btn").click().run(timeout=30)
     assert len(at.exception) == 0

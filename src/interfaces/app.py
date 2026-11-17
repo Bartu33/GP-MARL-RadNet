@@ -22,7 +22,7 @@ from src.core.radar import RadarParams, antenna_gain, measurement_sigmas, snr_li
 from src.core.rcs import EllipsoidRCS, LookupTableRCS, m2_to_dbsm
 from src.core.scenario import list_scenarios, load_scenario, validate_scenario
 from src.core.targets import CLASS_NAMES, CLASS_SHORT, advance, spawn_target
-from src.interfaces import plots, viewer3d
+from src.interfaces import dataset_browser, plots, viewer3d
 from src.models.baselines.policies import LEARNED, POLICIES
 from src.services import simulation_service as sim
 from src.services import radar_information_service as r_info_srv
@@ -78,7 +78,7 @@ with tab_scen:
                "physics-informed radar observations, and explainable radar coordination.")
 
     scen_col1, scen_col2 = st.columns([3, 4])
-    op_mode = scen_col1.radio("Operation Mode", ["Live Simulation (CPU)", "Dataset Replay (multi_target_v1)"], horizontal=True, key="scen_op_mode")
+    op_mode = scen_col1.radio("Operation Mode", ["Live Simulation (CPU)", "Dataset Replay"], horizontal=True, key="scen_op_mode")
 
     if op_mode == "Live Simulation (CPU)":
         st.markdown("##### A. Scenario Configuration")
@@ -206,31 +206,8 @@ with tab_scen:
                 st.error(f"Simulation Execution Failed: {e}")
 
     else:
-        # Replay Mode
-        st.markdown("##### A. Episode Replay Selection")
-        ds_root = ROOT / "data" / "processed" / "multi_target_v1"
-        if not ds_root.is_dir():
-            st.warning(f"multi_target_v1 dataset directory not found at {ds_root}.")
-        else:
-            rep_c1, rep_c2 = st.columns([1, 2])
-            split_choice = rep_c1.selectbox("Dataset Split", ["train", "validation", "test"], index=0, key="rep_split_sel")
-            split_dir = ds_root / split_choice
-            ep_dirs = sorted([d.name for d in split_dir.glob("ep-*")]) if split_dir.is_dir() else []
-            selected_ep = rep_c2.selectbox("Episode Directory", ep_dirs, index=0 if ep_dirs else None, key="rep_ep_sel")
-            st.caption(f"Aktif split: **{split_choice}** ({len(ep_dirs)} episode). "
-                       f"Bölünme: Prefix-stable largest-deficit tahsisi (Train: 70, Validation: 15, Test: 15).")
-
-            if selected_ep:
-                ep_full_path = split_dir / selected_ep
-                if st.button("Load Replay Episode", type="primary", key="rep_load_btn"):
-                    with st.spinner("Loading Canonical Episode Records v2 from disk..."):
-                        recs = sim.load_episode_records(ep_full_path)
-                        payload_conv = sim.records_to_viewer_payload(recs)
-                        st.session_state["scen_records"] = recs
-                        st.session_state["scen_payload"] = payload_conv
-                        st.session_state["scen_mode_active"] = "replay"
-                        st.session_state["scen_ep_name"] = selected_ep
-                    st.success(f"Episode {selected_ep} loaded successfully ({len(recs['reports'])} reports, {len(recs['tracks'])} tracks).")
+        # Replay Mode with Dynamic Episode Browser, Filters & Instant Preview
+        dataset_browser.render_dataset_replay_ui(ROOT, sim)
 
     records_data = st.session_state.get("scen_records")
     viewer_payload_data = st.session_state.get("scen_payload")
@@ -256,62 +233,62 @@ with tab_scen:
 
         n_states = len(records_data.get("states", []))
         n_steps = len(records_data.get("transitions", []))
-        sm_c[0].metric("Simülasyon Adımları", f"{n_steps} ad / {n_states} drm",
-                       help=f"{n_steps} eylem ve simülasyon geçiş adımı (transitions), {n_states} ayrık zaman durumu (states; t=0..T)")
+        sm_c[0].metric("Simulation Steps", f"{n_steps} stp / {n_states} stt",
+                       help=f"{n_steps} action & simulation transitions, {n_states} discrete-time states (t=0..T)")
         sm_c[1].metric("Ground Truth Rows", n_truth)
         sm_c[2].metric("Reports Generated", n_reps)
         sm_c[3].metric("Reports Delivered", f"{n_deliv} ({deliv_pct:.1f}%)")
         sm_c[4].metric("Packet Loss", f"{n_lost}")
-        sm_c[5].metric("Füzyon İzleri (Onaylı/Kümülatif)", f"{n_conf_tracks} / {n_cumul_tracks}",
-                       help=f"Doğrulanan (confirmed) iz sayısı: {n_conf_tracks}. Episode boyunca başlatılan toplam tekil iz (track ID) sayısı: {n_cumul_tracks}. "
-                            f"Fiziksel hedeflere ek olarak clutter, yanlış alarm ve track fragmentation sonucu geçici (tentative) izler başlatılabilir.")
+        sm_c[5].metric("Fusion Tracks (Confirmed / Cumulative)", f"{n_conf_tracks} / {n_cumul_tracks}",
+                       help=f"Confirmed track count: {n_conf_tracks}. Total unique track IDs initiated across the episode: {n_cumul_tracks}. "
+                            f"Tentative tracks may be initiated due to clutter, false alarms, and track fragmentation in addition to physical targets.")
 
-        v_opt = st.radio("Visualization Mode", ["3-D WebGL View", "2-D Kuşbakışı (Plotly)"], horizontal=True, key="scen_v_opt")
+        v_opt = st.radio("Visualization Mode", ["3-D WebGL View", "2-D Top-Down View (Plotly)"], horizontal=True, key="scen_v_opt")
         if v_opt == "3-D WebGL View":
             viewer3d.render(viewer_payload_data, height=620)
-            st.caption("3-D Etkileşimli Görünüm: Sol tık sürükle = döndür · Sağ tık = kaydır · Tekerlek = yakınlaştır. "
-                       "Replay modunda tespitler ve izler doğrudan kayıtlardan oynatılır.")
+            st.caption("3-D Interactive View: Left click drag = orbit · Right click drag = pan · Wheel = zoom. "
+                       "In Replay mode, detections and tracks are played back directly from records.")
         else:
-            fr_slider = st.slider("Zaman Adımı (Frame)", 0, len(viewer_payload_data["frames"]) - 1, 0, key="scen_fr_slider")
+            fr_slider = st.slider("Simulation Step (Frame)", 0, len(viewer_payload_data["frames"]) - 1, 0, key="scen_fr_slider")
             st.plotly_chart(plots.map_2d(viewer_payload_data, fr_slider), width="stretch")
 
         st.markdown("---")
-        st.markdown("##### C. Radar Information (Kategori A & B Operasyonel Analiz)")
+        st.markdown("##### C. Radar Information (Category A & B Operational Analysis)")
 
         info_r_col, info_t_col = st.columns([2, 4])
-        sel_radar_name = info_r_col.selectbox("Radar Seçimi", ["Tüm Radarlar (R1+R2+R3)", "Radar 1 (R1)", "Radar 2 (R2)", "Radar 3 (R3)"], key="scen_info_r")
-        rid_filter = None if "Tüm Radarlar" in sel_radar_name else (0 if "R1" in sel_radar_name else (1 if "R2" in sel_radar_name else 2))
+        sel_radar_name = info_r_col.selectbox("Radar Selection", ["All Radars (R1+R2+R3)", "Radar 1 (R1)", "Radar 2 (R2)", "Radar 3 (R3)"], key="scen_info_r")
+        rid_filter = None if "All Radars" in sel_radar_name else (0 if "R1" in sel_radar_name else (1 if "R2" in sel_radar_name else 2))
 
         t_max_scen = float(records_data["states"][-1]["t_s"]) if records_data.get("states") else 30.0
-        sel_t_range = info_t_col.slider("Zaman Penceresi (s)", 0.0, t_max_scen, (0.0, t_max_scen), 0.5, key="scen_t_slider")
+        sel_t_range = info_t_col.slider("Time Window (s)", 0.0, t_max_scen, (0.0, t_max_scen), 0.5, key="scen_t_slider")
 
         meas_summary = r_info_srv.summarize_radar_measurements(records_data, radar_id=rid_filter, t_range=sel_t_range)
         comm_summary = r_info_srv.summarize_communication(records_data, radar_id=rid_filter, t_range=sel_t_range)
         track_summary = r_info_srv.summarize_tracker_estimates(records_data, source="fused", t_range=sel_t_range)
 
         ic = st.columns(6)
-        ic[0].metric("Seçili Rapor", meas_summary["total_reports"])
+        ic[0].metric("Selected Reports", meas_summary["total_reports"])
         deliv_stat = f"{comm_summary.get('delivered', 0)} ({comm_summary.get('delivery_rate_pct', 0.0):.1f}%)" if comm_summary.get("delivered") is not None else "—"
-        ic[1].metric("Teslim Oranı", deliv_stat)
-        ic[2].metric("Ort. SNR", f"{meas_summary['snr_db']['mean']} dB" if meas_summary.get("snr_db") else "—")
-        ic[3].metric("Ort. Menzil", f"{meas_summary['range_m']['mean']:.0f} m" if meas_summary.get("range_m") else "—")
-        ic[4].metric("Ölçüm Gürültüsü σ_r", f"{meas_summary['measurement_uncertainty']['sigma_range_m']['mean']:.1f} m" if meas_summary.get("measurement_uncertainty") else "—",
-                     help="Sensör seviyesi menzil ölçüm gürültüsü standart sapması (Measurement Covariance R)")
-        ic[5].metric("Filtre Belirsizliği σ_pos", f"{track_summary['position_uncertainty_m']['mean']:.1f} m" if track_summary.get("position_uncertainty_m") else "—",
-                     help="Merkezi EKF durum kestirim kovaryansı (State Estimation Covariance P)")
+        ic[1].metric("Delivery Ratio", deliv_stat)
+        ic[2].metric("Avg SNR", f"{meas_summary['snr_db']['mean']} dB" if meas_summary.get("snr_db") else "—")
+        ic[3].metric("Avg Range", f"{meas_summary['range_m']['mean']:.0f} m" if meas_summary.get("range_m") else "—")
+        ic[4].metric("Measurement Noise σ_r", f"{meas_summary['measurement_uncertainty']['sigma_range_m']['mean']:.1f} m" if meas_summary.get("measurement_uncertainty") else "—",
+                     help="Sensor-level range measurement noise standard deviation (Measurement Covariance R)")
+        ic[5].metric("Filter Uncertainty σ_pos", f"{track_summary['position_uncertainty_m']['mean']:.1f} m" if track_summary.get("position_uncertainty_m") else "—",
+                     help="Centralized EKF state estimation covariance (State Estimation Covariance P)")
 
         st_bk = track_summary.get("status_breakdown", {})
         n_conf = st_bk.get("confirmed", 0)
         n_tent = st_bk.get("tentative", 0)
         n_coast = st_bk.get("coasted", 0)
-        st.caption(f"Füzyon İz Durum Dağılımı: **{n_conf} doğrulanmış (confirmed)** iz adımı (%{track_summary.get('confirmed_steps_pct', 0.0):.1f}), "
-                   f"**{n_tent} geçici (tentative)** iz adımı, **{n_coast} serbest seyir (coasted)** iz adımı.")
+        st.caption(f"Fusion Track State Distribution: **{n_conf} confirmed** track steps ({track_summary.get('confirmed_steps_pct', 0.0):.1f}%), "
+                   f"**{n_tent} tentative** track steps, **{n_coast} coasted** track steps.")
 
         # Detection Timeline Plotly Chart
         det_timeline_data = r_info_srv.get_detection_timeline(records_data, radar_id=rid_filter, bin_width_s=1.0)
         st.plotly_chart(plots.plot_detection_timeline(det_timeline_data), width="stretch")
 
-        st.info("**Kategori C Ground Truth İzolasyonu:** Operasyonel radar ölçümlerinde hedefin gerçek kimliği (`target_id`) veya türü (`target_type`) yer almaz. Yukarıdaki metrikler yalnızca radarların fiziksel RF sinyal ve EKF kovaryans çıktısıdır.")
+        st.info("**Category C Ground Truth Isolation:** Operational radar observations do not include target true identity (`target_id`) or type (`target_type`). Metrics above reflect exclusively physical RF signals and EKF covariance estimates.")
 
         st.markdown("---")
         st.markdown("##### D. Radar Selection & Decision Analysis")
@@ -319,30 +296,30 @@ with tab_scen:
         act_summary = r_sel_srv.analyze_radar_actions(records_data)
         st.plotly_chart(plots.plot_action_distribution(act_summary["radars"]), width="stretch")
 
-        st.markdown("###### Karar Açıklayıcı (Decision Inspector)")
-        st.caption("Herhangi bir zaman adımında seçilen radarın neden arama yaptığı veya neden belirli bir hedef slotunu takip ettiğini inceleyin.")
+        st.markdown("###### Decision Inspector")
+        st.caption("Inspect why a selected radar chose search or track mode for a specific target slot at any simulation time step.")
 
         di_c1, di_c2 = st.columns([3, 1])
-        insp_step = di_c1.slider("İncelenecek Zaman Adımı (Step)", 0, len(records_data.get("transitions", [])) - 1, min(15, len(records_data.get("transitions", [])) - 1), key="scen_insp_step")
-        insp_rid = di_c2.selectbox("İncelenecek Radar", [0, 1, 2], format_func=lambda r: f"Radar {r+1} (R{r+1})", key="scen_insp_rid")
+        insp_step = di_c1.slider("Inspection Time Step (Step)", 0, len(records_data.get("transitions", [])) - 1, min(15, len(records_data.get("transitions", [])) - 1), key="scen_insp_step")
+        insp_rid = di_c2.selectbox("Inspection Radar", [0, 1, 2], format_func=lambda r: f"Radar {r+1} (R{r+1})", key="scen_insp_rid")
 
         decision_data = r_sel_srv.explain_radar_selection_decision(records_data, insp_step, insp_rid)
 
         d_box1, d_box2 = st.columns(2)
         with d_box1:
-            st.markdown(f"**Alınan Aksiyon:** `{decision_data.get('mode')} (Aksiyon {decision_data.get('action')})`")
-            st.markdown(f"🟢 **Politika Kuralı (Rule-Based Fact):**  \n{decision_data.get('justification')}")
+            st.markdown(f"**Selected Action:** `{decision_data.get('mode')} (Action {decision_data.get('action')})`")
+            st.markdown(f"🟢 **Policy Rule (Rule-Based Fact):**  \n{decision_data.get('justification')}")
         with d_box2:
-            st.markdown(f"**Adım Bilgisi:** Step {decision_data.get('step_index')} (t = {insp_step * 0.5:.1f} s)")
-            st.markdown(f"🟡 **Analitik Çıkarsama (Post-Hoc Context):**  \n{decision_data.get('explanation')}")
+            st.markdown(f"**Step Details:** Step {decision_data.get('step_index')} (t = {insp_step * 0.5:.1f} s)")
+            st.markdown(f"🟡 **Analytical Context (Post-Hoc Reasoning):**  \n{decision_data.get('explanation')}")
 
-        st.markdown("###### Çoklu Sensör İz Geçişleri (Sensor Transitions)")
+        st.markdown("###### Multi-Sensor Track Transitions")
         trans_res = r_sel_srv.analyze_track_radar_transitions(records_data)
-        st.caption(f"Bu episode'da toplam **{trans_res['total_opportunistic_transitions']} adet** radarlar arası iz güncelleme geçişi gerçekleşmiştir.")
+        st.caption(f"Total of **{trans_res['total_opportunistic_transitions']}** inter-radar track update transitions occurred in this episode.")
         if trans_res["transitions"]:
             df_trans = pd.DataFrame(trans_res["transitions"])[["time_s", "track_id", "from_radar", "to_radar", "time_since_last_update_s", "sigma_pos_before_m", "sigma_pos_after_m"]]
             st.dataframe(df_trans.head(15), width="stretch", hide_index=True)
-        st.warning("**Not:** Bu geçişler merkezi kara tahta (slots) üzerinden fırsatçı sensör atamasıdır (Centralized Opportunistic Sensor Transition). Kod tabanında dağıtık otonom el sıkışma protokolü (Handover Protocol) bulunmamaktadır.")
+        st.warning("**Note:** These transitions represent centralized opportunistic sensor assignments via shared track slots. The codebase uses opportunistic scheduling rather than a distributed peer-to-peer handover protocol.")
 
 
 # ============================================================== 3-D simulation

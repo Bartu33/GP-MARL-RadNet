@@ -15,6 +15,13 @@ models/checkpoints/*
 models/metadata/*
 !**/.gitkeep
 
+# Visual verification screenshots and temporary samples (kept locally)
+reports/ui_verification/
+reports/pilot_visual_samples/
+reports/step2e_investigation/
+reports/terrain_diverse_samples/
+reports/terrain_visual_samples/
+
 # Third-party papers are not redistributed (copyright) -- keep them locally in ref/papers
 ref/papers/*.pdf
 

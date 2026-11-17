@@ -88,8 +88,20 @@ def terrain_group_id(terrain):
     """
     if terrain["source"] == "flat":
         return "terrain-" + _digest({"surface": "flat"})[:20]
+    if "family" in terrain:
+        surface = {
+            "surface": "procedural_family",
+            "family": terrain["family"],
+            "valley_width_m": float(terrain.get("valley_width_m", 0.0)),
+            "relief_height_m": float(terrain.get("relief_height_m", 0.0)),
+            "obstacle_profile": str(terrain.get("obstacle_profile", "clear")),
+            "texture_family": str(terrain.get("texture_family", "rocky_mountain")),
+            "seed": int(terrain.get("seed", 0)),
+            "parameters": _physical_numbers(terrain.get("parameters", {})),
+        }
+        return "terrain-" + _digest(surface)[:20]
     if terrain["source"] != "procedural" or "hills" not in terrain:
-        raise ValueError("terrain: planner v1 supports only flat or explicit procedural hills")
+        raise ValueError("terrain: planner v1 supports only flat or explicit procedural hills (or procedural families)")
     grouped = {}
     for hill in terrain["hills"]:
         key = tuple(float(v) or 0.0 for v in (*hill["center_m"], hill["sigma_m"]))
@@ -262,7 +274,9 @@ def _prepare(recipe):
         for i, entry in enumerate(entries):
             path = f"terrain_pools.{split}[{i}]"
             _mapping(entry, path, ("terrain", "seed"))
-            _mapping(entry.get("terrain"), f"{path}.terrain", ("source", "resolution", "hills"))
+            _mapping(entry.get("terrain"), f"{path}.terrain",
+                     ("source", "resolution", "hills", "family", "valley_width_m",
+                      "relief_height_m", "obstacle_profile", "parameters", "seed", "texture_family"))
             candidate = deepcopy(base)
             candidate["terrain"] = deepcopy(entry.get("terrain"))
             candidate["seed"] = entry.get("seed", 0)
@@ -478,6 +492,12 @@ def plan_episodes(recipe):
             "scenario_family": family, "terrain_group_id": terrain_id, "route_group_id": route_id,
             "geometry_group_id": "geometry-" + _digest([terrain_id, route_id, sc["radars"], sc["radar_defaults"]])[:20],
             "master_seed": master, "episode_seed": episode_seed, "terrain_seed": terrain_seed,
+            "terrain_family": sc["terrain"].get("family"),
+            "texture_family": sc["terrain"].get("texture_family"),
+            "obstacle_profile": sc["terrain"].get("obstacle_profile"),
+            "valley_width_m": sc["terrain"].get("valley_width_m"),
+            "relief_height_m": sc["terrain"].get("relief_height_m"),
+            "terrain_parameters": sc["terrain"].get("parameters"),
             "sampled_values": deepcopy(values), "resolved_scenario": sc, "config_snapshot": snapshot,
             "resolved_configuration_hash": config_hash, "recipe_version": 1,
             "generation_status": "planned", "geometry_attempts": attempt + 1, "rejected_attempts": rejected,

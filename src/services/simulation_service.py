@@ -257,11 +257,11 @@ def compare_policies(scenario, policies, seeds=(0, 1, 2), classifier="auto", pro
 # simulation itself is flat-earth and does not depend on the site).
 MAP_SITES = [
     {"name": "Utah Valley · US", "lat": 40.30, "lon": -111.70},
-    {"name": "Bursa · Uludağ · TR", "lat": 40.14, "lon": 29.10},
+    {"name": "Bursa · Uludag · TR", "lat": 40.14, "lon": 29.10},
     {"name": "Kayseri · Erciyes · TR", "lat": 38.58, "lon": 35.44},
     {"name": "Ankara · TR", "lat": 39.93, "lon": 32.85},
-    {"name": "İzmir · TR", "lat": 38.42, "lon": 27.14},
-    {"name": "Kapadokya · Göreme · TR", "lat": 38.64, "lon": 34.83},
+    {"name": "Izmir · TR", "lat": 38.42, "lon": 27.14},
+    {"name": "Cappadocia · Goreme · TR", "lat": 38.64, "lon": 34.83},
     {"name": "Van · TR", "lat": 38.50, "lon": 43.38},
     {"name": "Zermatt · Alps · CH", "lat": 46.02, "lon": 7.75},
     {"name": "Grand Canyon · US", "lat": 36.10, "lon": -112.11},

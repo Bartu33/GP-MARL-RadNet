@@ -1,0 +1,2564 @@
+{
+  "audit_schema_version": 2,
+  "pilot_name": "pilot_diverse_v2",
+  "total_episodes_audited": 42,
+  "overall_summary": {
+    "episode_count": 42,
+    "completed_count": 42,
+    "nominal_count": 12,
+    "challenging_count": 30,
+    "flawed_count": 0,
+    "total_truth_rows": 4758,
+    "total_reports": 1044,
+    "total_delivered_reports": 1044,
+    "total_lost_reports": 0,
+    "total_false_alarms": 652,
+    "zero_detection_targets_total": 32,
+    "mean_los_clear_pct": 86.5,
+    "mean_track_coverage_pct": 28.4,
+    "mean_target_agl_m": 823.8,
+    "min_target_agl_m": 30.0,
+    "min_radar_mast_m": 15
+  },
+  "difficulty_breakdown": {
+    "easy": {
+      "episode_count": 13,
+      "completed_count": 13,
+      "nominal_count": 6,
+      "challenging_count": 7,
+      "flawed_count": 0,
+      "total_truth_rows": 1403,
+      "total_reports": 475,
+      "total_delivered_reports": 475,
+      "total_lost_reports": 0,
+      "total_false_alarms": 232,
+      "zero_detection_targets_total": 5,
+      "mean_los_clear_pct": 98.1,
+      "mean_track_coverage_pct": 44.0,
+      "mean_target_agl_m": 832.0,
+      "min_target_agl_m": 30.0,
+      "min_radar_mast_m": 15
+    },
+    "medium": {
+      "episode_count": 19,
+      "completed_count": 19,
+      "nominal_count": 5,
+      "challenging_count": 14,
+      "flawed_count": 0,
+      "total_truth_rows": 2013,
+      "total_reports": 392,
+      "total_delivered_reports": 392,
+      "total_lost_reports": 0,
+      "total_false_alarms": 277,
+      "zero_detection_targets_total": 13,
+      "mean_los_clear_pct": 81.1,
+      "mean_track_coverage_pct": 26.4,
+      "mean_target_agl_m": 877.4,
+      "min_target_agl_m": 30.0,
+      "min_radar_mast_m": 15
+    },
+    "hard": {
+      "episode_count": 10,
+      "completed_count": 10,
+      "nominal_count": 1,
+      "challenging_count": 9,
+      "flawed_count": 0,
+      "total_truth_rows": 1342,
+      "total_reports": 177,
+      "total_delivered_reports": 177,
+      "total_lost_reports": 0,
+      "total_false_alarms": 143,
+      "zero_detection_targets_total": 14,
+      "mean_los_clear_pct": 81.6,
+      "mean_track_coverage_pct": 12.0,
+      "mean_target_agl_m": 711.2,
+      "min_target_agl_m": 41.8,
+      "min_radar_mast_m": 15
+    }
+  },
+  "split_breakdown": {
+    "train": {
+      "episode_count": 28,
+      "completed_count": 28,
+      "nominal_count": 10,
+      "challenging_count": 18,
+      "flawed_count": 0,
+      "total_truth_rows": 3172,
+      "total_reports": 782,
+      "total_delivered_reports": 782,
+      "total_lost_reports": 0,
+      "total_false_alarms": 437,
+      "zero_detection_targets_total": 17,
+      "mean_los_clear_pct": 90.1,
+      "mean_track_coverage_pct": 36.2,
+      "mean_target_agl_m": 868.4,
+      "min_target_agl_m": 30.0,
+      "min_radar_mast_m": 15
+    },
+    "validation": {
+      "episode_count": 7,
+      "completed_count": 7,
+      "nominal_count": 2,
+      "challenging_count": 5,
+      "flawed_count": 0,
+      "total_truth_rows": 793,
+      "total_reports": 150,
+      "total_delivered_reports": 150,
+      "total_lost_reports": 0,
+      "total_false_alarms": 115,
+      "zero_detection_targets_total": 6,
+      "mean_los_clear_pct": 63.7,
+      "mean_track_coverage_pct": 21.9,
+      "mean_target_agl_m": 632.4,
+      "min_target_agl_m": 41.8,
+      "min_radar_mast_m": 15
+    },
+    "test": {
+      "episode_count": 7,
+      "completed_count": 7,
+      "nominal_count": 0,
+      "challenging_count": 7,
+      "flawed_count": 0,
+      "total_truth_rows": 793,
+      "total_reports": 112,
+      "total_delivered_reports": 112,
+      "total_lost_reports": 0,
+      "total_false_alarms": 100,
+      "zero_detection_targets_total": 9,
+      "mean_los_clear_pct": 94.9,
+      "mean_track_coverage_pct": 3.8,
+      "mean_target_agl_m": 836.6,
+      "min_target_agl_m": 104.9,
+      "min_radar_mast_m": 15
+    }
+  },
+  "group_breakdown": {
+    "dataset_single_aircraft_v1": {
+      "episode_count": 6,
+      "completed_count": 6,
+      "nominal_count": 0,
+      "challenging_count": 6,
+      "flawed_count": 0,
+      "total_truth_rows": 366,
+      "total_reports": 103,
+      "total_delivered_reports": 103,
+      "total_lost_reports": 0,
+      "total_false_alarms": 90,
+      "zero_detection_targets_total": 2,
+      "mean_los_clear_pct": 100.0,
+      "mean_track_coverage_pct": 2.8,
+      "mean_target_agl_m": 2154.5,
+      "min_target_agl_m": 1840.9,
+      "min_radar_mast_m": 15
+    },
+    "dataset_single_uav_agile_v1": {
+      "episode_count": 6,
+      "completed_count": 6,
+      "nominal_count": 2,
+      "challenging_count": 4,
+      "flawed_count": 0,
+      "total_truth_rows": 366,
+      "total_reports": 138,
+      "total_delivered_reports": 138,
+      "total_lost_reports": 0,
+      "total_false_alarms": 96,
+      "zero_detection_targets_total": 2,
+      "mean_los_clear_pct": 88.9,
+      "mean_track_coverage_pct": 32.5,
+      "mean_target_agl_m": 211.9,
+      "min_target_agl_m": 154.0,
+      "min_radar_mast_m": 15
+    },
+    "dataset_single_uav_drift_v1": {
+      "episode_count": 6,
+      "completed_count": 6,
+      "nominal_count": 4,
+      "challenging_count": 2,
+      "flawed_count": 0,
+      "total_truth_rows": 366,
+      "total_reports": 152,
+      "total_delivered_reports": 152,
+      "total_lost_reports": 0,
+      "total_false_alarms": 104,
+      "zero_detection_targets_total": 2,
+      "mean_los_clear_pct": 83.3,
+      "mean_track_coverage_pct": 60.8,
+      "mean_target_agl_m": 216.6,
+      "min_target_agl_m": 161.8,
+      "min_radar_mast_m": 15
+    },
+    "dataset_single_missile_v1": {
+      "episode_count": 6,
+      "completed_count": 6,
+      "nominal_count": 0,
+      "challenging_count": 6,
+      "flawed_count": 0,
+      "total_truth_rows": 366,
+      "total_reports": 77,
+      "total_delivered_reports": 77,
+      "total_lost_reports": 0,
+      "total_false_alarms": 72,
+      "zero_detection_targets_total": 3,
+      "mean_los_clear_pct": 87.3,
+      "mean_track_coverage_pct": 0.0,
+      "mean_target_agl_m": 444.4,
+      "min_target_agl_m": 30.0,
+      "min_radar_mast_m": 15
+    },
+    "dataset_triple_all_same_v1": {
+      "episode_count": 6,
+      "completed_count": 6,
+      "nominal_count": 1,
+      "challenging_count": 5,
+      "flawed_count": 0,
+      "total_truth_rows": 1098,
+      "total_reports": 124,
+      "total_delivered_reports": 124,
+      "total_lost_reports": 0,
+      "total_false_alarms": 82,
+      "zero_detection_targets_total": 9,
+      "mean_los_clear_pct": 74.3,
+      "mean_track_coverage_pct": 21.4,
+      "mean_target_agl_m": 968.4,
+      "min_target_agl_m": 71.6,
+      "min_radar_mast_m": 15
+    },
+    "dataset_triple_all_different_v1": {
+      "episode_count": 6,
+      "completed_count": 6,
+      "nominal_count": 3,
+      "challenging_count": 3,
+      "flawed_count": 0,
+      "total_truth_rows": 1098,
+      "total_reports": 143,
+      "total_delivered_reports": 143,
+      "total_lost_reports": 0,
+      "total_false_alarms": 83,
+      "zero_detection_targets_total": 6,
+      "mean_los_clear_pct": 84.4,
+      "mean_track_coverage_pct": 45.3,
+      "mean_target_agl_m": 854.0,
+      "min_target_agl_m": 30.0,
+      "min_radar_mast_m": 15
+    },
+    "dataset_triple_two_plus_one_v1": {
+      "episode_count": 6,
+      "completed_count": 6,
+      "nominal_count": 2,
+      "challenging_count": 4,
+      "flawed_count": 0,
+      "total_truth_rows": 1098,
+      "total_reports": 307,
+      "total_delivered_reports": 307,
+      "total_lost_reports": 0,
+      "total_false_alarms": 125,
+      "zero_detection_targets_total": 8,
+      "mean_los_clear_pct": 87.2,
+      "mean_track_coverage_pct": 36.1,
+      "mean_target_agl_m": 916.5,
+      "min_target_agl_m": 30.0,
+      "min_radar_mast_m": 15
+    }
+  },
+  "episodes": [
+    {
+      "episode_id": "ep-000001-5b1b60249860",
+      "display_name": "EP-0001 · Rocky Canyon · Aircraft · 3 Radars",
+      "difficulty_level": "easy",
+      "dataset_group": "dataset_single_aircraft_v1",
+      "split": "train",
+      "terrain_family": "valley_linear_canyon",
+      "texture_family": "rocky_mountain",
+      "obstacle_profile": "clear",
+      "target_count": 1,
+      "target_types": [
+        "aircraft_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "valley_entrance_exit_overlook",
+      "radar_elevation_bars": [
+        5.0,
+        16.0,
+        28.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "easy",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 20,
+        "track_rows": 576,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 576,
+        "fused_tracks": 285,
+        "delivered_reports": 20,
+        "lost_reports": 0,
+        "false_alarms": 20,
+        "detections_per_target": {
+          "0": 0
+        },
+        "zero_detection_targets": 1,
+        "min_target_agl_m": 1840.9,
+        "mean_target_agl_m": 1840.9,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000002-60cab6a41752",
+      "display_name": "EP-0002 · Forest Highlands · Aircraft · 3 Radars",
+      "difficulty_level": "easy",
+      "dataset_group": "dataset_single_aircraft_v1",
+      "split": "train",
+      "terrain_family": "basin_highlands",
+      "texture_family": "green_forest_valley",
+      "obstacle_profile": "clear",
+      "target_count": 1,
+      "target_types": [
+        "aircraft_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "cross_valley_triangulation",
+      "radar_elevation_bars": [
+        5.0,
+        16.0,
+        28.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "easy",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 14,
+        "track_rows": 416,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 416,
+        "fused_tracks": 208,
+        "delivered_reports": 14,
+        "lost_reports": 0,
+        "false_alarms": 14,
+        "detections_per_target": {
+          "0": 0
+        },
+        "zero_detection_targets": 1,
+        "min_target_agl_m": 2134.1,
+        "mean_target_agl_m": 2319.3,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000003-a0e95e566a24",
+      "display_name": "EP-0003 · Dry Canyon · Aircraft · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_single_aircraft_v1",
+      "split": "train",
+      "terrain_family": "valley_linear_canyon",
+      "texture_family": "dry_canyon",
+      "obstacle_profile": "sparse",
+      "target_count": 1,
+      "target_types": [
+        "aircraft_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "asymmetric_ridge_chokepoint",
+      "radar_elevation_bars": [
+        5.0,
+        16.0,
+        28.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 17,
+        "track_rows": 408,
+        "confirmed_tracks": 10,
+        "tentative_tracks": 398,
+        "fused_tracks": 199,
+        "delivered_reports": 17,
+        "lost_reports": 0,
+        "false_alarms": 10,
+        "detections_per_target": {
+          "0": 7
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 1999.8,
+        "mean_target_agl_m": 1999.8,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 16.7,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (16.7% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000004-e7fa4fd04f0e",
+      "display_name": "EP-0004 · Snowy Winding Pass · Aircraft · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_single_aircraft_v1",
+      "split": "train",
+      "terrain_family": "valley_sinuous_pass",
+      "texture_family": "snowy_highlands",
+      "obstacle_profile": "sparse",
+      "target_count": 1,
+      "target_types": [
+        "aircraft_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "lateral_flank_staggered",
+      "radar_elevation_bars": [
+        5.0,
+        16.0,
+        28.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 12,
+        "track_rows": 350,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 350,
+        "fused_tracks": 175,
+        "delivered_reports": 12,
+        "lost_reports": 0,
+        "false_alarms": 11,
+        "detections_per_target": {
+          "0": 1
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 2125.4,
+        "mean_target_agl_m": 2255.7,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000005-9baed461aa0b",
+      "display_name": "EP-0005 · Grassland Pass · Aircraft · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_single_aircraft_v1",
+      "split": "validation",
+      "terrain_family": "mountain_chokepoint",
+      "texture_family": "grassland_valley",
+      "obstacle_profile": "sparse",
+      "target_count": 1,
+      "target_types": [
+        "aircraft_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "valley_entrance_exit_overlook",
+      "radar_elevation_bars": [
+        5.0,
+        16.0,
+        28.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 21,
+        "track_rows": 630,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 630,
+        "fused_tracks": 312,
+        "delivered_reports": 21,
+        "lost_reports": 0,
+        "false_alarms": 19,
+        "detections_per_target": {
+          "0": 2
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 2167.9,
+        "mean_target_agl_m": 2245.7,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000006-6db8b8d22fd8",
+      "display_name": "EP-0006 · Mixed Pass · Aircraft · 3 Radars",
+      "difficulty_level": "hard",
+      "dataset_group": "dataset_single_aircraft_v1",
+      "split": "test",
+      "terrain_family": "mountain_chokepoint",
+      "texture_family": "mixed_rock_vegetation",
+      "obstacle_profile": "asymmetric",
+      "target_count": 1,
+      "target_types": [
+        "aircraft_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "cross_valley_triangulation",
+      "radar_elevation_bars": [
+        5.0,
+        16.0,
+        28.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "hard",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 19,
+        "track_rows": 508,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 508,
+        "fused_tracks": 254,
+        "delivered_reports": 19,
+        "lost_reports": 0,
+        "false_alarms": 16,
+        "detections_per_target": {
+          "0": 3
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 2265.5,
+        "mean_target_agl_m": 2265.5,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000007-6b1b929b3efd",
+      "display_name": "EP-0007 · Rocky Highlands · UAV Agile · 3 Radars",
+      "difficulty_level": "easy",
+      "dataset_group": "dataset_single_uav_agile_v1",
+      "split": "train",
+      "terrain_family": "basin_highlands",
+      "texture_family": "rocky_mountain",
+      "obstacle_profile": "clear",
+      "target_count": 1,
+      "target_types": [
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "asymmetric_ridge_chokepoint",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "easy",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 28,
+        "track_rows": 537,
+        "confirmed_tracks": 150,
+        "tentative_tracks": 387,
+        "fused_tracks": 223,
+        "delivered_reports": 28,
+        "lost_reports": 0,
+        "false_alarms": 11,
+        "detections_per_target": {
+          "0": 17
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 231.8,
+        "mean_target_agl_m": 231.8,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 95.0,
+        "position_rmse_m": null,
+        "quality_tag": "nominal",
+        "quality_tag_reasons": [
+          "High continuous LOS visibility and track coverage"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000008-50ae273179b8",
+      "display_name": "EP-0008 · Forest Canyon · UAV Agile · 3 Radars",
+      "difficulty_level": "easy",
+      "dataset_group": "dataset_single_uav_agile_v1",
+      "split": "train",
+      "terrain_family": "valley_linear_canyon",
+      "texture_family": "green_forest_valley",
+      "obstacle_profile": "clear",
+      "target_count": 1,
+      "target_types": [
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "lateral_flank_staggered",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "easy",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 23,
+        "track_rows": 441,
+        "confirmed_tracks": 43,
+        "tentative_tracks": 398,
+        "fused_tracks": 214,
+        "delivered_reports": 23,
+        "lost_reports": 0,
+        "false_alarms": 12,
+        "detections_per_target": {
+          "0": 11
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 228.6,
+        "mean_target_agl_m": 228.6,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 30.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (30.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000009-ee07a66c3038",
+      "display_name": "EP-0009 · Dry Winding Pass · UAV Agile · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_single_uav_agile_v1",
+      "split": "train",
+      "terrain_family": "valley_sinuous_pass",
+      "texture_family": "dry_canyon",
+      "obstacle_profile": "sparse",
+      "target_count": 1,
+      "target_types": [
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "valley_entrance_exit_overlook",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 19,
+        "track_rows": 552,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 552,
+        "fused_tracks": 276,
+        "delivered_reports": 19,
+        "lost_reports": 0,
+        "false_alarms": 19,
+        "detections_per_target": {
+          "0": 0
+        },
+        "zero_detection_targets": 1,
+        "min_target_agl_m": 170.2,
+        "mean_target_agl_m": 205.7,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 183,
+        "clear_los_checks": 61,
+        "blocked_los_checks": 122,
+        "los_clear_pct": 33.3,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000010-a97707024128",
+      "display_name": "EP-0010 · Snowy Pass · UAV Agile · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_single_uav_agile_v1",
+      "split": "train",
+      "terrain_family": "mountain_chokepoint",
+      "texture_family": "snowy_highlands",
+      "obstacle_profile": "sparse",
+      "target_count": 1,
+      "target_types": [
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "cross_valley_triangulation",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 17,
+        "track_rows": 412,
+        "confirmed_tracks": 12,
+        "tentative_tracks": 400,
+        "fused_tracks": 206,
+        "delivered_reports": 17,
+        "lost_reports": 0,
+        "false_alarms": 13,
+        "detections_per_target": {
+          "0": 4
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 246.7,
+        "mean_target_agl_m": 250.7,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 10.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (10.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000011-6a0828f852b2",
+      "display_name": "EP-0011 · Grassland Canyon · UAV Agile · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_single_uav_agile_v1",
+      "split": "validation",
+      "terrain_family": "valley_linear_canyon",
+      "texture_family": "grassland_valley",
+      "obstacle_profile": "sparse",
+      "target_count": 1,
+      "target_types": [
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "asymmetric_ridge_chokepoint",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 31,
+        "track_rows": 627,
+        "confirmed_tracks": 93,
+        "tentative_tracks": 534,
+        "fused_tracks": 303,
+        "delivered_reports": 31,
+        "lost_reports": 0,
+        "false_alarms": 21,
+        "detections_per_target": {
+          "0": 10
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 187.6,
+        "mean_target_agl_m": 187.6,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 60.0,
+        "position_rmse_m": null,
+        "quality_tag": "nominal",
+        "quality_tag_reasons": [
+          "High continuous LOS visibility and track coverage"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000012-ce2e74c5b74c",
+      "display_name": "EP-0012 · Mixed Ridge Corridor · UAV Agile · 3 Radars",
+      "difficulty_level": "hard",
+      "dataset_group": "dataset_single_uav_agile_v1",
+      "split": "test",
+      "terrain_family": "ridge_multi_obstacle",
+      "texture_family": "mixed_rock_vegetation",
+      "obstacle_profile": "asymmetric",
+      "target_count": 1,
+      "target_types": [
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "lateral_flank_staggered",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "hard",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 20,
+        "track_rows": 604,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 604,
+        "fused_tracks": 302,
+        "delivered_reports": 20,
+        "lost_reports": 0,
+        "false_alarms": 20,
+        "detections_per_target": {
+          "0": 0
+        },
+        "zero_detection_targets": 1,
+        "min_target_agl_m": 154.0,
+        "mean_target_agl_m": 167.0,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000013-4bd38bbffa64",
+      "display_name": "EP-0013 · Rocky Canyon · UAV Drift · 3 Radars",
+      "difficulty_level": "easy",
+      "dataset_group": "dataset_single_uav_drift_v1",
+      "split": "train",
+      "terrain_family": "valley_linear_canyon",
+      "texture_family": "rocky_mountain",
+      "obstacle_profile": "clear",
+      "target_count": 1,
+      "target_types": [
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "valley_entrance_exit_overlook",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "easy",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 23,
+        "track_rows": 588,
+        "confirmed_tracks": 59,
+        "tentative_tracks": 529,
+        "fused_tracks": 288,
+        "delivered_reports": 23,
+        "lost_reports": 0,
+        "false_alarms": 16,
+        "detections_per_target": {
+          "0": 7
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 242.6,
+        "mean_target_agl_m": 242.6,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 90.0,
+        "position_rmse_m": null,
+        "quality_tag": "nominal",
+        "quality_tag_reasons": [
+          "High continuous LOS visibility and track coverage"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000014-8ab1befb3422",
+      "display_name": "EP-0014 · Forest Highlands · UAV Drift · 3 Radars",
+      "difficulty_level": "easy",
+      "dataset_group": "dataset_single_uav_drift_v1",
+      "split": "train",
+      "terrain_family": "basin_highlands",
+      "texture_family": "green_forest_valley",
+      "obstacle_profile": "clear",
+      "target_count": 1,
+      "target_types": [
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "cross_valley_triangulation",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "easy",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 43,
+        "track_rows": 950,
+        "confirmed_tracks": 147,
+        "tentative_tracks": 803,
+        "fused_tracks": 446,
+        "delivered_reports": 43,
+        "lost_reports": 0,
+        "false_alarms": 24,
+        "detections_per_target": {
+          "0": 19
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 184.4,
+        "mean_target_agl_m": 184.4,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 91.7,
+        "position_rmse_m": null,
+        "quality_tag": "nominal",
+        "quality_tag_reasons": [
+          "High continuous LOS visibility and track coverage"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000015-8867795ab9db",
+      "display_name": "EP-0015 · Dry Pass · UAV Drift · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_single_uav_drift_v1",
+      "split": "train",
+      "terrain_family": "mountain_chokepoint",
+      "texture_family": "dry_canyon",
+      "obstacle_profile": "sparse",
+      "target_count": 1,
+      "target_types": [
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "asymmetric_ridge_chokepoint",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 31,
+        "track_rows": 639,
+        "confirmed_tracks": 108,
+        "tentative_tracks": 531,
+        "fused_tracks": 307,
+        "delivered_reports": 31,
+        "lost_reports": 0,
+        "false_alarms": 17,
+        "detections_per_target": {
+          "0": 14
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 203.3,
+        "mean_target_agl_m": 203.3,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 183,
+        "clear_los_checks": 122,
+        "blocked_los_checks": 61,
+        "los_clear_pct": 66.7,
+        "track_coverage_pct": 90.0,
+        "position_rmse_m": null,
+        "quality_tag": "nominal",
+        "quality_tag_reasons": [
+          "High continuous LOS visibility and track coverage"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000016-13dd64766b25",
+      "display_name": "EP-0016 · Snowy Canyon · UAV Drift · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_single_uav_drift_v1",
+      "split": "train",
+      "terrain_family": "valley_linear_canyon",
+      "texture_family": "snowy_highlands",
+      "obstacle_profile": "sparse",
+      "target_count": 1,
+      "target_types": [
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "lateral_flank_staggered",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 23,
+        "track_rows": 599,
+        "confirmed_tracks": 106,
+        "tentative_tracks": 493,
+        "fused_tracks": 295,
+        "delivered_reports": 23,
+        "lost_reports": 0,
+        "false_alarms": 15,
+        "detections_per_target": {
+          "0": 8
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 165.9,
+        "mean_target_agl_m": 166.3,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 93.3,
+        "position_rmse_m": null,
+        "quality_tag": "nominal",
+        "quality_tag_reasons": [
+          "High continuous LOS visibility and track coverage"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000017-a49f882ecf66",
+      "display_name": "EP-0017 · Grassland Winding Pass · UAV Drift · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_single_uav_drift_v1",
+      "split": "validation",
+      "terrain_family": "valley_sinuous_pass",
+      "texture_family": "grassland_valley",
+      "obstacle_profile": "sparse",
+      "target_count": 1,
+      "target_types": [
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "valley_entrance_exit_overlook",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 18,
+        "track_rows": 570,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 570,
+        "fused_tracks": 285,
+        "delivered_reports": 18,
+        "lost_reports": 0,
+        "false_alarms": 18,
+        "detections_per_target": {
+          "0": 0
+        },
+        "zero_detection_targets": 1,
+        "min_target_agl_m": 239.6,
+        "mean_target_agl_m": 332.2,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 183,
+        "clear_los_checks": 61,
+        "blocked_los_checks": 122,
+        "los_clear_pct": 33.3,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000018-982d65683ef3",
+      "display_name": "EP-0018 · Mixed Pass · UAV Drift · 3 Radars",
+      "difficulty_level": "hard",
+      "dataset_group": "dataset_single_uav_drift_v1",
+      "split": "test",
+      "terrain_family": "mountain_chokepoint",
+      "texture_family": "mixed_rock_vegetation",
+      "obstacle_profile": "asymmetric",
+      "target_count": 1,
+      "target_types": [
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "cross_valley_triangulation",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "hard",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 14,
+        "track_rows": 428,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 428,
+        "fused_tracks": 214,
+        "delivered_reports": 14,
+        "lost_reports": 0,
+        "false_alarms": 14,
+        "detections_per_target": {
+          "0": 0
+        },
+        "zero_detection_targets": 1,
+        "min_target_agl_m": 161.8,
+        "mean_target_agl_m": 170.9,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000019-147be3924980",
+      "display_name": "EP-0019 · Rocky Highlands · Missile · 3 Radars",
+      "difficulty_level": "easy",
+      "dataset_group": "dataset_single_missile_v1",
+      "split": "train",
+      "terrain_family": "basin_highlands",
+      "texture_family": "rocky_mountain",
+      "obstacle_profile": "clear",
+      "target_count": 1,
+      "target_types": [
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "asymmetric_ridge_chokepoint",
+      "radar_elevation_bars": [
+        3.0,
+        8.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "easy",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 15,
+        "track_rows": 480,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 480,
+        "fused_tracks": 240,
+        "delivered_reports": 15,
+        "lost_reports": 0,
+        "false_alarms": 12,
+        "detections_per_target": {
+          "0": 3
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 30.0,
+        "mean_target_agl_m": 312.4,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 183,
+        "clear_los_checks": 147,
+        "blocked_los_checks": 36,
+        "los_clear_pct": 80.3,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000020-ab3a637a086e",
+      "display_name": "EP-0020 · Forest Canyon · Missile · 3 Radars",
+      "difficulty_level": "easy",
+      "dataset_group": "dataset_single_missile_v1",
+      "split": "train",
+      "terrain_family": "valley_linear_canyon",
+      "texture_family": "green_forest_valley",
+      "obstacle_profile": "clear",
+      "target_count": 1,
+      "target_types": [
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "lateral_flank_staggered",
+      "radar_elevation_bars": [
+        3.0,
+        8.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "easy",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 11,
+        "track_rows": 340,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 340,
+        "fused_tracks": 170,
+        "delivered_reports": 11,
+        "lost_reports": 0,
+        "false_alarms": 10,
+        "detections_per_target": {
+          "0": 1
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 343.2,
+        "mean_target_agl_m": 343.2,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000021-ee3876d0f90a",
+      "display_name": "EP-0021 · Dry Canyon · Missile · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_single_missile_v1",
+      "split": "train",
+      "terrain_family": "valley_linear_canyon",
+      "texture_family": "dry_canyon",
+      "obstacle_profile": "sparse",
+      "target_count": 1,
+      "target_types": [
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "valley_entrance_exit_overlook",
+      "radar_elevation_bars": [
+        3.0,
+        8.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 12,
+        "track_rows": 346,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 346,
+        "fused_tracks": 173,
+        "delivered_reports": 12,
+        "lost_reports": 0,
+        "false_alarms": 12,
+        "detections_per_target": {
+          "0": 0
+        },
+        "zero_detection_targets": 1,
+        "min_target_agl_m": 303.7,
+        "mean_target_agl_m": 409.1,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000022-576a86bad7f8",
+      "display_name": "EP-0022 · Snowy Winding Pass · Missile · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_single_missile_v1",
+      "split": "train",
+      "terrain_family": "valley_sinuous_pass",
+      "texture_family": "snowy_highlands",
+      "obstacle_profile": "sparse",
+      "target_count": 1,
+      "target_types": [
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "cross_valley_triangulation",
+      "radar_elevation_bars": [
+        3.0,
+        8.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 11,
+        "track_rows": 374,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 374,
+        "fused_tracks": 187,
+        "delivered_reports": 11,
+        "lost_reports": 0,
+        "false_alarms": 11,
+        "detections_per_target": {
+          "0": 0
+        },
+        "zero_detection_targets": 1,
+        "min_target_agl_m": 345.9,
+        "mean_target_agl_m": 825.1,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 183,
+        "clear_los_checks": 151,
+        "blocked_los_checks": 32,
+        "los_clear_pct": 82.5,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000023-2ef062d55b99",
+      "display_name": "EP-0023 · Grassland Pass · Missile · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_single_missile_v1",
+      "split": "validation",
+      "terrain_family": "mountain_chokepoint",
+      "texture_family": "grassland_valley",
+      "obstacle_profile": "sparse",
+      "target_count": 1,
+      "target_types": [
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "asymmetric_ridge_chokepoint",
+      "radar_elevation_bars": [
+        3.0,
+        8.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 15,
+        "track_rows": 473,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 473,
+        "fused_tracks": 232,
+        "delivered_reports": 15,
+        "lost_reports": 0,
+        "false_alarms": 14,
+        "detections_per_target": {
+          "0": 1
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 317.1,
+        "mean_target_agl_m": 404.9,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 183,
+        "clear_los_checks": 112,
+        "blocked_los_checks": 71,
+        "los_clear_pct": 61.2,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000024-eda7d8d34b7c",
+      "display_name": "EP-0024 · Mixed Ridge Corridor · Missile · 3 Radars",
+      "difficulty_level": "hard",
+      "dataset_group": "dataset_single_missile_v1",
+      "split": "test",
+      "terrain_family": "ridge_multi_obstacle",
+      "texture_family": "mixed_rock_vegetation",
+      "obstacle_profile": "asymmetric",
+      "target_count": 1,
+      "target_types": [
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "lateral_flank_staggered",
+      "radar_elevation_bars": [
+        3.0,
+        8.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "hard",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 61,
+        "report_rows": 13,
+        "track_rows": 374,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 374,
+        "fused_tracks": 187,
+        "delivered_reports": 13,
+        "lost_reports": 0,
+        "false_alarms": 13,
+        "detections_per_target": {
+          "0": 0
+        },
+        "zero_detection_targets": 1,
+        "min_target_agl_m": 216.5,
+        "mean_target_agl_m": 371.6,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 183,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000025-9d409bc0260c",
+      "display_name": "EP-0025 · Rocky Canyon · 3 Targets (All Same) · 3 Radars",
+      "difficulty_level": "easy",
+      "dataset_group": "dataset_triple_all_same_v1",
+      "split": "train",
+      "terrain_family": "valley_linear_canyon",
+      "texture_family": "rocky_mountain",
+      "obstacle_profile": "clear",
+      "target_count": 3,
+      "target_types": [
+        "aircraft_like",
+        "aircraft_like",
+        "aircraft_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "valley_entrance_exit_overlook",
+      "radar_elevation_bars": [
+        5.0,
+        16.0,
+        28.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "easy",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 19,
+        "track_rows": 444,
+        "confirmed_tracks": 4,
+        "tentative_tracks": 440,
+        "fused_tracks": 222,
+        "delivered_reports": 19,
+        "lost_reports": 0,
+        "false_alarms": 13,
+        "detections_per_target": {
+          "0": 2,
+          "1": 3,
+          "2": 1
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 1882.2,
+        "mean_target_agl_m": 2132.0,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 549,
+        "clear_los_checks": 549,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 3.3,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (3.3% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000026-f1b03d454d6f",
+      "display_name": "EP-0026 · Forest Canyon · 3 Targets (All Same) · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_triple_all_same_v1",
+      "split": "train",
+      "terrain_family": "valley_linear_canyon",
+      "texture_family": "green_forest_valley",
+      "obstacle_profile": "sparse",
+      "target_count": 3,
+      "target_types": [
+        "uav_like",
+        "uav_like",
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "cross_valley_triangulation",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 34,
+        "track_rows": 723,
+        "confirmed_tracks": 131,
+        "tentative_tracks": 592,
+        "fused_tracks": 339,
+        "delivered_reports": 34,
+        "lost_reports": 0,
+        "false_alarms": 15,
+        "detections_per_target": {
+          "0": 14,
+          "1": 5,
+          "2": 0
+        },
+        "zero_detection_targets": 1,
+        "min_target_agl_m": 85.8,
+        "mean_target_agl_m": 178.8,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 549,
+        "clear_los_checks": 488,
+        "blocked_los_checks": 61,
+        "los_clear_pct": 88.9,
+        "track_coverage_pct": 90.0,
+        "position_rmse_m": null,
+        "quality_tag": "nominal",
+        "quality_tag_reasons": [
+          "High continuous LOS visibility and track coverage"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000027-a3caedcd375e",
+      "display_name": "EP-0027 · Dry Winding Pass · 3 Targets (All Same) · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_triple_all_same_v1",
+      "split": "train",
+      "terrain_family": "valley_sinuous_pass",
+      "texture_family": "dry_canyon",
+      "obstacle_profile": "sparse",
+      "target_count": 3,
+      "target_types": [
+        "missile_like",
+        "missile_like",
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "asymmetric_ridge_chokepoint",
+      "radar_elevation_bars": [
+        3.0,
+        8.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 11,
+        "track_rows": 324,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 324,
+        "fused_tracks": 162,
+        "delivered_reports": 11,
+        "lost_reports": 0,
+        "false_alarms": 11,
+        "detections_per_target": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "zero_detection_targets": 3,
+        "min_target_agl_m": 202.9,
+        "mean_target_agl_m": 768.4,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 549,
+        "clear_los_checks": 296,
+        "blocked_los_checks": 253,
+        "los_clear_pct": 53.9,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000028-7ed4dfec6422",
+      "display_name": "EP-0028 · Snowy Pass · 3 Targets (All Same) · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_triple_all_same_v1",
+      "split": "train",
+      "terrain_family": "mountain_chokepoint",
+      "texture_family": "snowy_highlands",
+      "obstacle_profile": "sparse",
+      "target_count": 3,
+      "target_types": [
+        "aircraft_like",
+        "aircraft_like",
+        "aircraft_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "lateral_flank_staggered",
+      "radar_elevation_bars": [
+        5.0,
+        16.0,
+        28.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 33,
+        "track_rows": 795,
+        "confirmed_tracks": 41,
+        "tentative_tracks": 754,
+        "fused_tracks": 348,
+        "delivered_reports": 33,
+        "lost_reports": 0,
+        "false_alarms": 18,
+        "detections_per_target": {
+          "0": 2,
+          "1": 6,
+          "2": 7
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 1950.3,
+        "mean_target_agl_m": 2216.6,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 549,
+        "clear_los_checks": 549,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 35.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (35.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000029-a12c95e41526",
+      "display_name": "EP-0029 · Grassland Ridge Corridor · 3 Targets (All Same) · 3 Radars",
+      "difficulty_level": "hard",
+      "dataset_group": "dataset_triple_all_same_v1",
+      "split": "validation",
+      "terrain_family": "ridge_multi_obstacle",
+      "texture_family": "grassland_valley",
+      "obstacle_profile": "dense",
+      "target_count": 3,
+      "target_types": [
+        "uav_like",
+        "uav_like",
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "valley_entrance_exit_overlook",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "hard",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 17,
+        "track_rows": 514,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 514,
+        "fused_tracks": 257,
+        "delivered_reports": 17,
+        "lost_reports": 0,
+        "false_alarms": 17,
+        "detections_per_target": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "zero_detection_targets": 3,
+        "min_target_agl_m": 71.6,
+        "mean_target_agl_m": 150.6,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 549,
+        "clear_los_checks": 183,
+        "blocked_los_checks": 366,
+        "los_clear_pct": 33.3,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000030-9404707e77ab",
+      "display_name": "EP-0030 · Mixed Pass · 3 Targets (All Same) · 3 Radars",
+      "difficulty_level": "hard",
+      "dataset_group": "dataset_triple_all_same_v1",
+      "split": "test",
+      "terrain_family": "mountain_chokepoint",
+      "texture_family": "mixed_rock_vegetation",
+      "obstacle_profile": "asymmetric",
+      "target_count": 3,
+      "target_types": [
+        "missile_like",
+        "missile_like",
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "cross_valley_triangulation",
+      "radar_elevation_bars": [
+        3.0,
+        8.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "hard",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 10,
+        "track_rows": 308,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 308,
+        "fused_tracks": 154,
+        "delivered_reports": 10,
+        "lost_reports": 0,
+        "false_alarms": 8,
+        "detections_per_target": {
+          "0": 0,
+          "1": 2,
+          "2": 0
+        },
+        "zero_detection_targets": 2,
+        "min_target_agl_m": 314.2,
+        "mean_target_agl_m": 364.1,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 549,
+        "clear_los_checks": 382,
+        "blocked_los_checks": 167,
+        "los_clear_pct": 69.6,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000031-8311a98c0483",
+      "display_name": "EP-0031 · Rocky Highlands · 3 Targets (All Different) · 3 Radars",
+      "difficulty_level": "easy",
+      "dataset_group": "dataset_triple_all_different_v1",
+      "split": "train",
+      "terrain_family": "basin_highlands",
+      "texture_family": "rocky_mountain",
+      "obstacle_profile": "clear",
+      "target_count": 3,
+      "target_types": [
+        "aircraft_like",
+        "uav_like",
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "asymmetric_ridge_chokepoint",
+      "radar_elevation_bars": [
+        2.0,
+        7.0,
+        15.0,
+        25.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "easy",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 26,
+        "track_rows": 613,
+        "confirmed_tracks": 77,
+        "tentative_tracks": 536,
+        "fused_tracks": 266,
+        "delivered_reports": 26,
+        "lost_reports": 0,
+        "false_alarms": 14,
+        "detections_per_target": {
+          "0": 0,
+          "1": 2,
+          "2": 10
+        },
+        "zero_detection_targets": 1,
+        "min_target_agl_m": 30.0,
+        "mean_target_agl_m": 923.9,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 549,
+        "clear_los_checks": 535,
+        "blocked_los_checks": 14,
+        "los_clear_pct": 97.4,
+        "track_coverage_pct": 68.3,
+        "position_rmse_m": null,
+        "quality_tag": "nominal",
+        "quality_tag_reasons": [
+          "High continuous LOS visibility and track coverage"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000032-80c678da428a",
+      "display_name": "EP-0032 · Forest Winding Pass · 3 Targets (All Different) · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_triple_all_different_v1",
+      "split": "train",
+      "terrain_family": "valley_sinuous_pass",
+      "texture_family": "green_forest_valley",
+      "obstacle_profile": "sparse",
+      "target_count": 3,
+      "target_types": [
+        "aircraft_like",
+        "uav_like",
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "lateral_flank_staggered",
+      "radar_elevation_bars": [
+        2.0,
+        7.0,
+        15.0,
+        25.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 23,
+        "track_rows": 526,
+        "confirmed_tracks": 35,
+        "tentative_tracks": 491,
+        "fused_tracks": 255,
+        "delivered_reports": 23,
+        "lost_reports": 0,
+        "false_alarms": 16,
+        "detections_per_target": {
+          "0": 6,
+          "1": 0,
+          "2": 1
+        },
+        "zero_detection_targets": 1,
+        "min_target_agl_m": 30.0,
+        "mean_target_agl_m": 705.9,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 549,
+        "clear_los_checks": 335,
+        "blocked_los_checks": 214,
+        "los_clear_pct": 61.0,
+        "track_coverage_pct": 33.3,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (33.3% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000033-f170ab38fbaf",
+      "display_name": "EP-0033 · Dry Pass · 3 Targets (All Different) · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_triple_all_different_v1",
+      "split": "train",
+      "terrain_family": "mountain_chokepoint",
+      "texture_family": "dry_canyon",
+      "obstacle_profile": "sparse",
+      "target_count": 3,
+      "target_types": [
+        "aircraft_like",
+        "uav_like",
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "valley_entrance_exit_overlook",
+      "radar_elevation_bars": [
+        2.0,
+        7.0,
+        15.0,
+        25.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 14,
+        "track_rows": 450,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 450,
+        "fused_tracks": 225,
+        "delivered_reports": 14,
+        "lost_reports": 0,
+        "false_alarms": 13,
+        "detections_per_target": {
+          "0": 0,
+          "1": 1,
+          "2": 0
+        },
+        "zero_detection_targets": 2,
+        "min_target_agl_m": 30.0,
+        "mean_target_agl_m": 846.8,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 549,
+        "clear_los_checks": 421,
+        "blocked_los_checks": 128,
+        "los_clear_pct": 76.7,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000034-47df5bb82ac9",
+      "display_name": "EP-0034 · Snowy Canyon · 3 Targets (All Different) · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_triple_all_different_v1",
+      "split": "train",
+      "terrain_family": "valley_linear_canyon",
+      "texture_family": "snowy_highlands",
+      "obstacle_profile": "sparse",
+      "target_count": 3,
+      "target_types": [
+        "aircraft_like",
+        "uav_like",
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "cross_valley_triangulation",
+      "radar_elevation_bars": [
+        2.0,
+        7.0,
+        15.0,
+        25.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 28,
+        "track_rows": 701,
+        "confirmed_tracks": 45,
+        "tentative_tracks": 656,
+        "fused_tracks": 313,
+        "delivered_reports": 28,
+        "lost_reports": 0,
+        "false_alarms": 14,
+        "detections_per_target": {
+          "0": 2,
+          "1": 0,
+          "2": 12
+        },
+        "zero_detection_targets": 1,
+        "min_target_agl_m": 187.4,
+        "mean_target_agl_m": 841.4,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 549,
+        "clear_los_checks": 549,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 50.0,
+        "position_rmse_m": null,
+        "quality_tag": "nominal",
+        "quality_tag_reasons": [
+          "High continuous LOS visibility and track coverage"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000035-7e268402fc54",
+      "display_name": "EP-0035 · Grassland Pass · 3 Targets (All Different) · 3 Radars",
+      "difficulty_level": "hard",
+      "dataset_group": "dataset_triple_all_different_v1",
+      "split": "validation",
+      "terrain_family": "mountain_chokepoint",
+      "texture_family": "grassland_valley",
+      "obstacle_profile": "dense",
+      "target_count": 3,
+      "target_types": [
+        "aircraft_like",
+        "uav_like",
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "asymmetric_ridge_chokepoint",
+      "radar_elevation_bars": [
+        2.0,
+        7.0,
+        15.0,
+        25.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "hard",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 31,
+        "track_rows": 605,
+        "confirmed_tracks": 114,
+        "tentative_tracks": 491,
+        "fused_tracks": 301,
+        "delivered_reports": 31,
+        "lost_reports": 0,
+        "false_alarms": 12,
+        "detections_per_target": {
+          "0": 4,
+          "1": 14,
+          "2": 1
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 41.8,
+        "mean_target_agl_m": 909.4,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 549,
+        "clear_los_checks": 391,
+        "blocked_los_checks": 158,
+        "los_clear_pct": 71.2,
+        "track_coverage_pct": 93.3,
+        "position_rmse_m": null,
+        "quality_tag": "nominal",
+        "quality_tag_reasons": [
+          "High continuous LOS visibility and track coverage"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000036-d63cc78a2a07",
+      "display_name": "EP-0036 · Mixed Ridge Corridor · 3 Targets (All Different) · 3 Radars",
+      "difficulty_level": "hard",
+      "dataset_group": "dataset_triple_all_different_v1",
+      "split": "test",
+      "terrain_family": "ridge_multi_obstacle",
+      "texture_family": "mixed_rock_vegetation",
+      "obstacle_profile": "asymmetric",
+      "target_count": 3,
+      "target_types": [
+        "aircraft_like",
+        "uav_like",
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "lateral_flank_staggered",
+      "radar_elevation_bars": [
+        2.0,
+        7.0,
+        15.0,
+        25.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "hard",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 21,
+        "track_rows": 474,
+        "confirmed_tracks": 32,
+        "tentative_tracks": 442,
+        "fused_tracks": 226,
+        "delivered_reports": 21,
+        "lost_reports": 0,
+        "false_alarms": 14,
+        "detections_per_target": {
+          "0": 6,
+          "1": 0,
+          "2": 1
+        },
+        "zero_detection_targets": 1,
+        "min_target_agl_m": 104.9,
+        "mean_target_agl_m": 896.9,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 549,
+        "clear_los_checks": 549,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 26.7,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (26.7% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000037-21c1c11944dd",
+      "display_name": "EP-0037 · Rocky Canyon · 3 UAV (2 Agile + 1 Drift) · 3 Radars",
+      "difficulty_level": "easy",
+      "dataset_group": "dataset_triple_two_plus_one_v1",
+      "split": "train",
+      "terrain_family": "valley_linear_canyon",
+      "texture_family": "rocky_mountain",
+      "obstacle_profile": "clear",
+      "target_count": 3,
+      "target_types": [
+        "uav_like",
+        "uav_like",
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "valley_entrance_exit_overlook",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "easy",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 138,
+        "track_rows": 2145,
+        "confirmed_tracks": 553,
+        "tentative_tracks": 1592,
+        "fused_tracks": 912,
+        "delivered_reports": 138,
+        "lost_reports": 0,
+        "false_alarms": 45,
+        "detections_per_target": {
+          "0": 32,
+          "1": 33,
+          "2": 28
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 199.8,
+        "mean_target_agl_m": 211.2,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 549,
+        "clear_los_checks": 549,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 98.3,
+        "position_rmse_m": null,
+        "quality_tag": "nominal",
+        "quality_tag_reasons": [
+          "High continuous LOS visibility and track coverage"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000038-29e1ea82a062",
+      "display_name": "EP-0038 · Forest Highlands · 3 Targets (2+1) · 3 Radars",
+      "difficulty_level": "easy",
+      "dataset_group": "dataset_triple_two_plus_one_v1",
+      "split": "train",
+      "terrain_family": "basin_highlands",
+      "texture_family": "green_forest_valley",
+      "obstacle_profile": "clear",
+      "target_count": 3,
+      "target_types": [
+        "aircraft_like",
+        "aircraft_like",
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "cross_valley_triangulation",
+      "radar_elevation_bars": [
+        2.0,
+        7.0,
+        15.0,
+        25.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "easy",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 13,
+        "track_rows": 402,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 402,
+        "fused_tracks": 201,
+        "delivered_reports": 13,
+        "lost_reports": 0,
+        "false_alarms": 10,
+        "detections_per_target": {
+          "0": 0,
+          "1": 0,
+          "2": 3
+        },
+        "zero_detection_targets": 2,
+        "min_target_agl_m": 30.0,
+        "mean_target_agl_m": 1665.6,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 549,
+        "clear_los_checks": 537,
+        "blocked_los_checks": 12,
+        "los_clear_pct": 97.8,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000039-fdf573f0d02d",
+      "display_name": "EP-0039 · Dry Canyon · 3 UAV (2 Agile + 1 Drift) · 3 Radars",
+      "difficulty_level": "easy",
+      "dataset_group": "dataset_triple_two_plus_one_v1",
+      "split": "train",
+      "terrain_family": "valley_linear_canyon",
+      "texture_family": "dry_canyon",
+      "obstacle_profile": "clear",
+      "target_count": 3,
+      "target_types": [
+        "uav_like",
+        "uav_like",
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "asymmetric_ridge_chokepoint",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "easy",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 102,
+        "track_rows": 1547,
+        "confirmed_tracks": 508,
+        "tentative_tracks": 1039,
+        "fused_tracks": 624,
+        "delivered_reports": 102,
+        "lost_reports": 0,
+        "false_alarms": 31,
+        "detections_per_target": {
+          "0": 25,
+          "1": 23,
+          "2": 23
+        },
+        "zero_detection_targets": 0,
+        "min_target_agl_m": 156.3,
+        "mean_target_agl_m": 179.5,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 549,
+        "clear_los_checks": 549,
+        "blocked_los_checks": 0,
+        "los_clear_pct": 100.0,
+        "track_coverage_pct": 95.0,
+        "position_rmse_m": null,
+        "quality_tag": "nominal",
+        "quality_tag_reasons": [
+          "High continuous LOS visibility and track coverage"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000040-dface89ad443",
+      "display_name": "EP-0040 · Snowy Winding Pass · 3 Targets (2+1) · 3 Radars",
+      "difficulty_level": "medium",
+      "dataset_group": "dataset_triple_two_plus_one_v1",
+      "split": "train",
+      "terrain_family": "valley_sinuous_pass",
+      "texture_family": "snowy_highlands",
+      "obstacle_profile": "sparse",
+      "target_count": 3,
+      "target_types": [
+        "aircraft_like",
+        "aircraft_like",
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "lateral_flank_staggered",
+      "radar_elevation_bars": [
+        2.0,
+        7.0,
+        15.0,
+        25.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "medium",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 22,
+        "track_rows": 362,
+        "confirmed_tracks": 42,
+        "tentative_tracks": 320,
+        "fused_tracks": 162,
+        "delivered_reports": 22,
+        "lost_reports": 0,
+        "false_alarms": 10,
+        "detections_per_target": {
+          "0": 6,
+          "1": 6,
+          "2": 0
+        },
+        "zero_detection_targets": 1,
+        "min_target_agl_m": 30.0,
+        "mean_target_agl_m": 1626.3,
+        "min_radar_mast_m": 18,
+        "total_los_checks": 549,
+        "clear_los_checks": 462,
+        "blocked_los_checks": 87,
+        "los_clear_pct": 84.2,
+        "track_coverage_pct": 23.3,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (23.3% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000041-a502d69310ef",
+      "display_name": "EP-0041 · Grassland Ridge Corridor · 3 UAV (2 Agile + 1 Drift) · 3 Radars",
+      "difficulty_level": "hard",
+      "dataset_group": "dataset_triple_two_plus_one_v1",
+      "split": "validation",
+      "terrain_family": "ridge_multi_obstacle",
+      "texture_family": "grassland_valley",
+      "obstacle_profile": "dense",
+      "target_count": 3,
+      "target_types": [
+        "uav_like",
+        "uav_like",
+        "uav_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "valley_entrance_exit_overlook",
+      "radar_elevation_bars": [
+        1.5,
+        5.0,
+        9.5
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "hard",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 17,
+        "track_rows": 516,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 516,
+        "fused_tracks": 258,
+        "delivered_reports": 17,
+        "lost_reports": 0,
+        "false_alarms": 14,
+        "detections_per_target": {
+          "0": 3,
+          "1": 0,
+          "2": 0
+        },
+        "zero_detection_targets": 2,
+        "min_target_agl_m": 89.1,
+        "mean_target_agl_m": 196.1,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 549,
+        "clear_los_checks": 257,
+        "blocked_los_checks": 292,
+        "los_clear_pct": 46.8,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    },
+    {
+      "episode_id": "ep-000042-828d6407d584",
+      "display_name": "EP-0042 · Mixed Pass · 3 Targets (2+1) · 3 Radars",
+      "difficulty_level": "hard",
+      "dataset_group": "dataset_triple_two_plus_one_v1",
+      "split": "test",
+      "terrain_family": "mountain_chokepoint",
+      "texture_family": "mixed_rock_vegetation",
+      "obstacle_profile": "asymmetric",
+      "target_count": 3,
+      "target_types": [
+        "aircraft_like",
+        "aircraft_like",
+        "missile_like"
+      ],
+      "radar_count": 3,
+      "radar_placement": "cross_valley_triangulation",
+      "radar_elevation_bars": [
+        2.0,
+        7.0,
+        15.0,
+        25.0
+      ],
+      "metrics": {
+        "completed": true,
+        "difficulty_level": "hard",
+        "recorded_steps": 60,
+        "duration_s": 30.0,
+        "truth_rows": 183,
+        "report_rows": 15,
+        "track_rows": 458,
+        "confirmed_tracks": 0,
+        "tentative_tracks": 458,
+        "fused_tracks": 229,
+        "delivered_reports": 15,
+        "lost_reports": 0,
+        "false_alarms": 15,
+        "detections_per_target": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "zero_detection_targets": 3,
+        "min_target_agl_m": 409.7,
+        "mean_target_agl_m": 1620.2,
+        "min_radar_mast_m": 15,
+        "total_los_checks": 549,
+        "clear_los_checks": 520,
+        "blocked_los_checks": 29,
+        "los_clear_pct": 94.7,
+        "track_coverage_pct": 0.0,
+        "position_rmse_m": null,
+        "quality_tag": "challenging",
+        "quality_tag_reasons": [
+          "Sparse track coverage (0.0% < 40%) due to simulation window and narrow 3° pencil beam raster scan"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "aircraft_experiments": [
+    {
+      "name": "AC-1: Baseline v2 (Entrance/Exit, 3 bars [5, 16, 28], 120\u00b0)",
+      "truth_dets": 8,
+      "false_alarms": 14,
+      "confirmed_tracks": 2,
+      "confirmed_steps": 30,
+      "coverage_pct": 50.0,
+      "rmse_m": 6.768523519678343,
+      "first_det_s": 14.0
+    },
+    {
+      "name": "AC-2: Higher Elevation Bars [8, 22, 38], 120\u00b0 sector",
+      "truth_dets": 9,
+      "false_alarms": 13,
+      "confirmed_tracks": 2,
+      "confirmed_steps": 30,
+      "coverage_pct": 50.0,
+      "rmse_m": 16.060141281910898,
+      "first_det_s": 14.0
+    },
+    {
+      "name": "AC-3: Cross-Valley Triangulation (Eliminates Zenith Blind Zone)",
+      "truth_dets": 13,
+      "false_alarms": 11,
+      "confirmed_tracks": 2,
+      "confirmed_steps": 51,
+      "coverage_pct": 85.0,
+      "rmse_m": 12.214660109697633,
+      "first_det_s": 4.0
+    },
+    {
+      "name": "AC-4: Cross-Valley + Faster Sweep (90\u00b0 sector, bars [8, 24])",
+      "truth_dets": 1,
+      "false_alarms": 12,
+      "confirmed_tracks": 0,
+      "confirmed_steps": 0,
+      "coverage_pct": 0.0,
+      "rmse_m": NaN,
+      "first_det_s": 30.0
+    },
+    {
+      "name": "AC-5: Combined Optimal (Cross-Valley, 90\u00b0 sector, bars [6, 18, 32])",
+      "truth_dets": 14,
+      "false_alarms": 14,
+      "confirmed_tracks": 2,
+      "confirmed_steps": 53,
+      "coverage_pct": 88.33333333333333,
+      "rmse_m": 6.467470381864207,
+      "first_det_s": 3.0
+    }
+  ],
+  "missile_experiments": [
+    {
+      "name": "MS-1: Baseline v2 (Entrance/Exit, 2 bars [3, 8], 120\u00b0)",
+      "truth_dets": 1,
+      "false_alarms": 12,
+      "confirmed_tracks": 0,
+      "confirmed_steps": 0,
+      "coverage_pct": 0.0,
+      "rmse_m": NaN,
+      "first_det_s": 0.5
+    },
+    {
+      "name": "MS-2: Cross-Valley Triangulation (Both radars view corridor)",
+      "truth_dets": 16,
+      "false_alarms": 9,
+      "confirmed_tracks": 1,
+      "confirmed_steps": 55,
+      "coverage_pct": 91.66666666666666,
+      "rmse_m": 9.59023896434824,
+      "first_det_s": 0.5
+    },
+    {
+      "name": "MS-3: Cross-Valley + Faster Sweep (90\u00b0 sector, bars [3, 8])",
+      "truth_dets": 16,
+      "false_alarms": 12,
+      "confirmed_tracks": 2,
+      "confirmed_steps": 54,
+      "coverage_pct": 90.0,
+      "rmse_m": 15.935422107830536,
+      "first_det_s": 0.5
+    },
+    {
+      "name": "MS-4: Cross-Valley + Low-Elevation Fast Raster (90\u00b0 sector, 1 bar [4.5])",
+      "truth_dets": 17,
+      "false_alarms": 11,
+      "confirmed_tracks": 2,
+      "confirmed_steps": 54,
+      "coverage_pct": 90.0,
+      "rmse_m": 15.997319962241571,
+      "first_det_s": 0.5
+    },
+    {
+      "name": "MS-5: Staggered Flank (Inward cross-look, 90\u00b0 sector, 2 bars [3, 8])",
+      "truth_dets": 13,
+      "false_alarms": 15,
+      "confirmed_tracks": 1,
+      "confirmed_steps": 51,
+      "coverage_pct": 85.0,
+      "rmse_m": 16.415456941137517,
+      "first_det_s": 4.5
+    }
+  ]
+}
