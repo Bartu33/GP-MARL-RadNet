@@ -50,6 +50,9 @@ POLICY_HELP = {
     "central_greedy": "Central heuristic: most uncertain due tracks first, no duplicates, spare radars search.",
     "interleaved_greedy": "Like central_greedy but tracking radars keep searching (INTERLEAVED mode; "
                           "needs a scenario with interleaved_actions: true, e.g. 'interleaved').",
+    "task_greedy": "Fusion-centre task manager (rule-based): sends track-update requests for due tracks; "
+                   "each radar's local scheduler accepts, delays, partially serves or rejects them "
+                   "(src/core/scheduler.py). The centre never sets radar modes.",
     "random": "Random actions (sanity check).",
     "central_ppo": "Trained PPO policy at the fusion centre: sees the fused track table and all radars, "
                    "sends one action to each radar (models/checkpoints/central_ppo.pt).",

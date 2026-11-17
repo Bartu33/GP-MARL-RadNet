@@ -215,3 +215,11 @@ def test_forced_idle_does_not_advance_search_raster():
     before = s.raster.pointer
     radar_step([], RadarAction(Mode.SEARCH), s, p, 0.5, np.random.default_rng(0))
     assert s.mode == Mode.IDLE and s.raster.pointer == before
+
+
+def test_radar_physics_report_all_checks_pass():
+    """The verification table (src/services/radar_physics_report.py) passes every check."""
+    from src.services.radar_physics_report import run_checks
+    table = run_checks(n_mc=1500, seed=0)
+    assert len(table) >= 20
+    assert (table.result == "PASS").all(), table[table.result != "PASS"][["check", "expected", "measured"]]

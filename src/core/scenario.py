@@ -32,6 +32,8 @@ DEFAULTS = {
         "noise_scale": 1.0,        # multiplies measurement floors and k-factors
         "outages": [],             # [[radar index | "all", t0_s, t1_s], ...]: no detections in the window
     },
+    # track management (src/models/tracking/tracker.py): M-of-N confirmation over N tracker steps
+    "tracker": {"confirm_hits": 3, "confirm_window": 48},
     "interleaved_actions": False,   # add INTERLEAVED (search + track) actions per track slot
     "share_actions": False,         # each action also decides whether the radar sends its reports to the centre
     "reward": {"w_track": 1.0, "w_miss": 1.0, "w_class": 0.5, "w_cost": 0.2, "w_false": 0.2,

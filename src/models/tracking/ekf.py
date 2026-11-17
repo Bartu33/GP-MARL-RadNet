@@ -31,6 +31,7 @@ class EKF:
         self.x = np.asarray(x0, float).copy()
         self.P = np.asarray(P0, float).copy()
         self.q = q
+        self.last_nis: float | None = None      # normalised innovation squared of the last update
 
     # -- prediction ---------------------------------------------------------
     def predict(self, dt: float):
@@ -53,6 +54,7 @@ class EKF:
 
     def update(self, z, R, radar_pos, heading):
         nu, S, H = self.innovation(z, R, radar_pos, heading)
+        self.last_nis = float(nu @ np.linalg.solve(S, nu))
         K = self.P @ H.T @ np.linalg.inv(S)
         self.x = self.x + K @ nu
         I_KH = np.eye(6) - K @ H

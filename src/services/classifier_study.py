@@ -181,8 +181,11 @@ def fit_mlp(X, y):
     from sklearn.neural_network import MLPClassifier
     from sklearn.pipeline import make_pipeline
     from sklearn.preprocessing import StandardScaler
+    # early stopping holds out 10 % for validation: only meaningful with enough
+    # windows (tiny test datasets would leave fewer than two validation samples)
+    early = len(y) >= 50
     return make_pipeline(StandardScaler(), MLPClassifier((64, 64), alpha=1e-3, max_iter=600,
-                                                         early_stopping=True, random_state=0)).fit(X, y)
+                                                         early_stopping=early, random_state=0)).fit(X, y)
 
 
 class GRUClassifier:

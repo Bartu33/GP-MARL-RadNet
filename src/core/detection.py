@@ -12,15 +12,14 @@ from __future__ import annotations
 
 import numpy as np
 from scipy.optimize import curve_fit
-from scipy.special import erfc
-from scipy.stats import ncx2
+from scipy.special import chndtr, erfc
 
 
 def marcum_q1(a, b):
     """First-order Marcum Q function Q_1(a, b) via the non-central chi-square sf."""
     a = np.asarray(a, float)
     b = np.asarray(b, float)
-    return ncx2.sf(b * b, 2, a * a)
+    return 1.0 - chndtr(b * b, 2, a * a)      # ufunc: much faster than ncx2.sf
 
 
 def pd_nonfluctuating(snr_linear, pfa: float):

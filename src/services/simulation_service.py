@@ -50,7 +50,7 @@ def per_radar_table(env: RadarNetEnv) -> pd.DataFrame:
         rows.append({"track": f"{p.name} (local)", **ev.summary()})
     rows.append({"track": "Fused (network)", **env.evaluator.summary()})
     cols = ["track", "coverage_in_range", "pos_rmse_m", "longest_track_s", "track_losses", "interruptions",
-            "reacquire_s", "correct_class_continuity"]
+            "reacquire_s", "correct_class_continuity", "nees_mean", "nees_in_95"]
     return pd.DataFrame(rows)[cols]
 
 
@@ -60,6 +60,7 @@ def summarize(env: RadarNetEnv) -> dict:
         # coverage, continuity, detection / track loss: see src/core/evaluation.py (METRIC_INFO)
         **env.evaluator.summary(),
         **single_radar_summary(env),
+        **env.scheduler_summary(),
         "false_tracks_mean": float(np.mean(lg["false_tracks"])) if lg["false_tracks"] else 0.0,
         "class_accuracy": float(np.nanmean(lg["class_acc"])) if np.any(np.isfinite(lg["class_acc"])) else np.nan,
         "sensing_cost": float(np.mean(lg["energy"])) if lg["energy"] else 0.0,
@@ -83,9 +84,14 @@ def run_episode(scenario, policy_name: str = "central_greedy", seed: int | None 
     decide = []
     while env.agents:
         t0 = time.perf_counter()
-        actions = policy.act(env, obs)
-        decide.append(time.perf_counter() - t0)
-        obs, _, _, _, _ = env.step(actions)
+        if hasattr(policy, "requests"):                     # task manager: requests -> local schedulers
+            reqs = policy.requests(env)
+            decide.append(time.perf_counter() - t0)
+            obs, _, _, _, _ = env.step_requests(reqs)
+        else:
+            actions = policy.act(env, obs)
+            decide.append(time.perf_counter() - t0)
+            obs, _, _, _, _ = env.step(actions)
     return env, {**summarize(env), "decision_ms": float(np.mean(decide) * 1000) if decide else np.nan}
 
 

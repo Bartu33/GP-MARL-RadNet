@@ -35,6 +35,7 @@ from src.core.modes import Mode
 from src.core.radar import RadarAction, RadarState, radar_step, resource_vector, snr_linear, antenna_gain
 from src.core.radar import los_status
 from src.core.scenario import build_radars
+from src.core.scheduler import LocalScheduler
 from src.core.targets import CLASS_NAMES, advance, keep_above_ground, spawn_target
 from src.core.terrain import build_terrain
 from src.models.classifier.classifier import accumulate
@@ -93,20 +94,33 @@ class RadarNetEnv(ParallelEnv):
     def reset(self, seed=None, options=None):
         if seed is not None:
             self._seed = seed
-        self.rng = np.random.default_rng(self._seed)
+        # Independent random streams (all derived from one seed).  Target motion
+        # does not depend on what the radars do, so every policy run with the
+        # same seed sees exactly the same target trajectories (paired seeds).
+        #   stream 0: targets (one child per target: spawn, RCS, manoeuvres)
+        #   stream 1: communication losses
+        #   stream 2: everything else (e.g. the random baseline policy)
+        #   stream 3 + i: detections / noise / false alarms of radar i
+        root = np.random.SeedSequence(self._seed)
+        streams = root.spawn(3 + self.n_radars)
+        self.rng_targets = [np.random.default_rng(s) for s in streams[0].spawn(len(self.sc["targets"]))]
+        self.rng_comm = np.random.default_rng(streams[1])
+        self.rng = np.random.default_rng(streams[2])
+        self.rng_radar = [np.random.default_rng(s) for s in streams[3:]]
         self.agents = list(self.possible_agents)
         self.t = 0.0
         self.step_count = 0
         self.radar_states = [RadarState.initial(p) for p in self.radar_params]
         self.targets, self.motions = [], []
         for i, spec in enumerate(self.sc["targets"]):
-            s, m = spawn_target(i, int(spec["label"]), self.rng, self.sc["area_radius_m"],
+            s, m = spawn_target(i, int(spec["label"]), self.rng_targets[i], self.sc["area_radius_m"],
                                 position=spec.get("position"))
             keep_above_ground(s, self.terrain)
             self.targets.append(s)
             self.motions.append(m)
-        self.tracker = TrackManager()
-        self.local_trackers = [TrackManager() for _ in range(self.n_radars)] if self.local_tracks else []
+        tcfg = self.sc.get("tracker", {})
+        self.tracker = TrackManager(**tcfg)
+        self.local_trackers = [TrackManager(**tcfg) for _ in range(self.n_radars)] if self.local_tracks else []
         self.local_eval = [TrackEvaluator(len(self.targets), self.dt) for _ in self.local_trackers]
         self.slots: list = [None] * self.K
         self.frames: list[dict] = []
@@ -116,6 +130,10 @@ class RadarNetEnv(ParallelEnv):
         self.evaluator = TrackEvaluator(len(self.targets), self.dt)   # truth-based metrics, evaluation only
         self._last_reports = []
         self._beam_len = [None] * self.n_radars
+        # local schedulers: used when the centre sends track-update requests (step_requests)
+        self.schedulers = [LocalScheduler(p, self.dt, **self.sc.get("scheduler", {})) for p in self.radar_params]
+        self.last_answers: dict = {}
+        self.last_report_counts: dict = {}
         self._update_slots()
         self._obs = {a: self._observe(i) for i, a in enumerate(self.possible_agents)}
         if self.record:
@@ -123,7 +141,42 @@ class RadarNetEnv(ParallelEnv):
         return dict(self._obs), {a: {} for a in self.agents}
 
     # ------------------------------------------------------------------ step
-    def step(self, actions: dict):
+    def step_requests(self, requests: dict):
+        """Task-manager interface: ``requests`` maps radar index -> list of
+        ``scheduler.Request``.  Each radar's local scheduler answers the requests
+        (``self.last_answers``) and chooses its own look for this step; the centre
+        never sets a radar mode.  Returns the same tuple as :meth:`step`."""
+        t_next = self.t + self.dt
+        tracks = {tr.id: tr for tr in self.tracker.tracks}
+        self.last_answers, looks = {}, {}
+        for i, sch in enumerate(self.schedulers):
+            st = self.radar_states[i]
+            self.last_answers[i] = sch.submit(self.t, requests.get(i, []), tracks, st)
+            looks[i] = sch.next_action(t_next, tracks, st)
+        return self.step({a: 1 for a in self.agents}, radar_actions=looks)
+
+    def scheduler_summary(self) -> dict:
+        """Request statistics of all local schedulers (empty if no request was sent)."""
+        tot = {}
+        for sch in self.schedulers:
+            for k, v in sch.summary().items():
+                if k != "reasons":
+                    tot[k] = tot.get(k, 0) + v
+        n = tot.get("requests", 0)
+        if n == 0:
+            return {}
+        return {
+            "requests_per_step": n / max(self.step_count, 1),
+            "request_accept_rate": tot["accepted"] / n,
+            "request_delay_rate": tot["delayed"] / n,
+            "request_partial_rate": tot["partial"] / n,
+            "request_reject_rate": tot["rejected"] / n,
+            "request_expired_rate": tot["expired"] / n,
+        }
+
+    def step(self, actions: dict, radar_actions: dict | None = None):
+        """``radar_actions`` (radar index -> (RadarAction, beam length)) overrides the
+        decoded agent actions; it is used by :meth:`step_requests`."""
         self.t += self.dt
         self.step_count += 1
         stress = self.sc["stress"]
@@ -143,8 +196,11 @@ class RadarNetEnv(ParallelEnv):
         for i, (p, st) in enumerate(zip(self.radar_params, self.radar_states)):
             a = int(actions.get(self.possible_agents[i], 1))
             shared = a < self.n_base_actions
-            act = self._decode_action(i, a % self.n_base_actions)
-            reports, _ = radar_step(self.targets, act, st, p, self.dt, self.rng, radar_index=i,
+            if radar_actions is not None and i in radar_actions:
+                act, self._beam_len[i] = radar_actions[i]
+            else:
+                act = self._decode_action(i, a % self.n_base_actions)
+            reports, _ = radar_step(self.targets, act, st, p, self.dt, self.rng_radar[i], radar_index=i,
                                     terrain=self.terrain)
             if self._in_outage(i):
                 reports = []                     # radar transmits but detects nothing (e.g. jamming)
@@ -156,13 +212,16 @@ class RadarNetEnv(ParallelEnv):
             cap = stress.get("max_reports_per_radar")
             if cap is not None and len(reports) > cap:
                 reports = sorted(reports, key=lambda d: -d["signal_quality"])[:cap]
-            if self.rng.random() < stress.get("comm_drop_prob", 0.0):
+            if self.rng_comm.random() < stress.get("comm_drop_prob", 0.0):
                 reports = []
             if not shared:                       # radar keeps its reports (local track only)
                 self.withheld += len(reports)
                 reports = []
             all_reports.extend(reports)
         self._last_reports = all_reports
+        self.last_report_counts = {}                       # reports per radar that reached the centre
+        for d in all_reports:
+            self.last_report_counts[d["radar"]] = self.last_report_counts.get(d["radar"], 0) + 1
         self.evaluator.detections(self.targets, self.radar_params, self.radar_states, at_radar, self.terrain)
 
         self.tracker.process(self.t, all_reports, self.radar_params)

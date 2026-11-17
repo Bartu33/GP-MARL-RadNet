@@ -44,13 +44,25 @@ pip install torch --index-url https://download.pytorch.org/whl/cpu
 # 1) train the flight-profile classifier on synthetic tracker output (~30 s)
 python -m src.services.dataset_service --episodes 60 --train
 
-# 2) open the dashboard
+# 2) (optional, needs torch) classifier study: GBM / MLP / GRU on fused vs.
+#    single-radar tracks; results appear in the dashboard's Classifier tab
+python -m src.services.classifier_study --episodes 40
+
+# (optional) radar physics verification table: SNR, P_D, P_FA, RCS, measurement
+#    covariance (expected vs measured, ~15 s) -> data/processed/radar_physics/
+python -m src.services.radar_physics_report
+
+# (optional) tracking study: local single-radar tracks vs. fused track,
+#    nominal / high_noise / multi_target, 10 seeds (~6 min) -> data/processed/tracking_report/
+python -m src.services.tracking_report --seeds 10
+
+# 3) open the dashboard
 streamlit run src/interfaces/app.py
 
-# 3) run the tests
+# 4) run the tests
 pytest
 
-# 4) (optional) train MAPPO, then pick "mappo" in the dashboard
+# 5) (optional) train MAPPO, then pick "mappo" in the dashboard
 python -m src.services.training_service --scenario nominal --steps 200000
 ```
 

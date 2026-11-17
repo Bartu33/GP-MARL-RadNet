@@ -75,3 +75,58 @@ def test_interleaved_actions_extend_action_space():
     assert env.action_space(env.agents[0]).n == 2 + 2 * env.K
     base = load_scenario("nominal")
     assert RadarNetEnv(base).action_space("radar_0").n == 2 + base["max_track_slots"]   # unchanged default
+
+
+def _trajectories(policy, sc, seed=3, steps=60):
+    from src.models.baselines.policies import make_policy
+    env = RadarNetEnv(sc)
+    obs, _ = env.reset(seed=seed)
+    pol = make_policy(policy)
+    pol.reset(env)
+    traj, n_reports = [], 0
+    for _ in range(steps):
+        if not env.agents:
+            break
+        obs, *_ = env.step(pol.act(env, obs))
+        traj.append(np.array([np.r_[t.p, t.v] for t in env.targets]))
+        n_reports += len(env._last_reports)
+    return np.array(traj), n_reports
+
+
+def test_same_seed_gives_same_targets_for_every_policy():
+    """Paired seeds: target motion uses its own random stream, so the radars'
+    choices (and therefore their detections) cannot change the trajectories."""
+    sc = load_scenario("nominal")
+    sc["terrain"] = {"source": "procedural"}
+    a, na = _trajectories("fixed_scan", sc)
+    b, nb = _trajectories("central_greedy", sc)
+    c, nc = _trajectories("random", sc)
+    assert na != nb or nb != nc                     # the policies really behaved differently
+    assert np.array_equal(a, b) and np.array_equal(a, c)
+
+
+def test_different_seeds_give_different_targets():
+    sc = load_scenario("nominal")
+    sc["terrain"] = {"source": "procedural"}
+    env = RadarNetEnv(sc)
+    env.reset(seed=1)
+    p1 = np.array([t.p for t in env.targets])
+    env.reset(seed=2)
+    p2 = np.array([t.p for t in env.targets])
+    assert not np.allclose(p1, p2)
+
+
+def test_comm_losses_do_not_change_detections_of_the_radars():
+    """Communication loss draws from its own stream: switching it on removes
+    reports at the centre but leaves every radar's own detections unchanged."""
+    sc = load_scenario("nominal")
+    sc["terrain"] = {"source": "procedural"}
+    counts = []
+    for drop in (0.0, 0.5):
+        sc["stress"] = dict(sc["stress"], comm_drop_prob=drop)
+        env = RadarNetEnv(sc)
+        env.reset(seed=4)
+        for _ in range(40):
+            env.step({a: 1 for a in env.agents})        # everybody searches: actions independent of tracks
+        counts.append(env.evaluator.det_hit)
+    assert counts[0] == counts[1]

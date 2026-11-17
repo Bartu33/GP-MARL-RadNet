@@ -21,12 +21,22 @@ episode by :meth:`TrackEvaluator.summary`.
   the target tracked again.
 * identity switch: the target becomes matched to a different track id while
   the previous one still exists.
+* NEES (normalised estimation error squared): for a matched track with state
+  estimate x and covariance P, e = x - x_true (position and velocity) and
+  NEES = e^T P^-1 e.  For a consistent filter it is chi-square distributed
+  with 6 degrees of freedom, so its mean is about 6 and about 95 % of the
+  values lie inside [1.24, 14.45] (Bar-Shalom, Li & Kirubarajan 2001,
+  Sec. 5.4).  A mean far above 6 means the tracker is over-confident
+  (P too small), far below 6 that it is too cautious.
 """
 from __future__ import annotations
 
 import numpy as np
 
 from . import geometry as geo
+
+NEES_DOF = 6
+NEES_95 = (1.2373, 14.4494)       # two-sided 95 % interval of chi-square(6)
 from .radar import los_status
 
 # Shown in the dashboard next to the experiment table: name -> (meaning, unit / denominator).
@@ -49,6 +59,10 @@ METRIC_INFO = {
                                  "fraction of all target-steps"),
     "id_switches": ("A target became matched to a different track while the old one still existed",
                     "count per episode"),
+    "nees_mean": ("Mean NEES of matched fused tracks (position + velocity); about 6 for a consistent "
+                  "filter, larger = over-confident covariance", "chi-square(6) units, over matched target-steps"),
+    "nees_in_95": ("Matched target-steps whose NEES lies inside the 95 % chi-square(6) interval "
+                   "[1.24, 14.45]; about 0.95 for a consistent filter", "fraction of matched target-steps"),
     "false_tracks_mean": ("Confirmed tracks not matched to any target", "mean per step"),
     "class_accuracy": ("Predicted class correct, over matched tracks with a class estimate",
                        "fraction of matched target-steps"),
@@ -58,6 +72,16 @@ METRIC_INFO = {
                          "mean per step"),
     "return": ("Sum of the team reward over the episode", "reward units"),
     "usage_fairness": ("Jain index of cumulative tracking time per radar (1 = balanced)", "0-1"),
+    # task-manager interface (track-update requests answered by the radars' local schedulers)
+    "requests_per_step": ("Track-update requests sent by the fusion centre to all radars", "mean per step"),
+    "request_accept_rate": ("Requests served in the next step with a full track dwell", "fraction of requests"),
+    "request_delay_rate": ("Requests queued and served later, before their deadline", "fraction of requests"),
+    "request_partial_rate": ("Requests served with the short interleaved dwell (radar low on energy / heat margin)",
+                             "fraction of requests"),
+    "request_reject_rate": ("Requests refused by the local scheduler (coverage, queue full, deadline, resources)",
+                            "fraction of requests"),
+    "request_expired_rate": ("Accepted requests dropped before service (deadline passed or track deleted)",
+                             "fraction of requests"),
     "decision_ms": ("Time the coordination policy needs to choose the actions of all radars", "ms per step (CPU)"),
     # structure A: every radar on its own (local single-radar tracks, same detections)
     "single_best_coverage": ("Coverage in range reached by the best single radar using only its own "
@@ -68,6 +92,12 @@ METRIC_INFO = {
     "single_mean_rmse_m": ("RMS position error of local single-radar tracks, mean over radars",
                            "m, over matched target-steps"),
 }
+
+
+def nees(x, P, p_true, v_true) -> float:
+    """Normalised estimation error squared of a 6-D [position, velocity] estimate."""
+    e = np.asarray(x, float)[:6] - np.concatenate([p_true, v_true])
+    return float(e @ np.linalg.solve(np.asarray(P, float)[:6, :6], e))
 
 
 def in_beam(meas, beams, p) -> bool:
@@ -115,6 +145,7 @@ class TrackEvaluator:
         self.det_opp = 0
         self.det_hit = 0
         self.sq_err = []                            # squared position errors of matched target-steps
+        self.nees = []                              # NEES of matched target-steps (tracks that expose P)
 
     def detections(self, targets, radar_params, radar_states, reports_by_radar, terrain):
         """Count detection opportunities and losses of one step (call before comm loss)."""
@@ -153,6 +184,9 @@ class TrackEvaluator:
             ok = tr is not None
             if ok:
                 self.sq_err.append(float(np.sum((tr.x[:3] - tgt.p) ** 2)))
+                P = getattr(tr, "P", None)
+                if P is not None:
+                    self.nees.append(nees(tr.x, P, tgt.p, tgt.v))
             elif was_tracked:
                 interrupted += 1
             self.valid[ti].append(ok)
@@ -183,4 +217,7 @@ class TrackEvaluator:
             "correct_class_continuity": float(np.mean(np.concatenate(
                 [np.asarray(c, bool) for c in self.correct]))),
             "id_switches": int(self.id_switches),
+            "nees_mean": float(np.mean(self.nees)) if self.nees else np.nan,
+            "nees_in_95": float(np.mean([NEES_95[0] <= v <= NEES_95[1] for v in self.nees]))
+            if self.nees else np.nan,
         }

@@ -12,6 +12,7 @@ pillow>=10.0            # decodes elevation tiles for terrain line-of-sight
 gymnasium>=1.0           # spaces used by the environment
 pettingzoo>=1.24         # multi-agent ParallelEnv API
 plotly>=5.18
+matplotlib>=3.8        # static report figures (src/services/tracking_report.py)
 streamlit>=1.40          # dashboard:  streamlit run src/interfaces/app.py
 pytest>=8.0
 #

@@ -139,6 +139,41 @@ class InterleavedGreedy(GreedyCentral):
         return out
 
 
+class TaskManagerGreedy(Policy):
+    """Rule-based fusion-centre task manager (structure B of the proposal).
+
+    It does not set radar modes.  Every step it sends track-update requests
+    (``scheduler.Request``) for the tracks that are due for a revisit, most
+    uncertain first, each to the coverable radar with the fewest requests in
+    this step (ties: nearest).  A track that already has a pending request at
+    some radar is not requested again (no redundant illumination).  The
+    radars' local schedulers accept, delay, partially serve or reject them.
+    Deadline = now + ``REVISIT_S``; priority = position uncertainty / 100 m.
+    """
+    name = "task_greedy"
+
+    def act(self, env, obs):              # not used: run_episode calls requests()
+        return {a: 1 for a in env.agents}
+
+    def requests(self, env) -> dict:
+        from src.core.scheduler import Request
+        pending = {q.req.track_id for sch in env.schedulers for q in sch.queue}
+        load = {i: 0 for i in range(env.n_radars)}
+        out: dict = {}
+        due = sorted([tr for tr in env.tracker.tracks if _due(env, tr) and tr.id not in pending],
+                     key=lambda tr: (not tr.confirmed, -tr.ekf.pos_std))
+        for tr in due:
+            cands = [i for i in range(env.n_radars)
+                     if env.radar_states[i].online and _coverable(env, i, tr)]
+            if not cands:
+                continue
+            i = min(cands, key=lambda j: (load[j], np.linalg.norm(tr.x[:3] - env.radar_params[j].pos)))
+            load[i] += 1
+            out.setdefault(i, []).append(Request(tr.id, deadline_s=env.t + REVISIT_S,
+                                                 priority=tr.ekf.pos_std / 100.0, issued_t=env.t))
+        return out
+
+
 class RandomPolicy(Policy):
     name = "random"
 
@@ -147,7 +182,7 @@ class RandomPolicy(Policy):
 
 
 POLICIES = {cls.name: cls for cls in (FixedScan, RoundRobin, NearestSensor, GreedyCentral, InterleavedGreedy,
-                                       RandomPolicy)}
+                                       TaskManagerGreedy, RandomPolicy)}
 
 
 # learned policies -> training_service flags
