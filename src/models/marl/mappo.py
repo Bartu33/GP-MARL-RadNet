@@ -198,6 +198,10 @@ class MAPPOTrainer:
                     "history": self.history}, path)
 
 
+class IncompatiblePolicy(ValueError):
+    """A trained policy does not fit the scenario's observation / action sizes."""
+
+
 class MAPPOPolicy:
     """Decentralised execution: each radar samples from the shared actor
     using only its own observation."""
@@ -222,7 +226,17 @@ class MAPPOPolicy:
         return cls.load(DEFAULT_CKPT)
 
     def reset(self, env):
-        pass
+        """A trained network fits only scenarios with the same number of radars,
+        track slots and actions as its training scenario."""
+        n = self.net
+        need = (n.obs_dim, n.n_agents, n.n_actions)
+        have = (env.obs_dim, env.n_radars, env.action_space(env.possible_agents[0]).n)
+        if need != have:
+            raise IncompatiblePolicy(
+                f"{self.name} was trained for {n.n_agents} radars, observation size {n.obs_dim} and "
+                f"{n.n_actions} actions; scenario '{env.sc.get('name')}' has {have[1]} radars, observation "
+                f"size {have[0]} and {have[2]} actions (max_track_slots / interleaved / share actions differ). "
+                f"Train it on this scenario: python -m src.services.training_service --scenario {env.sc.get('name')}")
 
     def act(self, env, obs) -> dict:
         names = env.possible_agents

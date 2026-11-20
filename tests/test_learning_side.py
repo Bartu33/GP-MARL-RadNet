@@ -138,3 +138,29 @@ def test_simulation_classifier_trained_on_fused_tracks(tmp_path):
     clf = FlightProfileClassifier.load(tmp_path / "checkpoints" / "sim.joblib")
     assert clf.fitted and meta["trained_on"].startswith("fused")
     assert clf.predict_proba(d["feat"][:3]).shape == (3, 4)
+
+
+def test_trained_policy_refuses_a_scenario_of_another_size(monkeypatch):
+    """A network trained on nominal (6 track slots) cannot run multi_target (12 slots):
+    it must say so clearly, and the policy comparison skips it instead of crashing."""
+    pytest.importorskip("torch")
+    from src.models.marl.mappo import IncompatiblePolicy, MAPPOAgent, MAPPOConfig, MAPPOPolicy
+    from src.services import simulation_service as sim
+    nominal = RadarNetEnv(_sc("nominal"))
+    nominal.reset(seed=0)
+    n_act = nominal.action_space("radar_0").n
+    net = MAPPOAgent(nominal.obs_dim, nominal.obs_dim * nominal.n_radars, n_act, nominal.n_radars,
+                     MAPPOConfig(central_actor=True))
+    pol = MAPPOPolicy(net)
+    pol.name = "central_ppo"
+    pol.reset(nominal)                                    # same size: fine
+    multi = RadarNetEnv(_sc("multi_target"))
+    multi.reset(seed=0)
+    with pytest.raises(IncompatiblePolicy, match="trained for"):
+        pol.reset(multi)
+
+    real = sim.make_policy
+    monkeypatch.setattr(sim, "make_policy", lambda name: pol if name == "central_ppo" else real(name))
+    sc = _sc("multi_target", duration_s=5)
+    df = sim.compare_policies(sc, ["central_ppo", "fixed_scan"], seeds=[0, 1], classifier=None)
+    assert set(df.policy) == {"fixed_scan"} and "central_ppo" in df.attrs["skipped"]

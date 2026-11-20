@@ -98,18 +98,29 @@ def run_episode(scenario, policy_name: str = "central_greedy", seed: int | None 
 def compare_policies(scenario, policies, seeds=(0, 1, 2), classifier="auto", progress=None) -> pd.DataFrame:
     """Run every policy on every seed.  ``progress(done, total, label)`` is
     called after each episode (used by the dashboard's progress bar)."""
-    rows = []
+    rows, skipped = [], {}
     clf = load_classifier() if classifier == "auto" else classifier
     seeds = list(seeds)
     total, done = len(policies) * len(seeds), 0
     for pol in policies:
         for s in seeds:
-            _, summ = run_episode(scenario, pol, seed=s, classifier=clf, record=False)
+            try:
+                _, summ = run_episode(scenario, pol, seed=s, classifier=clf, record=False)
+            except ValueError as e:           # trained policy built for another scenario size
+                if type(e).__name__ != "IncompatiblePolicy":
+                    raise
+                skipped[pol] = str(e)
+                done += len(seeds) - seeds.index(s)
+                if progress is not None:
+                    progress(done, total, f"{pol} skipped")
+                break
             rows.append({"policy": pol, "seed": s, **summ})
             done += 1
             if progress is not None:
                 progress(done, total, f"{pol} · seed {s}")
-    return pd.DataFrame(rows)
+    df = pd.DataFrame(rows)
+    df.attrs["skipped"] = skipped             # policy -> reason (shown by the dashboard)
+    return df
 
 
 # Locations offered by the map picker of the 3-D view (display only: the

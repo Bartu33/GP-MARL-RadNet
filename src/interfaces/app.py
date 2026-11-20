@@ -98,42 +98,49 @@ with tab_sim:
     s2.caption(load_scenario(scen)["description"])
 
     with st.spinner("Simulating episode (first run on a new site downloads terrain)…"):
-        payload, summary, log, radar_table = cached_episode(scen, pol, int(seed), bool(use_clf), site_name)
-    t_src = payload.get("terrain", {}).get("source", "flat")
-    st.caption({"tiles": "Terrain: real elevation (AWS Terrain Tiles) · line-of-sight active",
-                "procedural": "Terrain: procedural hills (elevation tiles unavailable) · line-of-sight active",
-                "flat": "Terrain: flat"}.get(t_src, ""))
+        try:
+            payload, summary, log, radar_table = cached_episode(scen, pol, int(seed), bool(use_clf), site_name)
+        except ValueError as e:
+            if type(e).__name__ != "IncompatiblePolicy":
+                raise
+            st.warning(str(e))
+            payload = None
+    if payload is not None:
+        t_src = payload.get("terrain", {}).get("source", "flat")
+        st.caption({"tiles": "Terrain: real elevation (AWS Terrain Tiles) · line-of-sight active",
+                    "procedural": "Terrain: procedural hills (elevation tiles unavailable) · line-of-sight active",
+                    "flat": "Terrain: flat"}.get(t_src, ""))
 
-    fmt = lambda v, f: "—" if v is None or (isinstance(v, float) and np.isnan(v)) else f.format(v)
-    m = st.columns(8)
-    m[0].metric("Position RMSE", fmt(summary["pos_rmse_m"], "{:.0f} m"), help=METRIC_INFO["pos_rmse_m"][0])
-    m[1].metric("Coverage (in range)", fmt(summary["coverage_in_range"], "{:.0%}"), help=METRIC_INFO["coverage_in_range"][0])
-    m[2].metric("Track losses", fmt(summary["track_losses"], "{}"), help=METRIC_INFO["track_losses"][0])
-    m[3].metric("Longest track", fmt(summary["longest_track_s"], "{:.0f} s"), help=METRIC_INFO["longest_track_s"][0])
-    m[4].metric("Detection loss", fmt(summary["detection_loss"], "{:.0%}"), help=METRIC_INFO["detection_loss"][0])
-    m[5].metric("Class accuracy", fmt(summary["class_accuracy"], "{:.0%}"), help=METRIC_INFO["class_accuracy"][0])
-    m[6].metric("False tracks (avg)", fmt(summary["false_tracks_mean"], "{:.2f}"), help=METRIC_INFO["false_tracks_mean"][0])
-    m[7].metric("Team return", fmt(summary["return"], "{:.0f}"), help=METRIC_INFO["return"][0])
-    with st.expander("Single radar vs network: each radar's local track and the fused track"):
-        st.dataframe(radar_table.round(3), width="stretch", hide_index=True)
-        st.caption("Local tracks use only that radar's own detections (structure A); the fused track combines "
-                   "all radars at the fusion centre. Coverage is measured on the network coverage mask.")
+        fmt = lambda v, f: "—" if v is None or (isinstance(v, float) and np.isnan(v)) else f.format(v)
+        m = st.columns(8)
+        m[0].metric("Position RMSE", fmt(summary["pos_rmse_m"], "{:.0f} m"), help=METRIC_INFO["pos_rmse_m"][0])
+        m[1].metric("Coverage (in range)", fmt(summary["coverage_in_range"], "{:.0%}"), help=METRIC_INFO["coverage_in_range"][0])
+        m[2].metric("Track losses", fmt(summary["track_losses"], "{}"), help=METRIC_INFO["track_losses"][0])
+        m[3].metric("Longest track", fmt(summary["longest_track_s"], "{:.0f} s"), help=METRIC_INFO["longest_track_s"][0])
+        m[4].metric("Detection loss", fmt(summary["detection_loss"], "{:.0%}"), help=METRIC_INFO["detection_loss"][0])
+        m[5].metric("Class accuracy", fmt(summary["class_accuracy"], "{:.0%}"), help=METRIC_INFO["class_accuracy"][0])
+        m[6].metric("False tracks (avg)", fmt(summary["false_tracks_mean"], "{:.2f}"), help=METRIC_INFO["false_tracks_mean"][0])
+        m[7].metric("Team return", fmt(summary["return"], "{:.0f}"), help=METRIC_INFO["return"][0])
+        with st.expander("Single radar vs network: each radar's local track and the fused track"):
+            st.dataframe(radar_table.round(3), width="stretch", hide_index=True)
+            st.caption("Local tracks use only that radar's own detections (structure A); the fused track combines "
+                       "all radars at the fusion centre. Coverage is measured on the network coverage mask.")
 
-    if view == "3-D":
-        viewer3d.render(payload, height=740)
-        st.caption("Drag to rotate · right-drag to pan · scroll to zoom. Terrain and imagery are streamed "
-                   "from public tile services; without internet a procedural ground is shown.")
-    else:
-        k = st.slider("Frame", 0, len(payload["frames"]) - 1, len(payload["frames"]) // 2)
-        st.plotly_chart(plots.map_2d(payload, k), width="stretch")
+        if view == "3-D":
+            viewer3d.render(payload, height=740)
+            st.caption("Drag to rotate · right-drag to pan · scroll to zoom. Terrain and imagery are streamed "
+                       "from public tile services; without internet a procedural ground is shown.")
+        else:
+            k = st.slider("Frame", 0, len(payload["frames"]) - 1, len(payload["frames"]) // 2)
+            st.plotly_chart(plots.map_2d(payload, k), width="stretch")
 
-    g1, g2 = st.columns(2)
-    g1.plotly_chart(plots.time_series(log, ["rmse"], "Fused position error of tracked targets", "m"),
-                    width="stretch")
-    g2.plotly_chart(plots.time_series(log, ["tracked", "class_acc"], "Coverage and class accuracy", "fraction"),
-                    width="stretch")
-    st.download_button("Download this replay as a stand-alone HTML file",
-                       viewer3d.build_html(payload), file_name=f"radnet_{scen}_{pol}_{seed}.html", mime="text/html")
+        g1, g2 = st.columns(2)
+        g1.plotly_chart(plots.time_series(log, ["rmse"], "Fused position error of tracked targets", "m"),
+                        width="stretch")
+        g2.plotly_chart(plots.time_series(log, ["tracked", "class_acc"], "Coverage and class accuracy", "fraction"),
+                        width="stretch")
+        st.download_button("Download this replay as a stand-alone HTML file",
+                           viewer3d.build_html(payload), file_name=f"radnet_{scen}_{pol}_{seed}.html", mime="text/html")
 
 
 # ============================================================== Radar model lab
@@ -276,9 +283,11 @@ with tab_exp:
         df = sim.compare_policies(scen_e, pols, seeds=range(int(n_seeds)),
                                   progress=lambda d, n, lab: bar.progress(d / n, text=f"Episode {d}/{n} · {lab}"))
         bar.empty()
+        for pol_name, why in df.attrs.get("skipped", {}).items():
+            st.warning(f"Skipped **{pol_name}**: {why}")
         st.session_state["exp_df"] = df
     df = st.session_state.get("exp_df")
-    if df is not None:
+    if df is not None and not df.empty:
         metrics = [c for c in df.columns if c not in ("policy", "seed")]
         default = [m for m in ("coverage_in_range", "single_best_coverage", "track_losses", "longest_track_s", "reacquire_s",
                                "correct_class_continuity", "pos_rmse_m", "return") if m in metrics]
