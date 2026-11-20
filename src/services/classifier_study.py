@@ -164,12 +164,46 @@ def ece(proba: np.ndarray, y: np.ndarray, bins: int = 10) -> float:
     return float(e)
 
 
+def _downsample(x, y, n: int = 60):
+    idx = np.unique(np.linspace(0, len(x) - 1, min(n, len(x))).round().astype(int))
+    return [np.asarray(x)[idx].round(4).tolist(), np.asarray(y)[idx].round(4).tolist()]
+
+
+def auc_scores(proba, y) -> dict:
+    """One-vs-rest ROC-AUC and PR-AUC (average precision) per class and their
+    macro averages.  A class without positive or without negative test windows
+    gets None and is left out of the average.  PR-AUC is reported next to
+    ROC-AUC because with unbalanced classes ROC-AUC stays high even when the
+    rare class is found with many false alarms; the chance level of PR-AUC is
+    the class's share of the test windows (``prevalence``)."""
+    from sklearn.metrics import average_precision_score, precision_recall_curve, roc_auc_score, roc_curve
+    proba, y = np.asarray(proba, float), np.asarray(y, int)
+    roc, pr, prev, curves = [], [], [], {"roc": {}, "pr": {}}
+    for c in range(len(CLASS_NAMES)):
+        pos = y == c
+        prev.append(float(pos.mean()) if len(y) else None)
+        if pos.all() or not pos.any():
+            roc.append(None)
+            pr.append(None)
+            continue
+        roc.append(float(roc_auc_score(pos, proba[:, c])))
+        pr.append(float(average_precision_score(pos, proba[:, c])))
+        fpr, tpr, _ = roc_curve(pos, proba[:, c])
+        prec, rec, _ = precision_recall_curve(pos, proba[:, c])
+        curves["roc"][CLASS_NAMES[c]] = _downsample(fpr, tpr)
+        curves["pr"][CLASS_NAMES[c]] = _downsample(rec, prec)
+    mean = lambda v: float(np.mean([x for x in v if x is not None])) if any(x is not None for x in v) else None
+    return {"roc_auc_macro": mean(roc), "pr_auc_macro": mean(pr), "roc_auc_per_class": roc,
+            "pr_auc_per_class": pr, "prevalence": prev, "curves": curves}
+
+
 def _scores(proba, y) -> dict:
     from sklearn.metrics import balanced_accuracy_score, confusion_matrix, f1_score
     pred = proba.argmax(1)
     return {"macro_f1": float(f1_score(y, pred, average="macro")),
             "balanced_accuracy": float(balanced_accuracy_score(y, pred)), "ece": ece(proba, y), "n": int(len(y)),
-            "confusion": confusion_matrix(y, pred, labels=range(len(CLASS_NAMES))).tolist()}
+            "confusion": confusion_matrix(y, pred, labels=range(len(CLASS_NAMES))).tolist(),
+            **auc_scores(proba, y)}
 
 
 def fit_gbm(X, y):
@@ -314,7 +348,8 @@ def main():
     print(json.dumps(rep["dataset"], indent=1)[:1500])
     for r in rep["results"]:
         print(f"{r['model']:4s} train={r['train_on']:6s} test={r['test_on']:6s} "
-              f"macroF1={r['macro_f1']:.3f} balAcc={r['balanced_accuracy']:.3f} ECE={r['ece']:.3f} n={r['n']}")
+              f"macroF1={r['macro_f1']:.3f} balAcc={r['balanced_accuracy']:.3f} ECE={r['ece']:.3f} "
+              f"ROC-AUC={r['roc_auc_macro'] or float('nan'):.3f} PR-AUC={r['pr_auc_macro'] or float('nan'):.3f} n={r['n']}")
 
 
 if __name__ == "__main__":

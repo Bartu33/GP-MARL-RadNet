@@ -10,6 +10,7 @@ import pandas as pd
 from src.core.env import RadarNetEnv
 from src.core.scenario import load_scenario
 from src.models.baselines.policies import make_policy
+from src.services import radar_info
 
 ROOT = Path(__file__).resolve().parents[2]
 CLASSIFIER_PATH = ROOT / "models" / "checkpoints" / "flight_profile_gbm.joblib"
@@ -151,7 +152,11 @@ def viewer_payload(env: RadarNetEnv) -> dict:
             "name": p.name, "pos": [float(x) for x in p.position], "heading": float(p.heading),
             "fov": float(np.deg2rad(p.fov_az_deg)), "rmax": float(p.r_max_m),
             "bw_az": float(np.deg2rad(p.beamwidth_az_deg)), "bw_el": float(np.deg2rad(p.beamwidth_el_deg)),
+            # every parameter, shown by the viewer's right-click menu
+            "params": [list(r) for r in radar_info.radar_parameters(p)],
+            "fc_ghz": p.fc_hz / 1e9, "pfa": p.pfa, "swerling_note": "",
         } for p in env.radar_params],
+        "targets": radar_info.target_parameters(env.targets),
         "classes": ["A · fast", "B · agile", "C · erratic", "D · drift"],
         "frames": env.frames,
     }

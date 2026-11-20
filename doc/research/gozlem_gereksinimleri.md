@@ -73,11 +73,12 @@ içinde; tüm radarlar aynı satır sırasını görüyor; gerçek durum kullan�
 
 ## 3. Görev yöneticisi gözlemi (`src/core/observation.py`)
 
-o_t = [ {τ_j}, {ρ_i}, Q_t, maskeler ]. Boyut: K·17 + N·16 + N·K·5 + K + N·K + 1
-(nominal K = 6, N = 4: **317**; multi_target K = 12, N = 4: **569**).
-Bir gözlem ~5 ms'de üretiliyor (K = 12).
+o_t = [ {τ_j}, {ρ_i}, Q_t, maskeler ]. Boyut: K·22 + N·16 + N·K·8 + K + N·K + 1
+(nominal K = 6, N = 4: **419**; multi_target K = 12, N = 4: **773**).
+Bütün konumlar **ortak dünya koordinatında** (ENU, kartezyen); radarlar
+kendi kutupsal koordinatlarında ölçer, dönüşümü füzyon merkezindeki EKF yapar.
 
-### 3.1 İz özeti τ_j (17 özellik)
+### 3.1 İz özeti τ_j (22 özellik)
 
 | Özellik | Ölçek | Kaynak |
 |---|---|---|
@@ -94,7 +95,24 @@ Bir gözlem ~5 ms'de üretiliyor (K = 12).
 | son 3 s'de güncelleyen radar sayısı | / N | `updated_by` |
 | sınıf entropisi | / log C (1 = bilinmiyor) | `class_probs` |
 | bekleyen talep var | 0/1 | zamanlayıcı kuyrukları |
+| anlık SNR (son rapor) | / 30 dB | `track.snr` |
+| kayan ortalama SNR (son 10 rapor, **doğrusal** ortalama, dB'ye çevrilmiş) | / 30 dB | `track.snr` |
+| SNR standart sapması (dB) | / 10 dB | `track.snr` |
+| istenen bakışlarda tespit oranı | 0–1 (geçmiş yoksa 0,5) | `track.dwells` |
+| bakış geçmişi var | 0/1 | `track.dwells` |
 
+**SNR neden üç değerle ve tespit oranıyla veriliyor:** Dalgalanan
+(Swerling I) hedefte anlık SNR çok değişkendir (doğrusal güçte standart
+sapma ortalamaya eşit), bu yüzden tek başına yanıltıcıdır; kayan ortalama
+hedefin gerçek sinyal seviyesini, std ise ne kadar dalgalandığını verir.
+Ortalama dB üzerinden değil doğrusal güç üzerinden alınır (dB ortalaması
+düşük çıkar). SNR yalnızca **tespit edilen** bakışlarda ölçülür; kaçırılan
+bakışlar düşük SNR'lıdır ama ortalamaya girmez, yani ortalama olduğundan
+yüksek görünür (seçim yanlılığı). Bunu düzeltmek için istenen bakışların
+kaçında hedefin bulunduğu (tespit oranı) ayrıca verilir. Medyan SNR
+gözlemde değil, sonuç analizinde kullanılır (aykırı değerlere dayanıklı).
+Swerling (1960); Richards (2022); genlik bilgisinin takipte kullanımı için
+Lerro & Bar-Shalom (1993).
 ### 3.2 Radar özeti ρ_i (16 özellik)
 
 | Özellik | Ölçek | Kaynak |
@@ -108,7 +126,7 @@ Bir gözlem ~5 ms'de üretiliyor (K = 12).
 | şu an takip bakışında | 0/1 | `RadarState.mode` |
 | takip bakışına ayrılan adım oranı | 0–1 | `env.track_load` |
 
-### 3.3 Hizmet kalitesi Q_ij (5 özellik, radar × iz)
+### 3.3 Hizmet kalitesi ve geçmiş Q_ij (8 özellik, radar × iz)
 
 "Radar i, iz j'yi şimdi tam takip bakışıyla güncellerse ne olur?"
 
@@ -119,6 +137,13 @@ Bir gözlem ~5 ms'de üretiliyor (K = 12).
 | tahmini çapraz menzil σ | / 1000 m | r · σ_az (Eq. 42) |
 | beklenen bilgi kazancı ½(log det P − log det P⁺) | / 10 nat | P⁺ = (P⁻¹ + Hᵀ R⁻¹ H)⁻¹ |
 | bir takip bakışının enerji maliyeti | / E_max | kaynak modeli |
+| bu radarın bu izdeki son SNR'ı | / 30 dB (0 = hiç) | `track.snr[i]` |
+| bu radarın bu izi en son güncellemesinden beri geçen süre | / 10 s (1 = hiç) | `track.updated_by[i]` |
+| bu radarın bu izdeki istenen bakışlarda tespit oranı | 0–1 (geçmiş yoksa 0,5) | `track.dwells[i]` |
+
+Son üç özellik "hangi radarı ne zaman tercih etmeliyiz" sorusunun
+cevabıdır: hangi radar bu hedefi iyi görüyor, en son kim güncelledi,
+kimin bakışları boşa gidiyor.
 
 Bilgi kazancı, önerideki ödülün ana terimi (β_I) ile aynı büyüklüktür;
 ajan böylece hangi talebin ödülü en çok artıracağını gözlemden
@@ -159,16 +184,45 @@ eksik olabilir. Kural: **varsayılanla doldur, maskeyle işaretle, uydurma.**
 Kodda şu an yalnızca son üç satır uygulanıyor; ilk ikisi ve kaynak
 raporunun yaşı, gerçek bir ağ arayüzü tanımlandığında eklenecek.
 
-## 6. Açık konular / sonraki adım
+## 6. Öğrenen görev yöneticisi (`src/core/task_env.py`, `src/models/rl/ppo.py`)
 
-* **Aksiyon:** önerideki gibi önce yalnızca güncelleme talepleri (U_t);
-  her radar için tek talep veya radar–iz öncelik puanı + Macar ataması.
-  Ortam tarafı hazır: `env.step_requests` ve `task_greedy` baseline'ı.
-* **Ödül:** Q_ij'deki bilgi kazancı, τ_j'deki bilgi yaşı ve kesinti /
-  iz silme olayları önerideki ödülün terimleriyle birebir; ödül bu
-  büyüklüklerden hesaplanmalı.
-* **K seçimi:** Gözlem boyutu K ile doğrusal büyüyor (N·K·5 terimi);
-  12 iz için 569. Daha büyük sahnelerde iz başına ortak ağırlıklı bir
+Tek ajan, füzyon merkezinde, düz PPO (hiyerarşi ve çok ajan yok).
+
+* **Karar periyodu:** 1 s (2 benzetim adımı).
+* **Gözlem:** Bölüm 3'teki vektör (nominal'de 419 boyut).
+* **Aksiyon:** her radar için "iz 1 … iz K" ya da "talep yok"
+  (MultiDiscrete, N × (K+1)); radarın kapsamadığı izler maskelenir.
+  Talepler radarların yerel zamanlayıcısına gider; radar yine kabul,
+  erteleme, kısmi hizmet ya da ret kararını kendisi verir.
+* **Ödül (gerçek durum kullanmaz):** + bilgi kazancı (log det P azalması)
+  − bilgi yaşı − onaylı iz silinmesi + yeni onaylanan iz − reddedilen
+  talep − aynı izin birden fazla radardan istenmesi − gereksiz güncelleme
+  (yakın zamanda güncellenmiş ve belirsizliği düşük bir izi istemek).
+  Ağırlıklar (`DEFAULT_REWARD`): bilgi kazancı 0,05; bilgi yaşı 2;
+  iz silme 2; yeni iz 1; ret 0,05; çift talep 0,2; gereksiz güncelleme 0,2.
+* **Neden bu ağırlıklar:** İlk denemede bilgi kazancı ağırlığı yüksekti
+  (0,2) ve gereksiz güncelleme cezası yoktu. Ajan zaten iyi takip edilen
+  izleri tekrar tekrar güncelledi, aramayı ihmal etti; bu ödülde rastgele
+  politika ile kural tabanlı yöntem neredeyse aynı puanı alıyordu. Yeni
+  ağırlıklarla kural tabanlı yöntem (+17) rastgeleden (−7) ve hiç talep
+  göndermemekten (−6) açıkça ayrışıyor (nominal, 60 s, 5 bölüm).
+* **Taklitle başlatma (davranış klonlama):** Ağ önce kural tabanlı görev
+  yöneticisinin (`task_greedy`) kararlarını taklit eder (aktör çapraz
+  entropiyle, kritik o bölümlerin getirisiyle), sonra PPO ile ince ayar
+  yapılır. Algoritma yine düz PPO; yalnızca başlangıç noktası değişir.
+* **Eğitim:** `python -m src.services.training_service --task --decisions 30000`
+  (varsayılan 200 öğretmen bölümüyle taklitten başlar; `--bc-episodes 0`
+  sıfırdan başlatır) → `models/checkpoints/ppo_task.pt`; arayüzde
+  `ppo_task` olarak görünür.
+* MAPPO, IPPO ve central_ppo kodda duruyor ama arayüzde artık önerilmiyor
+  (radar modunu doğrudan seçtikleri için).
+
+## 7. Açık konular / sonraki adım
+
+* **Aksiyonun genişletilmesi:** öncelik ve son tarih seçimi, füzyonda
+  radar güven katsayısı (bozulan radar senaryosuyla), PRF profili.
+* **K seçimi:** Gözlem boyutu K ile doğrusal büyüyor (N·K·8 terimi);
+  12 iz için 773. Daha büyük sahnelerde iz başına ortak ağırlıklı bir
   kodlayıcı (ör. attention / DeepSets) düşünülebilir.
 * **Normalizasyon:** Ölçekler bu senaryolara göre seçildi; farklı alan
   boyutlarında yeniden kontrol edilmeli.

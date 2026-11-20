@@ -185,19 +185,30 @@ POLICIES = {cls.name: cls for cls in (FixedScan, RoundRobin, NearestSensor, Gree
                                        TaskManagerGreedy, RandomPolicy)}
 
 
-# learned policies -> training_service flags
-LEARNED = {"central_ppo": "--central", "mappo": "", "ippo": "--ippo"}
+# learned policies -> training_service flags.  The fusion-centre task manager
+# (single PPO agent sending requests) is the learned policy of the project; the
+# earlier policies that set radar modes directly (central_ppo, MAPPO, IPPO) are
+# kept in the code for reference but no longer offered in the dashboard.
+LEARNED = {"ppo_task": "--task"}
+LEGACY = {"central_ppo": "--central", "mappo": "", "ippo": "--ippo"}
 
 
 def make_policy(name: str) -> Policy:
     if name in POLICIES:
         return POLICIES[name]()
-    if name in LEARNED:
+    if name == "ppo_task":
+        from src.core.task_env import TaskPolicy
+        from src.models.rl.ppo import DEFAULT_CKPT, load_net  # requires torch
+        if not DEFAULT_CKPT.exists():
+            raise FileNotFoundError(f"no trained ppo_task checkpoint at {DEFAULT_CKPT}; "
+                                    "run: python -m src.services.training_service --task")
+        return TaskPolicy(load_net(DEFAULT_CKPT))
+    if name in LEGACY:
         from src.models.marl.mappo import DEFAULT_CKPT, MAPPOPolicy  # requires torch
         path = DEFAULT_CKPT.with_name(f"{name}.pt")
         if not path.exists():
             raise FileNotFoundError(f"no trained {name} checkpoint at {path}; "
-                                    f"run: python -m src.services.training_service {LEARNED[name]}")
+                                    f"run: python -m src.services.training_service {LEGACY[name]}")
         pol = MAPPOPolicy.load(path)
         pol.name = name
         return pol

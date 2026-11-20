@@ -35,6 +35,18 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px s
 #follow .hdr button{min-height:28px;min-width:28px;border-radius:6px;border:1px solid #2C3C46;background:#0E1417;color:var(--ink);cursor:pointer}
 #follow .kv{display:grid;grid-template-columns:auto auto;column-gap:12px;row-gap:2px;color:#cfd9dd}
 #follow .kv b{color:var(--mut);font-weight:500}
+#ctx{position:absolute;z-index:6;display:none;min-width:200px;padding:4px 0;font-size:12px}
+#ctx .ttl{padding:4px 12px;color:var(--mut);font-size:11px}
+#ctx button{display:block;width:100%;min-height:30px;padding:0 12px;text-align:left;border:0;background:transparent;color:var(--ink);cursor:pointer;font:inherit}
+#ctx button:hover,#ctx button:focus{background:#1B2A31;outline:none}
+#info{left:50%;top:96px;transform:translateX(-50%);z-index:5;width:min(560px,94%);max-height:calc(100% - 170px);overflow:auto;padding:8px 12px;display:none;font-size:12px}
+#info .hdr{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:700;margin-bottom:6px;position:sticky;top:-8px;background:#0b1114;padding:4px 0}
+#info .hdr button{min-height:28px;min-width:28px;border-radius:6px;border:1px solid #2C3C46;background:#0E1417;color:var(--ink);cursor:pointer}
+#info table{border-collapse:collapse;width:100%}
+#info td,#info th{padding:2px 6px;border-bottom:1px solid #1B2A31;text-align:left;vertical-align:top}
+#info th{color:var(--mut);font-weight:500}
+#info .grp td{color:var(--teal);font-weight:600;padding-top:6px}
+#info .note{color:#F5A524;margin-top:6px}
 @media (max-width:760px){#hudL,#legend{display:none}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
@@ -46,6 +58,11 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px s
 <div class="hud mono" id="follow">
   <div class="hdr"><span id="fTitle"></span><button type="button" id="unfollow" aria-label="Stop following" title="Stop following">✕</button></div>
   <div id="fBody"></div>
+</div>
+<div class="hud mono" id="ctx" role="menu"></div>
+<div class="hud mono" id="info" role="dialog" aria-label="Details">
+  <div class="hdr"><span id="iTitle"></span><button type="button" id="iClose" aria-label="Close" title="Close">✕</button></div>
+  <div id="iBody"></div>
 </div>
 <div class="hud" id="hudR">
   <select class="hb" id="siteSel" aria-label="Map location" title="Map location"></select>
@@ -61,7 +78,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px s
   <button class="hb on" data-tog="los" title="radar-target line of sight: green visible, red hidden by terrain">LOS</button>
 </div>
 <div class="hud" id="legend">
-  <span style="color:#8DA2AC">click a target or track to follow it ·</span>
+  <span style="color:#8DA2AC">click a target or track to follow it · right-click a radar, target or track for details ·</span>
   <span><i style="background:#4FD1C5"></i>search beam</span>
   <span><i style="background:#7FB3FF"></i>track beam</span>
   <span><i style="background:#C39BFF"></i>interleaved</span>
@@ -465,6 +482,78 @@ renderer.domElement.addEventListener('pointermove', e => {
   const r = renderer.domElement.getBoundingClientRect();
   renderer.domElement.style.cursor = pickAt(e.clientX - r.left, e.clientY - r.top) ? 'pointer' : '';
 });
+
+/* ------------------------------------------------------------------ right-click context menu and details panel */
+const ctxEl = document.getElementById('ctx'), infoEl = document.getElementById('info');
+const iTitle = document.getElementById('iTitle'), iBody = document.getElementById('iBody');
+document.getElementById('iClose').onclick = () => { infoEl.style.display = 'none'; };
+const esc = v => String(v).replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'})[c]);
+const curFrame = () => F[Math.min(NF - 1, Math.floor(fi))];
+function pickRadar(cx, cy) {
+  const w = box.clientWidth, h = box.clientHeight, q = new THREE.Vector3();
+  let best = null, bd = 26;
+  radObjs.forEach((R, i) => {
+    q.copy(R.g.position); q.y += 0.15; q.project(camera); if (q.z > 1) return;
+    const d = Math.hypot((q.x + 1) / 2 * w - cx, (1 - q.y) / 2 * h - cy);
+    if (d < bd) { bd = d; best = {kind: 'radar', id: i}; }
+  });
+  return best;
+}
+function showInfo(title, html) { iTitle.textContent = title; iBody.innerHTML = html; infoEl.style.display = 'block'; ctxEl.style.display = 'none'; }
+const LOS = ['outside coverage', 'visible', 'hidden by terrain'];
+function radarParams(i) {
+  let g = '', rows = '';
+  D.radars[i].params.forEach(([grp, k, v]) => {
+    if (grp !== g) { rows += `<tr class="grp"><td colspan="2">${esc(grp)}</td></tr>`; g = grp; }
+    rows += `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`;
+  });
+  showInfo(`${D.radars[i].name} · parameters`, `<table>${rows}</table>`);
+}
+function radarLinks(i) {
+  const A = curFrame(), rs = A.radars[i];
+  const rows = D.targets.map((t, j) => { const [r, s, snr] = rs.link[j];
+    return `<tr><td>${esc(t.target)}</td><td>${(r / 1000).toFixed(2)} km</td><td>${s.toPrecision(3)} m²</td><td>${snr.toFixed(1)} dB</td><td>${LOS[rs.los[j]]}</td></tr>`; }).join('');
+  showInfo(`${D.radars[i].name} · targets at t = ${A.t.toFixed(1)} s`,
+    `<table><tr><th>target</th><th>range</th><th>RCS (aspect)</th><th>SNR, track dwell</th><th>line of sight</th></tr>${rows}</table>` +
+    `<div style="color:#8DA2AC;margin-top:6px">SNR from the radar equation for a track dwell with the beam on the target; the step-by-step budget is in the dashboard ("Radar equation").</div>`);
+}
+function targetDetails(id) {
+  const A = curFrame(), j = A.targets.findIndex(t => t.id === id), t = A.targets[j], info = D.targets[j];
+  let rows = Object.entries(info).map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join('');
+  rows += `<tr><th>altitude</th><td>${Math.round(t.p[2])} m</td></tr><tr><th>speed</th><td>${Math.hypot(...t.v).toFixed(1)} m/s</td></tr>`;
+  const link = A.radars.map((rs, i) => { const [r, s, snr] = rs.link[j];
+    return `<tr><td>${D.radars[i].name}</td><td>${(r / 1000).toFixed(2)} km</td><td>${s.toPrecision(3)} m²</td><td>${snr.toFixed(1)} dB</td><td>${LOS[rs.los[j]]}</td></tr>`; }).join('');
+  showInfo(`${info.target} · ${info.class} · t = ${A.t.toFixed(1)} s`, `<table>${rows}</table>` +
+    `<div style="margin-top:8px;font-weight:700">As seen by each radar</div><table><tr><th>radar</th><th>range</th><th>RCS (aspect)</th><th>SNR, track dwell</th><th>line of sight</th></tr>${link}</table>`);
+}
+function trackDetails(id) {
+  const A = curFrame(), tr = A.tracks.find(q => q.id === id);
+  if (!tr) return showInfo(`T${id}`, 'not present at this time');
+  showInfo(`fused track T${tr.id}`, `<table>` + [
+    ['confirmed', tr.conf ? 'yes' : 'tentative'], ['class', tr.cls >= 0 ? `${D.classes[tr.cls]} · ${Math.round(tr.pc * 100)}%` : 'not classified yet'],
+    ['σ position', `${Math.round(tr.sig)} m`], ['position (E, N, U)', tr.p.map(Math.round).join(', ') + ' m'],
+    ['speed', `${Math.hypot(...tr.v).toFixed(1)} m/s`]].map(([k, v]) => `<tr><th>${k}</th><td>${esc(v)}</td></tr>`).join('') + `</table>`);
+}
+function openCtx(hit, x, y) {
+  const items = hit.kind === 'radar' ? [['Radar parameters', () => radarParams(hit.id)], ['Targets as seen by this radar', () => radarLinks(hit.id)]]
+    : hit.kind === 'target' ? [['Target parameters and SNR per radar', () => targetDetails(hit.id)], ['Follow', () => { ctxEl.style.display = 'none'; startFollow(hit); }]]
+    : [['Track details', () => trackDetails(hit.id)], ['Follow', () => { ctxEl.style.display = 'none'; startFollow(hit); }]];
+  const name = hit.kind === 'radar' ? D.radars[hit.id].name : hit.kind === 'target' ? D.targets[curFrame().targets.findIndex(t => t.id === hit.id)].target : `T${hit.id}`;
+  ctxEl.innerHTML = `<div class="ttl">${esc(name)}</div>`;
+  items.forEach(([label, fn]) => { const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitem'); b.textContent = label; b.onclick = fn; ctxEl.appendChild(b); });
+  ctxEl.style.display = 'block';
+  const W = box.clientWidth, H = box.clientHeight, cw = ctxEl.offsetWidth, ch = ctxEl.offsetHeight;
+  ctxEl.style.left = Math.min(x, W - cw - 4) + 'px'; ctxEl.style.top = Math.min(y, H - ch - 4) + 'px';   // keep it on screen
+  ctxEl.querySelector('button').focus();
+}
+renderer.domElement.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  const r = renderer.domElement.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  const hit = pickRadar(x, y) || pickAt(x, y);
+  if (hit) openCtx(hit, x, y); else ctxEl.style.display = 'none';
+});
+document.addEventListener('pointerdown', e => { if (!ctxEl.contains(e.target)) ctxEl.style.display = 'none'; });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { ctxEl.style.display = 'none'; infoEl.style.display = 'none'; } });
 
 /* ------------------------------------------------------------------ labels, camera, controls */
 const pv = new THREE.Vector3();

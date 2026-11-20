@@ -62,8 +62,10 @@ streamlit run src/interfaces/app.py
 # 4) run the tests
 pytest
 
-# 5) (optional) train MAPPO, then pick "mappo" in the dashboard
-python -m src.services.training_service --scenario nominal --steps 200000
+# 5) (optional, needs torch) train the learned fusion-centre task manager (one PPO
+#    agent that sends track-update requests): it first imitates the rule-based
+#    task manager, then PPO fine-tunes it (~30 min); then pick "ppo_task"
+python -m src.services.training_service --task --decisions 30000
 ```
 
 The 3-D view loads three.js from `cdn.jsdelivr.net`, satellite imagery from Esri

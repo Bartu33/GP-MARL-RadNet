@@ -45,6 +45,7 @@ import numpy as np
 from .ekf import EKF
 
 GATE_CHI2_4DOF_99 = 13.28
+SNR_HISTORY = 10          # reports / requested dwells kept per radar and track
 
 
 @dataclass
@@ -58,6 +59,8 @@ class Track:
     hit_steps: list = field(default_factory=list)     # tracker step of every update (one entry per report)
     history: list = field(default_factory=list)       # [(t, x(6)), ...]
     updated_by: dict = field(default_factory=dict)    # radar index -> last time
+    snr: dict = field(default_factory=dict)           # radar index -> [(t, SNR dB)] of associated reports
+    dwells: dict = field(default_factory=dict)        # radar index -> [(t, detected)] of requested dwells
     class_probs: np.ndarray | None = None
 
     @property
@@ -67,6 +70,18 @@ class Track:
     @property
     def P(self):
         return self.ekf.P
+
+    def record_snr(self, radar: int, t: float, snr_db, keep: int = SNR_HISTORY):
+        if snr_db is None:
+            return
+        h = self.snr.setdefault(radar, [])
+        h.append((t, float(snr_db)))
+        del h[:-keep]
+
+    def record_dwell(self, radar: int, t: float, detected: bool, keep: int = SNR_HISTORY):
+        h = self.dwells.setdefault(radar, [])
+        h.append((t, bool(detected)))
+        del h[:-keep]
 
     def coasting(self, t: float) -> bool:
         """True when the track was not updated at time ``t`` (predicted only)."""
@@ -125,6 +140,7 @@ class TrackManager:
                 tr.hits += 1
                 tr.last_update_t = t
                 tr.updated_by[ri] = t
+                tr.record_snr(ri, t, d.get("snr_db"))
                 tr.hit_steps.append(self.step)
                 if not tr.confirmed and self._m_of_n(tr):
                     tr.confirmed = True
@@ -132,8 +148,9 @@ class TrackManager:
                 if di in used_d or d["signal_quality"] < self.init_min_quality:
                     continue
                 ekf = EKF.from_detection(d, pos, hd, q=self.q)
-                self.tracks.append(Track(self._next_id, ekf, t, t, updated_by={ri: t},
-                                         hit_steps=[self.step]))
+                tr = Track(self._next_id, ekf, t, t, updated_by={ri: t}, hit_steps=[self.step])
+                tr.record_snr(ri, t, d.get("snr_db"))
+                self.tracks.append(tr)
                 self._next_id += 1
 
         self._prune(t)

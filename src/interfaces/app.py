@@ -20,10 +20,11 @@ from src.core.evaluation import METRIC_INFO
 from src.core.modes import Mode
 from src.core.radar import RadarParams, antenna_gain, measurement_sigmas, snr_linear
 from src.core.rcs import EllipsoidRCS, LookupTableRCS, m2_to_dbsm
-from src.core.scenario import list_scenarios, load_scenario
+from src.core.scenario import build_radars, list_scenarios, load_scenario
 from src.core.targets import CLASS_NAMES, CLASS_SHORT, advance, spawn_target
 from src.interfaces import plots, viewer3d
 from src.models.baselines.policies import LEARNED, POLICIES
+from src.services import radar_info
 from src.services import simulation_service as sim
 
 st.set_page_config(page_title="GP-MARL-RadNet", layout="wide", page_icon="📡")
@@ -54,6 +55,8 @@ POLICY_HELP = {
                    "each radar's local scheduler accepts, delays, partially serves or rejects them "
                    "(src/core/scheduler.py). The centre never sets radar modes.",
     "random": "Random actions (sanity check).",
+    "ppo_task": "Learned fusion-centre task manager: one PPO agent sends a track-update request (or none) to "
+                "each radar every second; the radars' local schedulers decide (models/checkpoints/ppo_task.pt).",
     "central_ppo": "Trained PPO policy at the fusion centre: sees the fused track table and all radars, "
                    "sends one action to each radar (models/checkpoints/central_ppo.pt).",
     "mappo": "Trained MAPPO policy (models/checkpoints/mappo.pt).",
@@ -84,11 +87,11 @@ with tab_sim:
                         help="Train it on the Classifier tab first." if not has_clf else None)
     view = c5.radio("View", ["3-D", "2-D"], horizontal=True)
     if not TRAINED:
-        st.info("**No learned policy in the list yet because none has been trained.** "
-                "Train once (needs PyTorch, ~1-2 h on a CPU):  \n"
-                "`python -m src.services.training_service --central --steps 150000` (policy at the fusion centre), "
-                "`--steps 150000` (MAPPO) or `--ippo --steps 150000` (IPPO).  \n"
-                "The checkpoints are written to `models/checkpoints/` and then appear here and on the Experiments tab.")
+        st.info("**The learned task manager (ppo_task) is not in the list yet because it has not been trained.** "
+                "Train once (needs PyTorch, ~30 min on a CPU):  \n"
+                "`python -m src.services.training_service --task --decisions 30000`  \n"
+                "The checkpoint is written to `models/checkpoints/ppo_task.pt` and then appears here and on the "
+                "Experiments tab.")
     sc_site = load_scenario(scen)["site"]["name"]
     site_names = [sc_site] + [s["name"] for s in sim.MAP_SITES if s["name"] != sc_site]
     s1, s2 = st.columns([2, 5])
@@ -121,6 +124,53 @@ with tab_sim:
         m[5].metric("Class accuracy", fmt(summary["class_accuracy"], "{:.0%}"), help=METRIC_INFO["class_accuracy"][0])
         m[6].metric("False tracks (avg)", fmt(summary["false_tracks_mean"], "{:.2f}"), help=METRIC_INFO["false_tracks_mean"][0])
         m[7].metric("Team return", fmt(summary["return"], "{:.0f}"), help=METRIC_INFO["return"][0])
+        # ------------------------------------------------ parameters (popovers) and the radar equation
+        radars_p = build_radars(load_scenario(scen))
+        b1, b2, b3 = st.columns([1, 1, 4])
+        with b1.popover("📡 Radar parameters"):
+            ptab = pd.DataFrame({p.name: [v for _, _, v in radar_info.radar_parameters(p)] for p in radars_p})
+            ptab.insert(0, "parameter", [n for _, n, _ in radar_info.radar_parameters(radars_p[0])])
+            ptab.insert(0, "group", [g for g, _, _ in radar_info.radar_parameters(radars_p[0])])
+            st.dataframe(ptab, hide_index=True, width="stretch", height=560)
+            vmax = max(np.linalg.norm(t["v"]) for fr in payload["frames"] for t in fr["targets"])
+            for note in sorted(set(n.split(": ", 1)[1] for p in radars_p for n in radar_info.ambiguity_notes(p, vmax))):
+                st.warning(note)
+        with b2.popover("🎯 Targets"):
+            st.dataframe(pd.DataFrame(payload["targets"]), hide_index=True, width="stretch")
+            st.caption("RCS depends on the aspect (incidence angle in the target's body frame); the range shows "
+                       "the mean RCS over random aspects. Swerling 1: the RCS also fluctuates from look to look.")
+        b3.caption("Right-click a radar, target or track in the 3-D view for its parameters.")
+
+        with st.expander("Radar equation: how range, RCS and SNR give the detection probability"):
+            e1, e2, e3 = st.columns(3)
+            ri_ = e1.selectbox("Radar", range(len(radars_p)), format_func=lambda i: radars_p[i].name, key="lb_r")
+            ti_ = e2.selectbox("Target", range(len(payload["targets"])),
+                               format_func=lambda i: f"{payload['targets'][i]['target']} · {payload['targets'][i]['class']}",
+                               key="lb_t")
+            fi_ = e3.slider("Time (frame)", 0, len(payload["frames"]) - 1, len(payload["frames"]) // 2, key="lb_f")
+            fr = payload["frames"][fi_]
+            rng_m, sig_m2, _ = fr["radars"][ri_]["link"][ti_]
+            los = fr["radars"][ri_]["los"][ti_]
+            sw = 1 if "1" in payload["targets"][ti_]["fluctuation"] else 0
+            lb = radar_info.link_budget(radars_p[ri_], max(rng_m, 1.0), sig_m2, swerling=sw)
+            st.markdown(f"**t = {fr['t']:.1f} s** · range **{rng_m / 1000:.2f} km** · RCS at this aspect "
+                        f"**{sig_m2:.3g} m²** ({10 * np.log10(max(sig_m2, 1e-12)):.1f} dBsm) · line of sight: "
+                        + {0: "outside coverage", 1: "visible", 2: "hidden by terrain"}[los])
+            c1, c2 = st.columns([3, 2])
+            terms = pd.DataFrame(lb["terms"], columns=["term", "dB"])
+            terms.loc[len(terms)] = ["= SNR (one track dwell, beam on the target)", lb["snr_db"]]
+            c1.dataframe(terms.round(2), hide_index=True, width="stretch", height=500)
+            c2.metric("SNR", f"{lb['snr_db']:.1f} dB")
+            c2.metric("P_D, constant RCS (Marcum)", f"{lb['pd_constant_rcs']:.3f}")
+            c2.metric("P_D, Swerling I", f"{lb['pd_swerling1']:.3f}")
+            c2.caption(f"This target uses the {lb['pd_model']} model. It would be detected with P_D = 0.5 out to "
+                       f"{lb['max_range_pd50_km']:.1f} km at this RCS.")
+            c2.markdown("**Measurement accuracy at this SNR**  \n" +
+                        "  \n".join(f"σ {k}: {v}" for k, v in lb["sigma"].items()))
+            st.caption("SNR = P_t G² λ² σ N / ((4π)³ R⁴ L k T_0 B F)  (Eq. 27): the dB terms add up to the SNR. "
+                       "Search looks integrate fewer pulses and a target off the beam centre loses gain, so their "
+                       "SNR is lower. Simulation truth (range, aspect) is used here for explanation only.")
+
         with st.expander("Single radar vs network: each radar's local track and the fused track"):
             st.dataframe(radar_table.round(3), width="stretch", hide_index=True)
             st.caption("Local tracks use only that radar's own detections (structure A); the fused track combines "
@@ -262,7 +312,46 @@ with tab_cls:
         st.caption("Macro-F1 on held-out episodes. train_on / test_on: fused = network track at the fusion "
                    "centre, local = one radar's own track, truth = true states (optimistic upper bound only).")
         with st.expander("ECE and balanced accuracy"):
-            st.dataframe(res.round(3), width="stretch", hide_index=True)
+            st.dataframe(res.drop(columns=[c for c in ("curves", "roc_auc_per_class", "pr_auc_per_class",
+                                                       "prevalence") if c in res.columns]).round(3),
+                         width="stretch", hide_index=True)
+        st.markdown("**ROC-AUC and PR-AUC** (one class against the rest, macro average over classes)")
+        if "roc_auc_macro" not in res.columns:
+            st.info("This study file predates ROC-AUC / PR-AUC: re-run "
+                    "`python -m src.services.classifier_study --episodes 40`.")
+        else:
+            a1, a2 = st.columns(2)
+            a1.dataframe(res.pivot_table(index=["train_on", "test_on"], columns="model",
+                                         values="roc_auc_macro").round(3), width="stretch")
+            a1.caption("ROC-AUC: 0.5 = chance, 1 = perfect ranking of the windows of each class.")
+            a2.dataframe(res.pivot_table(index=["train_on", "test_on"], columns="model",
+                                         values="pr_auc_macro").round(3), width="stretch")
+            a2.caption("PR-AUC (average precision): chance level = the class's share of the test windows. "
+                       "It falls when a class is found only together with many false alarms, which ROC-AUC hides "
+                       "when classes are unbalanced.")
+            pick = [r for r in rep_s["results"] if r.get("curves")]
+            if pick:
+                labels = [f"{r['model']} · train {r['train_on']} → test {r['test_on']}" for r in pick]
+                default = next((i for i, r in enumerate(pick) if r["model"] == "gbm"
+                                and r["train_on"] == r["test_on"] == "fused"), 0)
+                sel = pick[st.selectbox("Curves of", range(len(pick)), index=default,
+                                        format_func=lambda i: labels[i], key="auc_sel")]
+                import plotly.graph_objects as go
+                g1, g2 = st.columns(2)
+                for col, kind, xl, yl, title in ((g1, "roc", "false positive rate", "true positive rate", "ROC"),
+                                                 (g2, "pr", "recall", "precision", "Precision-recall")):
+                    fig = go.Figure()
+                    for k, (name, (x, y)) in enumerate(sel["curves"][kind].items()):
+                        auc = sel[f"{kind}_auc_per_class"][CLASS_NAMES.index(name)]
+                        fig.add_scatter(x=x, y=y, mode="lines", name=f"{CLASS_SHORT[CLASS_NAMES.index(name)]} "
+                                                                     f"({auc:.2f})")
+                    if kind == "roc":
+                        fig.add_scatter(x=[0, 1], y=[0, 1], mode="lines", name="chance",
+                                        line={"dash": "dash", "color": "#8DA2AC"})
+                    fig.update_layout(template="plotly_dark", title=title, xaxis_title=xl, yaxis_title=yl,
+                                      height=360, paper_bgcolor="#0E1417", plot_bgcolor="#151D21",
+                                      xaxis_range=[0, 1], yaxis_range=[0, 1.02], margin={"t": 40})
+                    col.plotly_chart(fig, width="stretch")
         ds_chk = rep_s["dataset"]
         st.markdown(
             f"**Dataset checks** – windows per class: {ds_chk['windows_per_class']} "

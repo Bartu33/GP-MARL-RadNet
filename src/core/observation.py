@@ -45,6 +45,12 @@ TRACK_FEATURES = [
     "radars that updated it in the last 3 s / N",
     "class entropy / log(C) (1 = unknown)",
     "pending request at some radar",
+    # SNR of the reports associated with the track (all radars, last SNR_HISTORY reports)
+    "instantaneous SNR: last report / 30 dB",
+    "rolling mean SNR (linear average, in dB) / 30 dB",
+    "SNR standard deviation in dB / 10 dB",
+    "detection rate of requested dwells",       # corrects the SNR selection bias (misses carry no SNR)
+    "dwell history available",
 ]
 RADAR_FEATURES = [
     "online",
@@ -63,7 +69,33 @@ QUALITY_FEATURES = [
     "predicted cross-range sigma / 1000 m",
     "expected information gain 0.5*(logdet P - logdet P+) / 10 nats",
     "energy cost of a track dwell / E_max",
+    "last SNR measured by this radar on this track / 30 dB (0 = never)",
+    "time since this radar last updated the track / 10 s (1 = never)",
+    "detection rate of this radar's requested dwells on the track (0.5 = no history)",
 ]
+
+
+def snr_statistics(tr, radar: int | None = None):
+    """(last, rolling mean, std) of the SNR in dB of the reports associated with a
+    track, from one radar or from all radars; None when there is no report.
+
+    The mean is taken over linear power and converted back to dB (a mean of dB
+    values would be biased); the spread is the standard deviation of the dB
+    values.  Only detected looks carry an SNR, so these numbers describe the
+    detections, not every look -- see ``dwell_detection_rate``."""
+    hist = tr.snr.get(radar, []) if radar is not None else sorted(
+        (x for h in tr.snr.values() for x in h), key=lambda x: x[0])[-10:]
+    if not hist:
+        return None
+    db = np.array([v for _, v in hist])
+    mean_db = 10 * np.log10(np.mean(10 ** (db / 10)))
+    return float(db[-1]), float(mean_db), float(db.std())
+
+
+def dwell_detection_rate(tr, radar: int | None = None):
+    """Share of requested dwells on this track that produced a detection (None if none)."""
+    hist = tr.dwells.get(radar, []) if radar is not None else [x for h in tr.dwells.values() for x in h]
+    return float(np.mean([d for _, d in hist])) if hist else None
 
 
 def _coverable(p, tr) -> bool:
@@ -98,8 +130,16 @@ def track_summary(env, tr) -> tuple[np.ndarray, bool]:
         recent / env.n_radars,
         ent,
         float(pending),
+        *_snr_features(tr),
     ])
     return f, nis is not None
+
+
+def _snr_features(tr) -> list:
+    st = snr_statistics(tr)
+    last, mean, std = (st[0] / 30.0, st[1] / 30.0, min(2.0, st[2] / 10.0)) if st else (0.0, 0.0, 0.0)
+    rate = dwell_detection_rate(tr)
+    return [last, mean, std, rate if rate is not None else 0.5, float(rate is not None)]
 
 
 def radar_summary(env, i: int) -> np.ndarray:
@@ -148,7 +188,19 @@ def service_quality(env, i: int, tr) -> tuple[np.ndarray, bool]:
         min(1.0, r * sig[1] / 1000.0),
         min(1.0, gain / 10.0),
         cost,
+        *_pair_history(env, i, tr),
     ]), True
+
+
+def _pair_history(env, i: int, tr) -> list:
+    """What the centre knows about radar i on this track: its last SNR, how long
+    ago it updated the track, and how often its requested dwells found it."""
+    st = snr_statistics(tr, i)
+    last_t = tr.updated_by.get(i)
+    rate = dwell_detection_rate(tr, i)
+    return [st[0] / 30.0 if st else 0.0,
+            min(1.0, (env.t - last_t) / 10.0) if last_t is not None else 1.0,
+            rate if rate is not None else 0.5]
 
 
 def central_observation(env) -> dict:

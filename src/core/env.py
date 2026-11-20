@@ -34,6 +34,7 @@ from src.core.evaluation import TrackEvaluator
 from src.core.modes import Mode
 from src.core.radar import RadarAction, RadarState, radar_step, resource_vector, snr_linear, antenna_gain
 from src.core.radar import los_status
+from src.core.rcs import incidence_in_body
 from src.core.scenario import build_radars
 from src.core.scheduler import LocalScheduler
 from src.core.targets import CLASS_NAMES, advance, keep_above_ground, spawn_target
@@ -134,6 +135,7 @@ class RadarNetEnv(ParallelEnv):
         self.schedulers = [LocalScheduler(p, self.dt, **self.sc.get("scheduler", {})) for p in self.radar_params]
         self.last_answers: dict = {}
         self.last_report_counts: dict = {}
+        self.track_events = {"info_gain": 0.0, "confirmed_deleted": 0, "newly_confirmed": 0}
         self._update_slots()
         self._obs = {a: self._observe(i) for i, a in enumerate(self.possible_agents)}
         if self.record:
@@ -153,7 +155,15 @@ class RadarNetEnv(ParallelEnv):
             st = self.radar_states[i]
             self.last_answers[i] = sch.submit(self.t, requests.get(i, []), tracks, st)
             looks[i] = sch.next_action(t_next, tracks, st)
-        return self.step({a: 1 for a in self.agents}, radar_actions=looks)
+        served = {i: sch.last_served for i, sch in enumerate(self.schedulers) if sch.last_served is not None}
+        out = self.step({a: 1 for a in self.agents}, radar_actions=looks)
+        # requested dwells: did the radar detect the track it was asked to look at?
+        alive = {tr.id: tr for tr in self.tracker.tracks}
+        for i, tid in served.items():
+            if tid in alive:
+                tr = alive[tid]
+                tr.record_dwell(i, self.t, tr.updated_by.get(i) == self.t)
+        return out
 
     def scheduler_summary(self) -> dict:
         """Request statistics of all local schedulers (empty if no request was sent)."""
@@ -224,7 +234,17 @@ class RadarNetEnv(ParallelEnv):
             self.last_report_counts[d["radar"]] = self.last_report_counts.get(d["radar"], 0) + 1
         self.evaluator.detections(self.targets, self.radar_params, self.radar_states, at_radar, self.terrain)
 
+        # truth-free track events of this step (used by the task-manager reward)
+        logdet = lambda tr: float(np.linalg.slogdet(tr.ekf.P[:3, :3])[1])
+        pre = {tr.id: (logdet(tr), tr.confirmed) for tr in self.tracker.tracks}
         self.tracker.process(self.t, all_reports, self.radar_params)
+        post = {tr.id: tr for tr in self.tracker.tracks}
+        self.track_events = {
+            # reduction of log det of the position covariance by this step's updates (nats)
+            "info_gain": sum(max(0.0, pre[k][0] - logdet(tr)) for k, tr in post.items() if k in pre),
+            "confirmed_deleted": sum(1 for k, (_, c) in pre.items() if c and k not in post),
+            "newly_confirmed": sum(1 for k, tr in post.items() if tr.confirmed and not pre.get(k, (0, False))[1]),
+        }
         for i, lt in enumerate(self.local_trackers):        # at the radar: before communication loss
             lt.process(self.t, at_radar[i], self.radar_params)
         self._update_channels()
@@ -378,6 +398,13 @@ class RadarNetEnv(ParallelEnv):
         return float(r), metrics
 
     # ------------------------------------------------------------------ recording for the UI
+    @staticmethod
+    def _link(p, tgt):
+        r = float(np.linalg.norm(tgt.p - p.pos))
+        sig = float(tgt.rcs.mean_rcs(incidence_in_body(p.pos, tgt.p, tgt.R_WT)))
+        chi = float(snr_linear(r, sig, antenna_gain(0, 0, p), p, p.profiles[Mode.TRACK].n_pulses))
+        return [round(r), round(sig, 4), round(10 * np.log10(max(chi, 1e-30)), 1)]
+
     def _record_frame(self, reports):
         r1 = lambda a: [round(float(x), 1) for x in a]
         radars = []
@@ -391,6 +418,8 @@ class RadarNetEnv(ParallelEnv):
                 "heat": round(1 - np.clip((st.heat_k - p.h_ambient_k) / (p.h_max_k - p.h_ambient_k), 0, 1), 3),
                 # per target: 0 out of coverage, 1 line of sight, 2 hidden by terrain
                 "los": [los_status(s, p, self.terrain) if st.online else 0 for s in self.targets],
+                # per target: [range m, mean RCS at this aspect m², SNR dB of a boresight track dwell]
+                "link": [self._link(p, s) for s in self.targets],
             })
         tracks = []
         for tr in self.tracker.tracks:
