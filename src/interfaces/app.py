@@ -177,12 +177,21 @@ with tab_sim:
                        "all radars at the fusion centre. Coverage is measured on the network coverage mask.")
 
         if view == "3-D":
-            viewer3d.render(payload, height=740)
+            viewer3d.render(payload, height=1080)
             st.caption("Drag to rotate · right-drag to pan · scroll to zoom. Terrain and imagery are streamed "
-                       "from public tile services; without internet a procedural ground is shown.")
+                       "from public tile services; without internet a procedural ground is shown. "
+                       "Below the map: one PPI scope per radar with its own local track (L#) and the fusion centre's "
+                       "fused track (T#); click a scope to enlarge it, the PPI button hides them.")
         else:
             k = st.slider("Frame", 0, len(payload["frames"]) - 1, len(payload["frames"]) // 2)
             st.plotly_chart(plots.map_2d(payload, k), width="stretch")
+            st.markdown("**PPI scopes** · own detections (4 s afterglow), own local track L# (amber), "
+                        "fused track T# from the fusion centre (white; open square = this radar does not feed it)")
+            n_r = len(payload["radars"])
+            for row in range(0, n_r, 4):
+                cols = st.columns(min(4, n_r - row))
+                for j, col in enumerate(cols):
+                    col.plotly_chart(plots.ppi(payload, k, row + j), width="stretch", key=f"ppi_{row + j}")
 
         g1, g2 = st.columns(2)
         g1.plotly_chart(plots.time_series(log, ["rmse"], "Fused position error of tracked targets", "m"),

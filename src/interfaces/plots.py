@@ -60,6 +60,107 @@ def map_2d(payload: dict, frame_index: int, trail: int = 60) -> go.Figure:
     return fig
 
 
+MODE_NAMES = {0: "IDLE", 1: "SEARCH", 2: "TRACK", 3: "OFFLINE", 4: "INTERLEAVED"}
+OWN_TRACK_COLOR = "#F5A524"
+
+
+def ppi(payload: dict, frame_index: int, radar_index: int, afterglow: int = 8, truth: bool = True,
+        height: int = 330) -> go.Figure:
+    """PPI scope of one radar for one recorded frame (2-D fallback of the 3-D viewer's scopes).
+
+    North up, centred on the radar, range in km, rings every 2 km.  Shows the
+    radar's own detections (last ``afterglow`` frames), its own local tracks
+    (L#, amber diamonds, dashed link to the integrated track fed by the same
+    reports) and the fusion centre's integrated tracks (T#, white squares;
+    open when this radar does not feed the track)."""
+    r = payload["radars"][radar_index]
+    frames = payload["frames"]
+    fr = frames[frame_index]
+    rs = fr["radars"][radar_index]
+    x0, y0 = r["pos"][0], r["pos"][1]
+    km = lambda x, y: ((np.asarray(x, float) - x0) / 1e3, (np.asarray(y, float) - y0) / 1e3)
+    R = r["rmax"] / 1e3
+    fig = go.Figure()
+    th = np.linspace(0, 2 * np.pi, 121)
+    fig.add_trace(go.Scatter(x=R * np.cos(th), y=R * np.sin(th), fill="toself", fillcolor="#04100d",
+                             line=dict(color="#22303A", width=1), hoverinfo="skip", showlegend=False))
+    a = np.linspace(r["heading"] - r["fov"], r["heading"] + r["fov"], 60)
+    fig.add_trace(go.Scatter(x=[0, *(R * np.cos(a)), 0], y=[0, *(R * np.sin(a)), 0], fill="toself",
+                             fillcolor="rgba(79,209,197,0.08)", line=dict(width=0), hoverinfo="skip", showlegend=False))
+    for k in range(2, int(R) + 1, 2):
+        fig.add_trace(go.Scatter(x=k * np.cos(th), y=k * np.sin(th), mode="lines", hoverinfo="skip", showlegend=False,
+                                 line=dict(color="rgba(120,200,160,0.2)", width=1)))
+    for k, (az, _) in enumerate(rs["beams"]):
+        w = r["heading"] - az
+        track_beam = rs["mode"] == 2 or (rs["mode"] == 4 and k == len(rs["beams"]) - 1)
+        L = (rs.get("len") or r["rmax"]) / 1e3 if track_beam else R
+        ww = np.linspace(w - r["bw_az"] / 2, w + r["bw_az"] / 2, 6)
+        col = MODE_COLORS[1] if rs["mode"] == 4 and not track_beam else MODE_COLORS[rs["mode"]]
+        fig.add_trace(go.Scatter(x=[0, *(L * np.cos(ww)), 0], y=[0, *(L * np.sin(ww)), 0], fill="toself",
+                                 fillcolor=col, opacity=0.35 if track_beam else 0.2, line=dict(width=0),
+                                 hoverinfo="skip", showlegend=False))
+    # own detections with afterglow
+    pts = []
+    for kk in range(max(0, frame_index - afterglow + 1), frame_index + 1):
+        f = frames[kk]
+        own = f["own"][radar_index] if "own" in f else [d[:4] for d in f["dets"] if d[4] == radar_index]
+        for d in own:
+            pts.append((*km(d[0], d[1]), d[3], 1 - (frame_index - kk) / afterglow))
+    if pts:
+        P = np.array(pts, float)
+        fig.add_trace(go.Scatter(x=P[:, 0], y=P[:, 1], mode="markers", name="own detections",
+                                 marker=dict(size=5, color=np.where(P[:, 2] > 0, "#ff6b6b", "#9fffe0"),
+                                             opacity=0.3 + 0.7 * P[:, 3]),
+                                 hovertemplate="%{x:.2f} km, %{y:.2f} km<extra>detection</extra>"))
+    if truth:
+        for t in fr["targets"]:
+            x, y = km(t["p"][0], t["p"][1])
+            fig.add_trace(go.Scatter(x=[x], y=[y], mode="markers", showlegend=False,
+                                     marker=dict(size=6, color=CLASS_COLORS[t["label"]]),
+                                     hovertemplate=f"truth {CLASS_SHORT[t['label']]}<extra></extra>"))
+    net = {t["id"]: t for t in fr["tracks"] if t["conf"]}
+    for t in net.values():
+        x, y = km(t["p"][0], t["p"][1])
+        fed = radar_index in t.get("by", [])
+        fig.add_trace(go.Scatter(x=[x, x + t["v"][0] * 0.02], y=[y, y + t["v"][1] * 0.02], mode="lines",
+                                 line=dict(color="#E6EDEF", width=1), hoverinfo="skip", showlegend=False))
+        fig.add_trace(go.Scatter(x=[x], y=[y], mode="markers+text", text=[f"T{t['id']}"], textposition="bottom right",
+                                 textfont=dict(color="#E6EDEF", size=10), showlegend=False,
+                                 marker=dict(symbol="square" if fed else "square-open", size=9,
+                                             color="rgba(230,237,239,0.25)" if fed else "#E6EDEF",
+                                             line=dict(color="#E6EDEF", width=1.5)),
+                                 hovertemplate=f"T{t['id']} · σ {t['sig']:.0f} m<extra>integrated</extra>"))
+    local = (fr.get("ltracks") or [[]] * len(payload["radars"]))[radar_index]   # confirmed local tracks
+    for t in local:
+        x, y = km(t["p"][0], t["p"][1])
+        if t.get("conf") is False:
+            fig.add_trace(go.Scatter(x=[x], y=[y], mode="markers", showlegend=False, hoverinfo="skip",
+                                     marker=dict(symbol="diamond-open", size=7, color=OWN_TRACK_COLOR, opacity=0.6)))
+            continue
+        f = net.get(t.get("fid"))
+        if f is not None:
+            fx, fy = km(f["p"][0], f["p"][1])
+            fig.add_trace(go.Scatter(x=[x, fx], y=[y, fy], mode="lines", hoverinfo="skip", showlegend=False,
+                                     line=dict(color=OWN_TRACK_COLOR, width=1, dash="dot")))
+        if "v" in t:
+            fig.add_trace(go.Scatter(x=[x, x + t["v"][0] * 0.02], y=[y, y + t["v"][1] * 0.02], mode="lines",
+                                     line=dict(color=OWN_TRACK_COLOR, width=1), hoverinfo="skip", showlegend=False))
+        lab = f"L{t['id']}" + (f"→T{f['id']}" if f is not None else "")
+        fig.add_trace(go.Scatter(x=[x], y=[y], mode="markers+text", text=[lab], textposition="top right",
+                                 textfont=dict(color=OWN_TRACK_COLOR, size=10), showlegend=False,
+                                 marker=dict(symbol="diamond", size=9, color=OWN_TRACK_COLOR),
+                                 hovertemplate=f"L{t['id']}" + (f" · σ {t['sig']:.0f} m" if "sig" in t else "") + "<extra>own track</extra>"))
+    comm = fr.get("comm")
+    n_own = sum(1 for t in local if t.get("conf", True))
+    title = (f"{r['name']} · {MODE_NAMES[rs['mode']]} · own {n_own} · net {len(net)}"
+             + (f" · to FC {comm[radar_index][1]}/{comm[radar_index][0]}" if comm else ""))
+    fig.update_layout(**{**DARK, "margin": dict(l=10, r=10, t=36, b=10), "plot_bgcolor": "#0b1518"}, height=height,
+                      title=dict(text=title, font=dict(size=12, color=MODE_COLORS[rs["mode"]])), showlegend=False,
+                      xaxis=dict(range=[-R * 1.02, R * 1.02], visible=False),
+                      yaxis=dict(range=[-R * 1.02, R * 1.02], visible=False, scaleanchor="x"))
+    return fig
+
+
 def time_series(log: dict, keys, title: str, ytitle: str = "") -> go.Figure:
     fig = go.Figure()
     for k in keys:

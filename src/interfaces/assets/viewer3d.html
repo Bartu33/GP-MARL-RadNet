@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RadNet 3-D viewer</title>
 <style>
-:root{--bg:#0E1417;--panel:rgba(11,17,20,.82);--line:#22303A;--ink:#E6EDEF;--mut:#8DA2AC;--teal:#4FD1C5;--blue:#7FB3FF;--orange:#F5A524}
+:root{--ppiH:320px;--bg:#0E1417;--panel:rgba(11,17,20,.82);--line:#22303A;--ink:#E6EDEF;--mut:#8DA2AC;--teal:#4FD1C5;--blue:#7FB3FF;--orange:#F5A524}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
 .mono{font-family:ui-monospace,"IBM Plex Mono",Menlo,monospace}
-#scene{position:absolute;inset:0 0 54px 0;background:linear-gradient(180deg,#4d6274 0%,#8ea2af 40%,#2a3236 100%)}
+#scene{position:absolute;inset:0 0 calc(54px + var(--ppiH)) 0;background:linear-gradient(180deg,#4d6274 0%,#8ea2af 40%,#2a3236 100%)}
 #scene canvas{display:block;width:100%;height:100%;touch-action:none}
 .hud{position:absolute;z-index:3;background:var(--panel);border:1px solid var(--line);border-radius:8px}
 #hudL{top:10px;left:10px;padding:8px 10px;min-width:210px}
@@ -20,17 +20,17 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px s
 #hudR{top:10px;right:10px;padding:6px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:60%}
 .hb{min-height:32px;padding:0 10px;border-radius:6px;border:1px solid #2C3C46;background:#0E1417;color:var(--ink);cursor:pointer;font:12px ui-monospace,monospace}
 .hb.on{border-color:var(--teal);background:#1A3A3A}
-#legend{bottom:64px;left:10px;padding:6px 10px;display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:#cfd9dd}
+#legend{bottom:calc(64px + var(--ppiH));left:10px;padding:6px 10px;display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:#cfd9dd}
 #legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
-#labels{position:absolute;inset:0 0 54px 0;pointer-events:none;z-index:2;overflow:hidden}
+#labels{position:absolute;inset:0 0 calc(54px + var(--ppiH)) 0;pointer-events:none;z-index:2;overflow:hidden}
 .lbl{position:absolute;left:0;top:0;font:600 11px ui-monospace,monospace;padding:1px 5px;border-radius:3px;background:rgba(11,17,20,.75);white-space:nowrap}
 #bottom{position:absolute;left:0;right:0;bottom:0;height:54px;display:flex;align-items:center;gap:10px;padding:0 12px;background:#111A1E;border-top:1px solid var(--line)}
 #bottom button{min-height:38px;min-width:44px;padding:0 12px;border-radius:7px;border:1px solid #2C3C46;background:transparent;color:var(--ink);cursor:pointer;font:inherit}
 #play{background:var(--teal)!important;color:#062421!important;border:0!important;font-weight:700!important;min-width:84px!important}
 #scrub{flex:1;accent-color:var(--teal)}
 #loading{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:rgba(11,17,20,.6);font:12px ui-monospace,monospace;color:#cfd9dd;text-align:center;padding:16px}
-#attr{position:absolute;right:8px;bottom:60px;z-index:3;font-size:10px;color:#e6edef;text-shadow:0 1px 2px #000;opacity:.85}
-#follow{right:10px;bottom:100px;padding:8px 10px;min-width:220px;display:none;font-size:12px}
+#attr{position:absolute;right:8px;bottom:calc(60px + var(--ppiH));z-index:3;font-size:10px;color:#e6edef;text-shadow:0 1px 2px #000;opacity:.85}
+#follow{right:10px;bottom:calc(100px + var(--ppiH));padding:8px 10px;min-width:220px;display:none;font-size:12px}
 #follow .hdr{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:700;margin-bottom:4px}
 #follow .hdr button{min-height:28px;min-width:28px;border-radius:6px;border:1px solid #2C3C46;background:#0E1417;color:var(--ink);cursor:pointer}
 #follow .kv{display:grid;grid-template-columns:auto auto;column-gap:12px;row-gap:2px;color:#cfd9dd}
@@ -47,6 +47,41 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px s
 #info th{color:var(--mut);font-weight:500}
 #info .grp td{color:var(--teal);font-weight:600;padding-top:6px}
 #info .note{color:#F5A524;margin-top:6px}
+/* PPI scopes: one per radar, under the map (meeting 03, action 07) */
+#ppi{position:absolute;left:0;right:0;bottom:54px;height:var(--ppiH);display:flex;flex-direction:column;background:#081013;border-top:1px solid var(--line)}
+#ppiKey{height:22px;display:flex;align-items:center;gap:14px;padding:0 10px;font-size:11px;color:#8DA2AC;white-space:nowrap;overflow:hidden}
+#ppiKey b{color:#cfd9dd;font-weight:600}
+#ppiKey i{display:inline-block;width:9px;height:9px;margin-right:4px;vertical-align:-1px}
+#ppiRow{flex:1;display:flex;gap:6px;padding:0 6px 6px;min-height:0}
+.scope{flex:1;min-width:0;display:flex;flex-direction:column;background:#0b1518;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.scope .sh{height:22px;display:flex;justify-content:space-between;align-items:center;padding:0 8px;font:600 11px ui-monospace,monospace;border-bottom:1px solid var(--line)}
+.scope .sh span:last-child{color:#8DA2AC;font-weight:500}
+.scope .cv{flex:1;min-height:0;position:relative}
+.scope canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.scope{cursor:zoom-in}
+.scope .sh .x{display:none;background:none;border:1px solid var(--line);color:#cfd9dd;border-radius:4px;font:600 11px ui-monospace,monospace;padding:0 6px;margin-left:6px;cursor:pointer}
+/* enlarged scope: fills the view above the replay bar */
+#ppiBack{position:fixed;inset:0 0 54px 0;background:rgba(4,8,10,.72);z-index:40;display:none}
+body.ppibig #ppiBack{display:block}
+.scope.big{position:fixed;inset:14px 14px 68px 14px;z-index:41;cursor:grab;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.scope.big:active{cursor:grabbing}
+.scope.big .sh{height:30px;font-size:13px}
+.scope.big .sh .x{display:inline-block}
+.scope .pairs{display:none}
+.scope.big .pairs{display:block;position:absolute;top:8px;right:8px;max-width:min(560px,60%);max-height:calc(100% - 16px);overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#22303A transparent;background:rgba(8,16,19,.88);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font:12px ui-monospace,monospace;color:#cfd9dd;pointer-events:auto;cursor:default}
+.pairs table{border-collapse:collapse;width:100%}
+.pairs th,.pairs td{padding:2px 6px;text-align:right}
+.pairs th{white-space:normal;vertical-align:bottom}
+.pairs td{white-space:nowrap}
+@media (max-width:1100px){.scope.big .pairs{font-size:11px}.pairs th,.pairs td{padding:2px 4px}}
+.pairs th{color:#8DA2AC;font-weight:500;border-bottom:1px solid var(--line)}
+.pairs td:first-child,.pairs th:first-child{text-align:left}
+.pairs .hint{color:#8DA2AC;margin-top:6px;font-size:11px;white-space:normal}
+.scope.big .bkey{display:flex}
+.scope .bkey{display:none;position:absolute;left:8px;bottom:8px;gap:4px 12px;flex-wrap:wrap;max-width:min(620px,calc(100% - 200px));background:rgba(8,16,19,.85);border:1px solid var(--line);border-radius:6px;padding:5px 9px;font:11px ui-monospace,monospace;color:#cfd9dd;pointer-events:none}
+.scope .bkey i{display:inline-block;width:9px;height:9px;margin-right:4px;vertical-align:-1px}
+body.noppi{--ppiH:0px}
+body.noppi #ppi{display:none}
 @media (max-width:760px){#hudL,#legend{display:none}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
@@ -76,6 +111,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px s
   <button class="hb on" data-tog="dets">Detections</button>
   <button class="hb on" data-tog="truth">Truth</button>
   <button class="hb on" data-tog="los" title="radar-target line of sight: green visible, red hidden by terrain">LOS</button>
+  <button class="hb on" id="ppiB" title="show / hide the PPI scopes">PPI</button>
 </div>
 <div class="hud" id="legend">
   <span style="color:#8DA2AC">click a target or track to follow it · right-click a radar, target or track for details ·</span>
@@ -91,6 +127,18 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px s
 </div>
 <div id="attr"></div>
 <div id="loading"><span id="loadTxt">Starting 3-D view…</span></div>
+<div id="ppi">
+  <div id="ppiKey" class="mono">
+    <b>PPI · one scope per radar</b><span>north up · rings every 2 km · click a scope to enlarge it</span>
+    <span><i style="background:#9fffe0;border-radius:50%"></i>own detections (4 s afterglow)</span>
+    <span><i style="background:#F5A524;transform:rotate(45deg)"></i>own track L#</span>
+    <span><i style="border:1.5px solid #E6EDEF"></i>integrated track T# (dashed: this radar does not feed it)</span>
+    <span><i style="border-top:1.5px dashed #F5A524;height:0;width:12px"></i>own → integrated link</span>
+    <span><i style="background:#8DA2AC;border-radius:50%;width:6px;height:6px"></i>truth</span>
+  </div>
+  <div id="ppiRow"></div>
+</div>
+<div id="ppiBack" title="close"></div>
 <div id="bottom">
   <button id="play">Pause</button>
   <button id="stepB" title="one frame">Step</button>
@@ -100,11 +148,258 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px s
 </div>
 
 <script id="payload" type="application/json">__PAYLOAD__</script>
+<script>
+/* PPI scopes ------------------------------------------------------------------
+   Plan-position indicator of every radar, north up, centred on the radar,
+   range rings every 2 km out to r_max.  Each scope shows what that radar knows
+   on its own (its detections with a short afterglow and its local tracks L#)
+   together with the integrated tracks T# produced by the fusion centre.  The
+   scopes are redrawn once per simulation step, like a real scan update. */
+window.RADNET_D = JSON.parse(document.getElementById('payload').textContent);
+window.PPI = (function () {
+  const D = window.RADNET_D, F = D.frames || [];
+  const MODE = ['IDLE', 'SEARCH', 'TRACK', 'OFFLINE', 'INTERLEAVED'];
+  const MODE_CSS = ['#8DA2AC', '#4FD1C5', '#7FB3FF', '#ff5c5c', '#C39BFF'];
+  const CLS_CSS = ['#ff9f43', '#d980fa', '#7bed9f', '#feca57'];
+  const OWN = '#F5A524', AFTERGLOW = 8;               // frames of detection afterglow (4 s at dt = 0.5 s)
+  const row = document.getElementById('ppiRow');
+  const scopes = (D.radars || []).map((r, i) => {
+    const el = document.createElement('div'); el.className = 'scope'; el.title = 'click to enlarge';
+    el.innerHTML = '<div class="sh"><span></span><span><span class="hr"></span>' +
+      '<button type="button" class="x fit" title="fit the view to the tracks">Fit</button>' +
+      '<button type="button" class="x full" title="whole radar coverage">Full range</button>' +
+      '<button type="button" class="x close" title="close (Esc)">✕</button></span></div>' +
+      '<div class="cv"><canvas></canvas><div class="pairs"></div><div class="bkey">' +
+      '<span><i style="background:#9fffe0;border-radius:50%"></i>own detection</span>' +
+      '<span><i style="background:#F5A524;transform:rotate(45deg)"></i>own track L# (this radar alone)</span>' +
+      '<span><i style="border:1.5px solid #E6EDEF"></i>integrated track T# (fusion centre)</span>' +
+      '<span><i style="border:1.5px dashed #E6EDEF"></i>T# not fed by this radar</span>' +
+      '<span><i style="border-top:1.5px dashed #F5A524;height:0;width:12px"></i>L# → T# link</span>' +
+      '<span>circles: 3σ position uncertainty · lines: 20 s of velocity</span></div></div>';
+    row.appendChild(el);
+    const sc = {r, i, el, hl: el.querySelector('.sh > span'), hr: el.querySelector('.sh .hr'),
+                cv: el.querySelector('canvas'), pairs: el.querySelector('.pairs'), w: 0, h: 0, view: null};
+    new ResizeObserver(() => { sc.w = 0; last = -1; }).observe(el.querySelector('.cv'));
+    el.addEventListener('click', e => { if (!el.classList.contains('big') && !e.target.closest('button')) openBig(sc); });
+    el.querySelector('.close').onclick = e => { e.stopPropagation(); closeBig(); };
+    el.querySelector('.fit').onclick = e => { e.stopPropagation(); sc.view = null; sc.full = false; redrawNow(); };
+    el.querySelector('.full').onclick = e => { e.stopPropagation(); sc.view = null; sc.full = true; redrawNow(); };
+    // enlarged scope: wheel zooms around the cursor, drag pans
+    const cv = sc.cv;
+    cv.addEventListener('wheel', e => { if (!el.classList.contains('big') || !sc.view) return; e.preventDefault();
+      const b = cv.getBoundingClientRect(), mx = e.clientX - b.left, my = e.clientY - b.top, V = sc.view;
+      const wx = V.x + (mx - sc.w / 2) / V.s, wy = V.y - (my - sc.h / 2) / V.s, f = Math.exp(-e.deltaY * 0.0015);
+      const sMax = Math.min(sc.w, sc.h) / 400, sMin = Math.min(sc.w, sc.h) / (2.4 * sc.r.rmax);   // 400 m .. whole coverage
+      V.s = Math.min(sMax, Math.max(sMin, V.s * f));
+      V.x = wx - (mx - sc.w / 2) / V.s; V.y = wy + (my - sc.h / 2) / V.s; V.user = true; redrawNow(); }, {passive: false});
+    let drag = null;
+    cv.addEventListener('pointerdown', e => { if (el.classList.contains('big') && sc.view) { drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); } });
+    cv.addEventListener('pointermove', e => { if (!drag) return; const V = sc.view;
+      V.x -= (e.clientX - drag[0]) / V.s; V.y += (e.clientY - drag[1]) / V.s; V.user = true; drag = [e.clientX, e.clientY]; redrawNow(); });
+    cv.addEventListener('pointerup', () => { drag = null; });
+    cv.addEventListener('dblclick', () => { if (el.classList.contains('big')) { sc.view = null; redrawNow(); } });
+    return sc;
+  });
+  let last = -1, lastKey = '', lastOpt = {truth: true}, big = null;
+  function redrawNow() { last = -1; draw(lastK, lastOpt); }
+  let lastK = 0;
+  function openBig(sc) { closeBig(); big = sc; sc.view = null; sc.full = false; sc.el.classList.add('big');
+    document.body.classList.add('ppibig'); sc.w = 0; requestAnimationFrame(redrawNow); }
+  function closeBig() { if (!big) return; big.el.classList.remove('big'); big.w = 0; big = null;
+    document.body.classList.remove('ppibig'); requestAnimationFrame(redrawNow); }
+  document.getElementById('ppiBack').onclick = closeBig;
+  window.addEventListener('keydown', e => { if (e.key === 'Escape') closeBig(); });
+
+  // view of the enlarged scope: fitted to what this radar and the fusion centre show
+  function fitView(sc, A, i, w, h) {
+    const r = sc.r;
+    if (sc.full) return {x: r.pos[0], y: r.pos[1], s: (Math.min(w, h) / 2 - 10) / r.rmax, user: false};
+    const pts = [];
+    A.tracks.filter(t => t.conf).forEach(t => pts.push(t.p));
+    ((A.ltracks && A.ltracks[i]) || []).forEach(t => pts.push(t.p));
+    ((A.own && A.own[i]) || []).forEach(d => { if (!d[3]) pts.push(d); });
+    if (!pts.length) return {x: r.pos[0], y: r.pos[1], s: (Math.min(w, h) / 2 - 10) / r.rmax, user: false};
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    pts.forEach(p => { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); });
+    const half = Math.max(1500, 0.5 * Math.max(x1 - x0, (y1 - y0) * w / h) * 1.35);
+    return {x: (x0 + x1) / 2, y: (y0 + y1) / 2, s: (w / 2) / half, user: false};
+  }
+  const niceStep = m => { const c = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000]; return c.find(v => v >= m) || 10000; };
+
+  function size(sc) {
+    const box = sc.cv.parentElement, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = box.clientWidth, h = box.clientHeight;
+    if (w !== sc.w || h !== sc.h) { sc.w = w; sc.h = h; sc.cv.width = Math.max(1, w * dpr); sc.cv.height = Math.max(1, h * dpr); }
+    const g = sc.cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); return g;
+  }
+  const wedge = (g, cx, cy, R, a0, a1) => { g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R, -a1, -a0); g.closePath(); };
+  function diamond(g, x, y, s) { g.beginPath(); g.moveTo(x, y - s); g.lineTo(x + s, y); g.lineTo(x, y + s); g.lineTo(x - s, y); g.closePath(); }
+
+  function drawScope(sc, k, opt) {
+    const g = size(sc), w = sc.w, h = sc.h, r = sc.r, i = sc.i, A = F[k];
+    g.clearRect(0, 0, w, h);
+    if (!A || w < 20 || h < 20) return;
+    const isBig = sc === big;
+    let R, cx, cy, s;
+    if (isBig) {
+      if (!sc.view) sc.view = fitView(sc, A, i, w, h);
+      else if (!sc.view.user && !sc.full) {                       // follow the tracks smoothly until the user zooms / pans
+        const f = fitView(sc, A, i, w, h), V = sc.view, a = 0.25;
+        V.x += (f.x - V.x) * a; V.y += (f.y - V.y) * a; V.s = Math.exp(Math.log(V.s) + (Math.log(f.s) - Math.log(V.s)) * a);
+      }
+      s = sc.view.s; cx = w / 2 + (r.pos[0] - sc.view.x) * s; cy = h / 2 - (r.pos[1] - sc.view.y) * s; R = r.rmax * s;
+    } else { R = Math.min(w, h) / 2 - 6; cx = w / 2; cy = h / 2; s = R / r.rmax; }
+    const P = (x, y) => [cx + (x - r.pos[0]) * s, cy - (y - r.pos[1]) * s];
+    const SZ = isBig ? 1.6 : 1;                                   // symbol scale
+    const rs = A.radars[i], mode = rs.mode;
+    // header
+    // local (single-radar) tracks: frame key "ltracks" (confirmed only); empty when the run has no local trackers
+    const loc = (A.ltracks && A.ltracks[i]) || [], net = A.tracks.filter(t => t.conf);
+    const cm = A.comm ? A.comm[i] : null;
+    sc.hl.textContent = `${r.name} · ${MODE[mode]}`; sc.hl.style.color = MODE_CSS[mode];
+    sc.hr.textContent = (isBig ? 'own tracks ' : 'own ') + loc.filter(t => t.conf !== false).length +
+      (isBig ? ' · integrated tracks ' : ' · net ') + net.length +
+      (cm ? (isBig ? ` · reports to fusion centre ${cm[1]}/${cm[0]}` : ` · to FC ${cm[1]}/${cm[0]}`) : '');
+    // scope face
+    g.save();
+    if (isBig) { g.fillStyle = '#060c0e'; g.fillRect(0, 0, w, h); }
+    g.beginPath(); g.arc(cx, cy, R, 0, 2 * Math.PI); g.fillStyle = '#04100d'; g.fill(); g.clip();
+    wedge(g, cx, cy, R, r.heading - r.fov, r.heading + r.fov); g.fillStyle = 'rgba(79,209,197,0.13)'; g.fill();
+    g.strokeStyle = 'rgba(120,200,160,0.18)'; g.lineWidth = 1; g.fillStyle = 'rgba(141,162,172,0.75)';
+    g.font = isBig ? '11px ui-monospace,monospace' : '9px ui-monospace,monospace';
+    const ringStep = isBig ? niceStep(80 / s) : 2000;                // ~80 px between rings when enlarged
+    // range labels along the direction from the radar to the view centre, so they stay on screen
+    let la = Math.PI / 4;
+    // enlarged: towards the upper-left part of the view, which the tracks (centred) rarely occupy
+    if (isBig) { const dx = w * 0.1 - cx, dy = cy - h * 0.2; if (Math.hypot(dx, dy) > 5) la = Math.atan2(dy, dx); }
+    for (let m = ringStep; m <= r.rmax + 1; m += ringStep) { const rr = m * s; g.beginPath(); g.arc(cx, cy, rr, 0, 2 * Math.PI); g.stroke();
+      if (R > 70) g.fillText((m >= 1000 ? (m / 1000) + ' km' : m + ' m').replace(' km', isBig ? ' km' : ''),
+                             cx + rr * Math.cos(la) + 2, cy - rr * Math.sin(la) - 2); }
+    for (let d = 0; d < 360; d += 30) { const a = d * Math.PI / 180; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + R * Math.cos(a), cy - R * Math.sin(a)); g.stroke(); }
+    g.setLineDash([4, 4]); g.strokeStyle = 'rgba(79,209,197,0.45)';
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + R * Math.cos(r.heading), cy - R * Math.sin(r.heading)); g.stroke(); g.setLineDash([]);
+    // beams of this step (sensor azimuth is positive to the right of the boresight)
+    (rs.beams || []).forEach((b, kb) => {
+      const trackBeam = mode === 2 || (mode === 4 && kb === rs.beams.length - 1);
+      const L = (trackBeam && rs.len ? rs.len : r.rmax) * s, a = r.heading - b[0];
+      wedge(g, cx, cy, L, a - r.bw_az / 2, a + r.bw_az / 2);
+      g.fillStyle = (mode === 4 && !trackBeam ? MODE_CSS[1] : MODE_CSS[mode]) + (trackBeam ? '66' : '33'); g.fill();
+    });
+    // afterglow of this radar's own detections
+    for (let kk = Math.max(0, k - AFTERGLOW + 1); kk <= k; kk++) {
+      const own = F[kk].own ? F[kk].own[i] : (F[kk].dets || []).filter(d => d[4] === i).map(d => d.slice(0, 4));
+      const al = 0.2 + 0.8 * (1 - (k - kk) / AFTERGLOW);
+      (own || []).forEach(d => { const [x, y] = P(d[0], d[1]); g.globalAlpha = al; g.fillStyle = d[3] ? '#ff6b6b' : '#9fffe0';
+        g.beginPath(); g.arc(x, y, (kk === k ? 3 : 2.2) * SZ, 0, 2 * Math.PI); g.fill(); });
+    }
+    g.globalAlpha = 1;
+    // truth
+    if (opt.truth) A.targets.forEach(t => { const [x, y] = P(t.p[0], t.p[1]); g.fillStyle = CLS_CSS[t.label] || '#fff';
+      g.globalAlpha = 0.85; g.beginPath(); g.arc(x, y, 2.5 * SZ, 0, 2 * Math.PI); g.fill(); g.globalAlpha = 1; });
+    // integrated tracks from the fusion centre
+    const byId = new Map(A.tracks.map(t => [t.id, t]));
+    g.font = isBig ? '600 13px ui-monospace,monospace' : '600 10px ui-monospace,monospace';
+    // simple label declutter: try a few positions around the symbol, keep the first free one
+    const placed = [];
+    const label = (txt, x, y, col) => {
+      const tw = g.measureText(txt).width, th = isBig ? 13 : 10, o = isBig ? 10 : 7;
+      const cand = [[o, -5], [o, th + 3], [-tw - o, -5], [-tw - o, th + 3], [o, 2 * th + 5], [-tw - o, 2 * th + 5], [o, -th - 7]];
+      let best = cand[0];
+      for (const c of cand) { const bx = x + c[0], by = y + c[1] - th;
+        if (!placed.some(q => bx < q[0] + q[2] && bx + tw > q[0] && by < q[1] + q[3] && by + th > q[1])) { best = c; break; } }
+      placed.push([x + best[0], y + best[1] - th, tw, th]);
+      texts.push([txt, x + best[0], y + best[1], col]);      // drawn after the clip, so edge labels stay whole
+    };
+    const texts = [];
+    net.forEach(t => {
+      const [x, y] = P(t.p[0], t.p[1]), fed = (t.by || []).includes(i);
+      const sr = 3 * t.sig * s; if (sr > 5) { g.strokeStyle = 'rgba(230,237,239,0.25)'; g.beginPath(); g.arc(x, y, sr, 0, 2 * Math.PI); g.stroke(); }
+      const b = 5 * SZ;
+      g.strokeStyle = '#E6EDEF'; g.lineWidth = 1.5; g.setLineDash(fed ? [] : [3, 2]); g.strokeRect(x - b, y - b, 2 * b, 2 * b); g.setLineDash([]);
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + t.v[0] * 20 * s, y - t.v[1] * 20 * s); g.stroke(); g.lineWidth = 1;
+      label('T' + t.id + (isBig && t.cls >= 0 ? ' ' + (D.classes || [])[t.cls] : ''), x, y,
+            isBig && t.cls >= 0 ? CLS_CSS[t.cls] : '#E6EDEF');
+    });
+    // this radar's own (local) tracks, linked to the integrated track fed by the same reports
+    loc.forEach(t => {
+      const [x, y] = P(t.p[0], t.p[1]);
+      if (t.conf === false) { g.strokeStyle = 'rgba(245,165,36,0.55)'; diamond(g, x, y, 3.5 * SZ); g.stroke(); return; }
+      if (isBig && t.sig) { const sr = 3 * t.sig * s; if (sr > 5) { g.strokeStyle = 'rgba(245,165,36,0.35)'; g.beginPath(); g.arc(x, y, sr, 0, 2 * Math.PI); g.stroke(); } }
+      const f = t.fid != null ? byId.get(t.fid) : null;
+      if (f && f.conf) { const [fx, fy] = P(f.p[0], f.p[1]); g.strokeStyle = OWN; g.setLineDash([3, 3]);
+        g.beginPath(); g.moveTo(x, y); g.lineTo(fx, fy); g.stroke(); g.setLineDash([]); }
+      if (t.v) { g.strokeStyle = OWN; g.beginPath(); g.moveTo(x, y); g.lineTo(x + t.v[0] * 20 * s, y - t.v[1] * 20 * s); g.stroke(); }
+      g.fillStyle = OWN; diamond(g, x, y, 4.5 * SZ); g.fill();
+      label('L' + t.id + (f && f.conf ? '→T' + f.id : ''), x, y, OWN);
+    });
+    g.restore();
+    g.font = isBig ? '600 13px ui-monospace,monospace' : '600 10px ui-monospace,monospace';
+    texts.forEach(([txt, x, y, col]) => { g.fillStyle = col; g.fillText(txt, Math.min(Math.max(x, 2), w - g.measureText(txt).width - 2), y); });
+    g.strokeStyle = '#22303A'; g.beginPath(); g.arc(cx, cy, R, 0, 2 * Math.PI); g.stroke();
+    g.fillStyle = '#8DA2AC'; g.font = (isBig ? 12 : 10) + 'px ui-monospace,monospace';
+    if (isBig) {
+      // radar position (or an arrow towards it when it is off screen) and a scale bar
+      const inView = cx > 0 && cx < w && cy > 0 && cy < h;
+      if (inView) { g.fillStyle = MODE_CSS[mode]; g.beginPath(); g.arc(cx, cy, 5, 0, 2 * Math.PI); g.fill(); g.fillText(r.name, cx + 8, cy + 4); }
+      g.fillStyle = '#8DA2AC'; g.fillText('N ↑', 10, 20);
+      if (!inView) {                                               // where the radar is, from the view centre
+        const dx = r.pos[0] - sc.view.x, dy = r.pos[1] - sc.view.y;
+        const arrows = ['→', '↗', '↑', '↖', '←', '↙', '↓', '↘'], k8 = ((Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) % 8) + 8) % 8;
+        g.fillStyle = MODE_CSS[mode]; g.fillText(`radar ${r.name}: ${arrows[k8]} ${(Math.hypot(dx, dy) / 1000).toFixed(1)} km`, 10, 38);
+      }
+      // scale bar: at most ~150 px, label above its right end (clear of the legend box)
+      const nice = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
+      const bar = nice.filter(v => v * s <= 150).pop() || nice[0], bp = bar * s;
+      g.strokeStyle = '#cfd9dd'; g.lineWidth = 2;
+      g.beginPath(); g.moveTo(w - 20 - bp, h - 18); g.lineTo(w - 20, h - 18);
+      g.moveTo(w - 20 - bp, h - 23); g.lineTo(w - 20 - bp, h - 13); g.moveTo(w - 20, h - 23); g.lineTo(w - 20, h - 13); g.stroke(); g.lineWidth = 1;
+      const bl = bar >= 1000 ? bar / 1000 + ' km' : bar + ' m';
+      g.fillStyle = '#cfd9dd'; g.fillText(bl, w - 20 - g.measureText(bl).width, h - 27);
+      g.fillStyle = '#8DA2AC'; g.font = '11px ui-monospace,monospace';
+      g.fillText(`t = ${A.t.toFixed(1)} s · wheel: zoom · drag: pan · double-click: fit`, 10, inView ? 38 : 56);
+      sc.pairs.innerHTML = pairTable(loc, byId, net, i);
+    } else {
+      g.fillText('N', cx - 3, cy - R + 11);
+      g.fillText(`t = ${A.t.toFixed(1)} s`, 6, h - 6);
+    }
+  }
+
+  // single radar vs network, numerically: each own track next to the integrated track it feeds
+  function pairTable(loc, byId, net, i) {
+    const conf = loc.filter(t => t.conf !== false);
+    const rows = conf.map(t => {
+      const f = t.fid != null ? byId.get(t.fid) : null;
+      const d = f ? Math.hypot(t.p[0] - f.p[0], t.p[1] - f.p[1], t.p[2] - f.p[2]) : null;
+      return `<tr><td style="color:${OWN}">L${t.id}</td><td>${f ? 'T' + f.id : '—'}</td>` +
+             `<td>${d != null ? Math.round(d) + ' m' : '—'}</td><td>${t.sig != null ? Math.round(t.sig) + ' m' : '—'}</td>` +
+             `<td>${f ? Math.round(f.sig) + ' m' : '—'}</td><td>${f && f.by ? f.by.length : '—'}</td></tr>`;
+    }).join('');
+    const only = net.filter(t => !conf.some(l => l.fid === t.id));
+    return '<b>This radar alone vs fusion centre</b><table><tr><th>own</th><th>integrated</th><th>Δ position</th>' +
+      '<th>σ own</th><th>σ integrated</th><th>radars</th></tr>' + (rows || '<tr><td colspan="6">no own confirmed track</td></tr>') +
+      '</table>' + (only.length ? `<div class="hint">Integrated tracks this radar has no own track for: ${only.map(t => 'T' + t.id).join(', ')}</div>` : '') +
+      '<div class="hint">σ: position standard deviation; “radars”: how many radars fed the integrated track in the last 3 s.</div>';
+  }
+
+  function draw(k, opt) {
+    opt = opt || {}; k = Math.max(0, Math.min(F.length - 1, k | 0)); lastK = k; lastOpt = opt;
+    const key = k + ':' + !!opt.truth;
+    if (key === lastKey && last === k) return;
+    lastKey = key; last = k;
+    scopes.forEach(sc => drawScope(sc, k, opt));
+  }
+  const btn = document.getElementById('ppiB');
+  btn.onclick = () => { document.body.classList.toggle('noppi'); btn.classList.toggle('on', !document.body.classList.contains('noppi'));
+    window.dispatchEvent(new Event('resize')); last = -1; };
+  draw(0, {truth: true});                          // first frame even before three.js has loaded
+  return {draw, redraw: () => { last = -1; }};
+})();
+</script>
 <script type="module">
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 
-const D = JSON.parse(document.getElementById('payload').textContent);
+const D = window.RADNET_D || JSON.parse(document.getElementById('payload').textContent);
 const F = D.frames, NF = F.length;
 const CLS_COL = [0xff9f43, 0xd980fa, 0x7bed9f, 0xfeca57];
 const CLS_CSS = ['#ff9f43', '#d980fa', '#7bed9f', '#feca57'];
@@ -573,7 +868,7 @@ function setView(kind) {
 document.querySelectorAll('[data-cam]').forEach(b => b.onclick = () => { stopFollow(); setView(b.dataset.cam); });
 const orbitB = document.getElementById('orbit');
 orbitB.onclick = () => { controls.autoRotate = !controls.autoRotate; orbitB.classList.toggle('on', controls.autoRotate); };
-document.querySelectorAll('[data-tog]').forEach(b => b.onclick = () => { const g = groups[b.dataset.tog]; g.visible = !g.visible; b.classList.toggle('on', g.visible); });
+document.querySelectorAll('[data-tog]').forEach(b => b.onclick = () => { const g = groups[b.dataset.tog]; g.visible = !g.visible; b.classList.toggle('on', g.visible); if (window.PPI) window.PPI.redraw(); });
 
 let playing = true, speed = 1, fi = 0, last = performance.now();
 const scrub = document.getElementById('scrub'); scrub.max = NF - 1;
@@ -592,6 +887,7 @@ function loop(now) {
   if (T && NF > 0) {
     if (playing) { fi += dts * speed / D.dt; if (fi >= NF - 1) fi = 0; scrub.value = Math.floor(fi); }
     apply(fi); placeLabels();
+    if (window.PPI) window.PPI.draw(Math.floor(fi), {truth: groups.truth.visible});
   }
   controls.update(); renderer.render(scene, camera);
 }

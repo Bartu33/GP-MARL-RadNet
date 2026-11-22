@@ -105,6 +105,9 @@ class TrackManager:
         self.history_len = history_len
         self.tracks: list[Track] = []
         self._next_id = 1
+        # report -> track id of the last process() call, keyed by id(report["z"]);
+        # read by the fusion centre to link local tracks to integrated tracks (PPI scopes)
+        self.last_assoc: dict[int, int] = {}
         self.step = 0                                  # tracker steps processed so far
 
     def predict(self, dt: float):
@@ -114,6 +117,7 @@ class TrackManager:
     def process(self, t: float, detections: list[dict], radars):
         """Associate and fuse all reports of this step.  ``radars`` is the list
         of RadarParams (positions/headings needed by the measurement model)."""
+        self.last_assoc = {}
         by_radar: dict[int, list[dict]] = {}
         for d in detections:
             by_radar.setdefault(d["radar"], []).append(d)
@@ -140,6 +144,7 @@ class TrackManager:
                 tr.hits += 1
                 tr.last_update_t = t
                 tr.updated_by[ri] = t
+                self.last_assoc[id(d["z"])] = tr.id
                 tr.record_snr(ri, t, d.get("snr_db"))
                 tr.hit_steps.append(self.step)
                 if not tr.confirmed and self._m_of_n(tr):
@@ -151,6 +156,7 @@ class TrackManager:
                 tr = Track(self._next_id, ekf, t, t, updated_by={ri: t}, hit_steps=[self.step])
                 tr.record_snr(ri, t, d.get("snr_db"))
                 self.tracks.append(tr)
+                self.last_assoc[id(d["z"])] = self._next_id
                 self._next_id += 1
 
         self._prune(t)

@@ -72,6 +72,40 @@ many are blocked by terrain) and which track follows it, or for a track its
 class, uncertainty and error to the nearest truth. Click empty ground, the
 ✕ button or a camera preset to stop following.
 
+### PPI scopes
+
+Below the map there is one **PPI scope** per radar, synchronised with the
+replay (one update per simulation step). Each scope shows what that radar
+knows on its own next to what the fusion centre knows. The **PPI** button
+hides them; in the **2-D** view the same scopes are drawn with Plotly (offline).
+
+| Symbol | Meaning |
+|---|---|
+| shaded sector | the radar's field of view; north up, rings every 2 km out to r_max |
+| teal / blue wedge | search / track beams of this step |
+| small fading dots | the radar's own detections, 4 s afterglow (red = false alarm) |
+| amber diamond `L#` | the radar's own confirmed local track (structure A) |
+| white square `T#` | fused track from the fusion centre; dashed / open when this radar does not feed it |
+| dashed amber line `L5→T12` | the fused track updated by the same reports as the local track |
+| coloured dot | truth (follows the **Truth** button) |
+| header `own · net · to FC a/b` | confirmed local tracks, confirmed fused tracks, reports received by the centre / produced by the radar |
+
+**Click a scope to enlarge it.** The enlarged scope fits its view to the
+tracks and follows them; the mouse wheel zooms (down to a ~400 m wide view),
+dragging pans, a double click or **Fit** fits the view again and **Full range**
+shows the whole coverage. Range rings adapt to the zoom (50 m … 5 km), a scale
+bar sits bottom right and, when the radar is off screen, its direction and
+distance are shown top left. Uncertainty circles (3σ) are drawn for both the
+local and the fused tracks. A table compares, for every confirmed local track,
+the fused track it feeds: position difference, σ of the local track, σ of the
+fused track and how many radars fed the fused track in the last 3 s; fused
+tracks this radar has no own track for are listed below it. Close with ✕, Esc
+or a click outside.
+
+Local tracks are recorded when the episode runs with `local_tracks=True`
+(the dashboard and `run_episode` do); otherwise the scopes show detections and
+fused tracks only.
+
 ## 4. Scenarios
 
 YAML files in `configs/scenarios/`. Copy one and edit:

@@ -130,6 +130,12 @@ class RadarNetEnv(ParallelEnv):
         self.track_load = np.zeros(self.n_radars)         # cumulative seconds spent tracking per radar
         self.evaluator = TrackEvaluator(len(self.targets), self.dt)   # truth-based metrics, evaluation only
         self._last_reports = []
+        # PPI scopes (display only, no random numbers): every radar's own reports before
+        # communication, report counts [produced at the radar, received at the centre],
+        # and which fused track each local track feeds: (radar, local id) -> (fused id, t)
+        self._own_reports = [[] for _ in range(self.n_radars)]
+        self._comm = [[0, 0] for _ in range(self.n_radars)]
+        self._links: dict = {}
         self._beam_len = [None] * self.n_radars
         # local schedulers: used when the centre sends track-update requests (step_requests)
         self.schedulers = [LocalScheduler(p, self.dt, **self.sc.get("scheduler", {})) for p in self.radar_params]
@@ -247,6 +253,7 @@ class RadarNetEnv(ParallelEnv):
         }
         for i, lt in enumerate(self.local_trackers):        # at the radar: before communication loss
             lt.process(self.t, at_radar[i], self.radar_params)
+        self._update_ppi(at_radar, all_reports)
         self._update_channels()
         if self.classifier is not None and self.step_count % 4 == 0:      # every 2 s
             probs = self.classifier.classify_tracks(self.tracker.tracks)
@@ -280,6 +287,31 @@ class RadarNetEnv(ParallelEnv):
         return dict(self._obs), rewards, terms, truncs, infos
 
     # ------------------------------------------------------------------ helpers
+    def _update_ppi(self, at_radar: dict, delivered: list):
+        """Bookkeeping for the PPI scopes: each radar's own reports, how many
+        reached the fusion centre, and which fused track every local track
+        feeds (the fused track updated by the same report)."""
+        self._own_reports = [list(at_radar.get(i, [])) for i in range(self.n_radars)]
+        recv = [0] * self.n_radars
+        for d in delivered:
+            recv[d["radar"]] += 1
+        self._comm = [[len(self._own_reports[i]), recv[i]] for i in range(self.n_radars)]
+        central = self.tracker.last_assoc
+        for i, lt in enumerate(self.local_trackers):
+            for d in self._own_reports[i]:
+                k = id(d["z"])
+                if k in lt.last_assoc and k in central:
+                    self._links[(i, lt.last_assoc[k])] = (central[k], self.t)
+        fused = {tr.id for tr in self.tracker.tracks}
+        local = {(i, tr.id) for i, lt in enumerate(self.local_trackers) for tr in lt.tracks}
+        self._links = {k: v for k, v in self._links.items()
+                       if k in local and v[0] in fused and self.t - v[1] <= 15.0}
+
+    def link_of(self, radar: int, local_id: int):
+        """Fused track id fed by the same reports as this radar's local track (or None)."""
+        v = self._links.get((radar, local_id))
+        return v[0] if v else None
+
     def _in_outage(self, i: int) -> bool:
         """Scenario-defined detection outages: ``stress.outages`` = [[radar | "all", t0, t1], ...]."""
         for r, t0, t1 in self.sc["stress"].get("outages") or []:
@@ -429,6 +461,8 @@ class RadarNetEnv(ParallelEnv):
                 "sig": round(tr.ekf.pos_std, 1), "conf": bool(tr.confirmed),
                 "cls": int(np.argmax(cp)) if cp is not None else -1,
                 "pc": round(float(np.max(cp)), 3) if cp is not None else 0.0,
+                # radars whose reports updated this fused track in the last 3 s
+                "by": sorted(r for r, tt in tr.updated_by.items() if self.t - tt <= 3.0),
             })
         self.frames.append({
             "t": round(self.t, 2),
@@ -437,7 +471,13 @@ class RadarNetEnv(ParallelEnv):
             "tracks": tracks,
             "dets": [r1(d["world_xyz"]) + [int(d["is_false_alarm"]), d["radar"]] for d in reports],
             # confirmed local (single-radar) tracks per radar, for per-radar displays
-            "ltracks": [[{"id": tr.id, "p": r1(tr.x[:3])} for tr in lt.confirmed] for lt in self.local_trackers],
+            "ltracks": [[{"id": tr.id, "p": r1(tr.x[:3]), "v": r1(tr.x[3:]), "sig": round(tr.ekf.pos_std, 1),
+                          "fid": self.link_of(i, tr.id)} for tr in lt.confirmed]
+                        for i, lt in enumerate(self.local_trackers)],
+            # PPI scopes: every radar's own reports (also those not delivered) and the
+            # report count per radar [produced at the radar, received by the fusion centre]
+            "own": [[r1(d["world_xyz"]) + [int(d["is_false_alarm"])] for d in reps] for reps in self._own_reports],
+            "comm": [list(c) for c in self._comm],
         })
 
 
