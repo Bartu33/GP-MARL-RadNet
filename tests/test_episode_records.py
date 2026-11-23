@@ -391,13 +391,44 @@ def test_v1_roundtrip_has_no_inferred_communication(tmp_path):
     legacy["metadata"].pop("communication_order")
     legacy.pop("communication")
     legacy.pop("deliveries")
+    legacy.pop("radar_resources")
+    legacy.pop("reward_terms")
     export_episode_records(legacy, tmp_path)
     restored = load_episode_records(tmp_path)
     assert_equal(restored, legacy)
     assert "deliveries" not in restored and "communication" not in restored
 
 
-@pytest.mark.parametrize("version", [0, 3, True, "2"])
+def test_v2_records_still_roundtrip_without_resource_tables(tmp_path):
+    env = make_env(record_episode=True)
+    run(env)
+    v2 = deepcopy(env.episode_records)
+    v2["metadata"]["record_schema_version"] = 2
+    v2.pop("radar_resources")
+    v2.pop("reward_terms")
+    export_episode_records(v2, tmp_path)
+    restored = load_episode_records(tmp_path)
+    assert_equal(restored, v2)
+    assert "radar_resources" not in restored
+
+
+def test_v3_records_resources_and_reward_terms(tmp_path):
+    from src.core.env import REWARD_TERMS
+    env = make_env(record_episode=True)
+    run(env)
+    rec = env.episode_records
+    steps = len(rec["transitions"])
+    assert len(rec["radar_resources"]) == steps * env.n_radars
+    assert len(rec["reward_terms"]) == steps
+    w = env.sc["reward"]
+    for row, tr in zip(rec["reward_terms"], rec["transitions"]):
+        total = sum(sign * w.get(key, 0.0) * row[term] for term, (key, sign) in REWARD_TERMS.items())
+        assert total == pytest.approx(row["reward"]) and row["reward"] == pytest.approx(tr["rewards"][0])
+    export_episode_records(rec, tmp_path)
+    assert_equal(load_episode_records(tmp_path), rec)
+
+
+@pytest.mark.parametrize("version", [0, 4, True, "2"])
 def test_unsupported_record_versions_fail_explicitly(tmp_path, version):
     records = make_env(record_episode=True).episode_records
     records["metadata"]["record_schema_version"] = version

@@ -57,6 +57,50 @@ MANEUVER_WEIGHTS = {
 # rate follows the ground trend along the planned leg (within the climb limit).
 TERRAIN_RELATIVE_BELOW_AGL_M = 500.0
 
+# Rugged terrain pool: high relief, narrow valleys and steep flanks, so that
+# ridges block line of sight and low-level routes have to follow the valleys.
+# Ranges are sampled per episode; "parameters" are the generator knobs of
+# src/core/procedural_terrain.py (orientation, ridge width, asymmetry, ...).
+RUGGED_PROFILES = {
+    "deep_canyon": {"family": "valley_linear_canyon", "valley_width_m": (2600.0, 4000.0),
+                    "relief_height_m": (950.0, 1450.0), "ridge_width_m": (900.0, 1500.0),
+                    "obstacle_profiles": ["sparse", "dense", "asymmetric"]},
+    "twisting_gorge": {"family": "valley_sinuous_pass", "valley_width_m": (3000.0, 4400.0),
+                       "relief_height_m": (900.0, 1400.0), "ridge_width_m": (900.0, 1500.0),
+                       "obstacle_profiles": ["dense", "asymmetric"]},
+    "alpine_chokepoint": {"family": "mountain_chokepoint", "valley_width_m": (2800.0, 4200.0),
+                          "relief_height_m": (900.0, 1400.0), "ridge_width_m": (900.0, 1600.0),
+                          "obstacle_profiles": ["sparse", "dense", "asymmetric"]},
+    "knife_ridges": {"family": "ridge_multi_obstacle", "valley_width_m": (2800.0, 4200.0),
+                     "relief_height_m": (950.0, 1450.0), "ridge_width_m": (900.0, 1500.0),
+                     "obstacle_profiles": ["dense", "asymmetric"]},
+    "highland_bowl": {"family": "basin_highlands", "valley_width_m": (3000.0, 4400.0),
+                      "relief_height_m": (850.0, 1300.0), "ridge_width_m": (1000.0, 1700.0),
+                      "obstacle_profiles": ["sparse", "dense"]},
+}
+ROUTE_PATTERNS = ("converging", "diverging", "hub")
+ZONE_NAMES = ("Zone A", "Zone B", "Zone C", "Zone D")
+
+DEFAULT_MISSILE_FOCUS = {
+    "missile_count": [2, 3],
+    "route_patterns": list(ROUTE_PATTERNS),
+    "variant_weights": {"subsonic_cruise": 0.5, "supersonic": 0.5},
+    "anchor_radius_m": 2000.0,        # reference point drawn within this distance of the centre
+    "anchor_tolerance_m": 700.0,      # a route must pass this close to the reference point
+    "min_heading_separation_deg": 40.0,
+    "relaxed_heading_separation_deg": 8.0,   # after a third of the attempts: in-trail salvos in narrow valleys
+    "inbound_phase": [0.50, 0.85],    # share of the episode flown before reaching the reference point
+    "outbound_phase": [0.05, 0.20],
+    "downrange_zone_m": 5500.0,       # outbound routes get a zone where they leave this circle
+    "facility_count": [0, 2],
+    "zone_radius_m": [350.0, 600.0],
+    "zone_height_m": [60.0, 220.0],
+    "episode_attempts": 10,           # anchor / route redraws per terrain
+    "max_route_attempts": 150,        # trajectory draws per missile and variant before the next variant
+    "facility_radius_m": [150.0, 300.0],
+    "facility_height_m": [40.0, 120.0],
+}
+
 DEFAULT_RECIPE = {
     "recipe_version": RECIPE_VERSION,
     "dataset_name": "class_targets_v1",
@@ -80,6 +124,11 @@ DEFAULT_RECIPE = {
         "obstacle_profiles": ["clear", "sparse", "dense", "asymmetric"],
         "valley_width_m": [2200.0, 3800.0],
         "relief_height_m": [650.0, 1050.0],
+        "terrain_rerolls": 4,       # missile_focus only: next profile's terrain if no route fits
+        # names from RUGGED_PROFILES: when set, each episode takes the next profile of a
+        # shuffled cycle (family, width, relief, ridge shape, orientation) instead of the
+        # families / valley_width_m / relief_height_m above.  None = legacy sampling.
+        "rugged_profiles": None,
     },
     "radar": {
         "distance_from_centre_m": [1500.0, 6000.0],
@@ -90,6 +139,11 @@ DEFAULT_RECIPE = {
                      "search_bars_deg": [2.0, 7.0, 15.0, 25.0]},
     },
     "trajectory": {"cpa_radius_m": 3500.0, "segments": [1, 3], "max_attempts": 600},
+    # Missile-focused episodes (None = the mixed-class behaviour above, unchanged).
+    # missile_count missiles per episode share a reference point ("Zone A"): the
+    # routes converge on it, diverge from it, or both ("hub").  Remaining targets
+    # (target_count - missiles) are UAV / aircraft.  Zones are visual markers only.
+    "missile_focus": None,
     "coverage": {"min_visible_fraction": 0.3, "sample_step_s": 1.0, "max_radar_attempts": 300,
                  "max_episode_attempts": 30},
 }
@@ -129,7 +183,38 @@ def resolve_recipe(recipe: dict | None = None) -> dict:
     steps = r["duration_s"] / r["dt"]
     if abs(steps - round(steps)) > 1e-9:
         raise ValueError("duration_s must be a multiple of dt")
+    rugged = r["terrain"].get("rugged_profiles")
+    if rugged is not None and (not rugged or set(rugged) - set(RUGGED_PROFILES)):
+        raise ValueError(f"terrain.rugged_profiles: non-empty subset of {list(RUGGED_PROFILES)}")
+    if r["missile_focus"] is not None:
+        r["missile_focus"] = _resolve_focus(r["missile_focus"], r)
     return r
+
+
+def _resolve_focus(over, r):
+    focus = _merge(DEFAULT_MISSILE_FOCUS, over)
+    unknown = set(focus) - set(DEFAULT_MISSILE_FOCUS)
+    if unknown:
+        raise ValueError(f"missile_focus: unsupported fields {sorted(unknown)}")
+    lo, hi = focus["missile_count"]
+    if not (isinstance(lo, int) and isinstance(hi, int) and 1 <= lo <= hi <= len(ZONE_NAMES) - 1):
+        raise ValueError(f"missile_focus.missile_count: [lo, hi] with 1 <= lo <= hi <= {len(ZONE_NAMES) - 1}")
+    if lo > r["target_count"][1] or hi > 3:
+        raise ValueError("missile_focus.missile_count: cannot exceed target_count (at most 3 targets)")
+    if not focus["route_patterns"] or set(focus["route_patterns"]) - set(ROUTE_PATTERNS):
+        raise ValueError(f"missile_focus.route_patterns: non-empty subset of {list(ROUTE_PATTERNS)}")
+    allowed = {"subsonic_cruise", "supersonic"}
+    weights = focus["variant_weights"]
+    if set(weights) - allowed or not any(w > 0 for w in weights.values()):
+        raise ValueError(f"missile_focus.variant_weights: positive weights over {sorted(allowed)}")
+    for key in ("inbound_phase", "outbound_phase"):
+        a, b = focus[key]
+        if not 0.0 < a <= b < 1.0:
+            raise ValueError(f"missile_focus.{key}: 0 < lo <= hi < 1")
+    for key in ("anchor_radius_m", "anchor_tolerance_m", "min_heading_separation_deg", "downrange_zone_m"):
+        if not focus[key] > 0:
+            raise ValueError(f"missile_focus.{key}: expected a positive number")
+    return focus
 
 
 # ---------------------------------------------------------------------------
@@ -293,11 +378,54 @@ def _leg(rng, terrain, centre, cpa_radius, length, low, candidates=12):
     return cpa, float(psis[best[int(rng.integers(len(best)))]]), f
 
 
-def plan_target(class_name, rng, terrain, duration, dt, centre, cfg, variant=None):
+def _angle_gap(a, b):
+    return abs((a - b + math.pi) % (2 * math.pi) - math.pi)
+
+
+def _route_leg(rng, terrain, route, length, low, relaxed=False, candidates=48):
+    """Leg through the route's reference point, or None if no heading is separated enough.
+
+    The closest point lies a fraction of ``route["tolerance_m"]`` from the reference
+    point; ``f`` is drawn from the route's phase (late = inbound, early = outbound).
+    Headings closer than the minimum separation to an already planned route are dropped;
+    low-level flyers then take the flattest of the remaining ones.
+    """
+    anchor = np.asarray(route["anchor"], float)
+    ang, rad = rng.uniform(-np.pi, np.pi), 0.4 * route["tolerance_m"] * math.sqrt(rng.uniform())
+    cpa = anchor + rad * np.array([math.cos(ang), math.sin(ang)])
+    f = float(rng.uniform(*route["phase"]))
+    sep = math.radians(route["relaxed_separation_deg"] if relaxed else route["min_separation_deg"])
+    psis = [p for p in rng.uniform(-np.pi, np.pi, candidates)
+            if all(_angle_gap(p, q) >= sep for q in route["headings"])]
+    if not psis:
+        return None
+    if low:
+        # terrain-following flies a straight line between the end heights: rank headings by the
+        # largest ground deviation from that chord and drop the hopeless ones without propagating
+        s_ = np.linspace(-f, 1.0 - f, 25) * length
+        dev = []
+        for psi in psis:
+            xy = cpa[None, :] + s_[:, None] * np.array([math.cos(psi), math.sin(psi)])[None, :]
+            h = terrain.height(xy[:, 0], xy[:, 1])
+            chord = h[0] + (h[-1] - h[0]) * np.linspace(0.0, 1.0, len(h))
+            dev.append(float(np.abs(h - chord).max()))
+        keep = [i for i in np.argsort(dev) if dev[i] <= route.get("max_chord_dev_m", 200.0)][:3]
+        if not keep:
+            return None
+        psi = psis[int(keep[int(rng.integers(len(keep)))])]
+    else:
+        psi = psis[int(rng.integers(len(psis)))]
+    return cpa, float(psi), f
+
+
+def plan_target(class_name, rng, terrain, duration, dt, centre, cfg, variant=None, route=None):
     """Draw one target of ``class_name`` and a valid trajectory through the area.
 
     The leg is placed so that its closest point to the area lies within
     ``cpa_radius_m`` of ``centre``; ``f`` of the leg is flown before that point.
+    With ``route`` (anchor, tolerance_m, phase, headings, min_separation_deg) the leg
+    instead passes through the route's reference point on a heading separated from
+    the other routes, and the realised path must stay within the tolerance of it.
     """
     if variant is None:
         # variants with a leg model here; missile/terminal_dive episodes come from missile_dive_service
@@ -314,7 +442,14 @@ def plan_target(class_name, rng, terrain, duration, dt, centre, cfg, variant=Non
         agl0 = instance["altitude_agl_m"] if attempt == 0 else float(
             rng.uniform(*(spec.altitude_agl_typical_m if rng.random() < 0.85 else spec.altitude_agl_range_m)))
         low = agl0 < TERRAIN_RELATIVE_BELOW_AGL_M
-        cpa, psi, f = _leg(rng, terrain, centre, cfg["cpa_radius_m"], speed * duration, low)
+        if route is None:
+            cpa, psi, f = _leg(rng, terrain, centre, cfg["cpa_radius_m"], speed * duration, low)
+        else:
+            leg = _route_leg(rng, terrain, route, speed * duration, low, relaxed=attempt >= cfg["max_attempts"] // 3)
+            if leg is None:
+                rejected["no_feasible_heading"] = rejected.get("no_feasible_heading", 0) + 1
+                continue
+            cpa, psi, f = leg
         u = np.array([math.cos(psi), math.sin(psi)])
         start_xy = cpa - u * speed * duration * f
         end_xy = start_xy + u * speed * duration
@@ -344,9 +479,15 @@ def plan_target(class_name, rng, terrain, duration, dt, centre, cfg, variant=Non
             # rounding must not break the checked trajectory
             P, V = propagate(target["position"], target["velocity"], motion, duration)
             if check_trajectory(spec, P, V, terrain) is None:
-                return target, {"attempts": attempt + 1, "rejected": rejected, "maneuvers": kinds,
-                                "trajectory": P}
-            reason = "rounding"
+                miss = None if route is None else float(
+                    np.min(np.linalg.norm(P[:, :2] - np.asarray(route["anchor"]), axis=1)))
+                if miss is not None and miss > route["tolerance_m"]:
+                    reason = "anchor_miss"
+                else:
+                    return target, {"attempts": attempt + 1, "rejected": rejected, "maneuvers": kinds,
+                                    "trajectory": P, "heading_rad": psi}
+            else:
+                reason = "rounding"
         rejected[reason] = rejected.get(reason, 0) + 1
     raise ValueError(f"{class_name}/{instance['variant']}: no valid trajectory in "
                      f"{cfg['max_attempts']} attempts ({rejected})")
@@ -433,6 +574,146 @@ def _cycle_counts(master, stream, index, lo, hi):
     return int(cycle_rng.permutation(span)[index % len(span)])
 
 
+def _rugged_terrain_spec(r, rng, master, index, which, retry=0):
+    """Terrain spec from the next rugged profile of a shuffled cycle (see RUGGED_PROFILES)."""
+    t_cfg = r["terrain"]
+    names = t_cfg["rugged_profiles"]
+    prof_name = names[(_cycle_counts(master, 8, index, 0, len(names) - 1) + retry) % len(names)]   # a reroll moves on to the next profile
+    prof = RUGGED_PROFILES[prof_name]
+    obstacle = prof["obstacle_profiles"][int(rng.integers(len(prof["obstacle_profiles"])))]
+    params = {"valley_angle_deg": round(float(rng.uniform(0.0, 180.0)), 1),
+              "ridge_width_m": round(float(rng.uniform(*prof["ridge_width_m"])), 1)}
+    if obstacle == "asymmetric":
+        params["asymmetry_ratio"] = round(float(rng.uniform(1.3, 1.7)), 2)
+    spec = {
+        "source": "procedural", "resolution": t_cfg["resolution"], "family": prof["family"],
+        "texture_family": t_cfg["textures"][int(rng.integers(len(t_cfg["textures"])))],
+        "obstacle_profile": obstacle,
+        "valley_width_m": round(float(rng.uniform(*prof["valley_width_m"])), 1),
+        "relief_height_m": round(float(rng.uniform(*prof["relief_height_m"])), 1),
+        "parameters": params,
+        "seed": int(np.random.SeedSequence(
+            master, spawn_key=(3, which, index) + ((retry,) if retry else ())).generate_state(1)[0]),
+    }
+    return spec, prof_name
+
+
+def _focus_composition(r, rng, master, index, n_targets, class_counts):
+    """Shuffled class list of a missile-focused episode (missiles drawn first, the rest UAV / aircraft)."""
+    focus = r["missile_focus"]
+    n_missiles = min(n_targets, _cycle_counts(master, 6, index, *focus["missile_count"]))
+    others = {c: float(r["class_weights"].get(c, 0.0)) for c in CLASS_ORDER if c != "missile"}
+    classes = ["missile"] * n_missiles
+    class_counts["missile"] += n_missiles
+    for _ in range(n_targets - n_missiles):
+        if not any(w > 0 for w in others.values()):
+            raise ValueError("missile_focus: target_count exceeds missile_count and no UAV / aircraft weight is positive")
+        c = _balanced_pick(class_counts, others, rng)
+        class_counts[c] += 1
+        classes.append(c)
+    patterns = focus["route_patterns"]
+    cyc = np.random.default_rng(np.random.SeedSequence(master, spawn_key=(7, index // len(patterns))))
+    pattern = patterns[int(cyc.permutation(len(patterns))[index % len(patterns)])]
+    return [classes[i] for i in rng.permutation(len(classes))], pattern
+
+
+def _route_phases(pattern, n_missiles, rng):
+    """'in' (reaches the reference point late) or 'out' (leaves it early) per missile."""
+    if pattern == "converging":
+        return ["in"] * n_missiles
+    if pattern == "diverging":
+        return ["out"] * n_missiles
+    if n_missiles == 1:
+        return ["in"]
+    n_in = int(rng.integers(1, n_missiles))                 # hub: at least one inbound and one outbound
+    return ["in"] * n_in + ["out"] * (n_missiles - n_in)
+
+
+def _plan_focus_targets(r, rng, terrain, classes, pattern, duration, dt, centre):
+    """Targets of a missile-focused episode with routes tied to one reference point.
+
+    Returns (targets, info, route); route holds the anchor, per-missile phases and headings.
+    Raises ValueError if a route cannot be placed.
+    """
+    focus = r["missile_focus"]
+    cfg = {**r["trajectory"], "max_attempts": focus["max_route_attempts"]}
+    # reference point: the lowest of a few draws, so that low-level routes can follow the ground
+    draws = []
+    for _ in range(8):
+        ang, rad = rng.uniform(-np.pi, np.pi), focus["anchor_radius_m"] * math.sqrt(rng.uniform())
+        draws.append(np.asarray(centre, float) + rad * np.array([math.cos(ang), math.sin(ang)]))
+    anchor = min(draws, key=lambda q: float(terrain.height(*q)))
+    phases = iter(_route_phases(pattern, classes.count("missile"), rng))
+    names = [v for v in focus["variant_weights"] if focus["variant_weights"][v] > 0]
+    w = np.array([focus["variant_weights"][v] for v in names], float)
+    headings, route_phases, targets, info = [], [], [], []
+    for c in classes:
+        if c != "missile":
+            t, meta = plan_target(c, rng, terrain, duration, dt, centre, r["trajectory"])
+        else:
+            phase = next(phases)
+            route = {"anchor": anchor, "tolerance_m": focus["anchor_tolerance_m"],
+                     "phase": focus["inbound_phase"] if phase == "in" else focus["outbound_phase"],
+                     "headings": headings, "min_separation_deg": focus["min_heading_separation_deg"],
+                     "relaxed_separation_deg": focus["relaxed_heading_separation_deg"]}
+            first = int(rng.choice(len(names), p=w / w.sum()))
+            order = [names[first]] + [v for v in names if v != names[first]]
+            for k, variant in enumerate(order):      # a variant that cannot fly the route yields to another
+                try:
+                    t, meta = plan_target(c, rng, terrain, duration, dt, centre, cfg, variant=variant, route=route)
+                    break
+                except ValueError:
+                    if k == len(order) - 1:
+                        raise
+            headings.append(meta["heading_rad"])
+            route_phases.append(phase)
+        targets.append(t)
+        info.append(meta)
+    return targets, info, {"anchor": anchor, "phases": route_phases, "headings": headings}
+
+
+def _build_zones(r, rng, terrain, route, targets, info, radars):
+    """Abstract reference markers: Zone A at the anchor, a zone downrange of every outbound route,
+    and a few facilities clear of the anchor, the zones and the radars."""
+    focus = r["missile_focus"]
+
+    def draw(key):
+        return round(float(rng.uniform(*focus[key])), 1)
+
+    def xy_of(q):
+        return [round(float(q[0]), 1), round(float(q[1]), 1)]
+
+    anchor = np.asarray(route["anchor"], float)
+    zones = [{"name": ZONE_NAMES[0], "kind": "zone", "position": xy_of(anchor),
+              "radius_m": draw("zone_radius_m"), "height_m": draw("zone_height_m")}]
+    taken = [anchor]
+    missiles = [m for t, m in zip(targets, info) if t["target_class"] == "missile"]
+    for phase, meta in zip(route["phases"], missiles):
+        if phase != "out":
+            continue
+        P = meta["trajectory"][:, :2]
+        far = np.nonzero(np.linalg.norm(P - anchor, axis=1) >= focus["downrange_zone_m"])[0]
+        q = P[int(far[0])] if far.size else P[-1]
+        zones.append({"name": ZONE_NAMES[len(zones)], "kind": "zone", "position": xy_of(q),
+                      "radius_m": draw("zone_radius_m"), "height_m": draw("zone_height_m")})
+        taken.append(q)
+    sites = [np.asarray(p["position"][:2], float) for p in radars]
+    n_fac = int(rng.integers(focus["facility_count"][0], focus["facility_count"][1] + 1))
+    placed = 0
+    for _ in range(n_fac * 40):
+        if placed >= n_fac:
+            break
+        ang, rad = rng.uniform(-np.pi, np.pi), r["area_radius_m"] * 0.8 * math.sqrt(rng.uniform())
+        q = np.array([rad * math.cos(ang), rad * math.sin(ang)])
+        if (all(np.linalg.norm(q - o) >= 1500.0 for o in taken + sites)
+                and _inside_grid(terrain, q[None, :], GRID_MARGIN_M)):
+            placed += 1
+            taken.append(q)
+            zones.append({"name": f"Facility {placed}", "kind": "facility", "position": xy_of(q),
+                          "radius_m": draw("facility_radius_m"), "height_m": draw("facility_height_m")})
+    return zones
+
+
 def plan_class_episodes(recipe: dict | None = None) -> dict:
     """Deterministic plan for the recipe; JSON-ready, consumed by generate_dataset."""
     r = resolve_recipe(recipe)
@@ -453,52 +734,75 @@ def plan_class_episodes(recipe: dict | None = None) -> dict:
         n_radars = _cycle_counts(master, 4, index, *r["radar_count"])
         n_targets = _cycle_counts(master, 5, index, *r["target_count"])
 
-        t_cfg = r["terrain"]
-        terrain_spec = {
-            "source": "procedural", "resolution": t_cfg["resolution"],
-            "family": t_cfg["families"][int(rng.integers(len(t_cfg["families"])))],
-            "texture_family": t_cfg["textures"][int(rng.integers(len(t_cfg["textures"])))],
-            "obstacle_profile": t_cfg["obstacle_profiles"][int(rng.integers(len(t_cfg["obstacle_profiles"])))],
-            "valley_width_m": round(float(rng.uniform(*t_cfg["valley_width_m"])), 1),
-            "relief_height_m": round(float(rng.uniform(*t_cfg["relief_height_m"])), 1),
-            # split in the seed keeps terrain groups split-owned by construction
-            "seed": int(np.random.SeedSequence(master, spawn_key=(3, which, index)).generate_state(1)[0]),
-        }
-        terrain = _cached_terrain({"site": r["site"], "terrain": terrain_spec, "seed": terrain_spec["seed"]})
+        rerolls = r["terrain"]["terrain_rerolls"] if r["missile_focus"] else 1
+        for retry in range(rerolls):
+            t_cfg = r["terrain"]
+            rugged_profile = None
+            if t_cfg.get("rugged_profiles"):
+                terrain_spec, rugged_profile = _rugged_terrain_spec(r, rng, master, index, which, retry)
+            else:
+                terrain_spec = {
+                    "source": "procedural", "resolution": t_cfg["resolution"],
+                    "family": t_cfg["families"][int(rng.integers(len(t_cfg["families"])))],
+                    "texture_family": t_cfg["textures"][int(rng.integers(len(t_cfg["textures"])))],
+                    "obstacle_profile": t_cfg["obstacle_profiles"][int(rng.integers(len(t_cfg["obstacle_profiles"])))],
+                    "valley_width_m": round(float(rng.uniform(*t_cfg["valley_width_m"])), 1),
+                    "relief_height_m": round(float(rng.uniform(*t_cfg["relief_height_m"])), 1),
+                    # split in the seed keeps terrain groups split-owned by construction
+                    "seed": int(np.random.SeedSequence(master, spawn_key=(3, which, index)).generate_state(1)[0]),
+                }
+            terrain = _cached_terrain({"site": r["site"], "terrain": terrain_spec, "seed": terrain_spec["seed"]})
 
-        classes = []
-        for _ in range(n_targets):
-            c = _balanced_pick(class_counts, weights, rng)
-            class_counts[c] += 1
-            classes.append(c)
+            focus = r["missile_focus"]
+            classes, pattern = [], None
+            if focus:
+                classes, pattern = _focus_composition(r, rng, master, index, n_targets, class_counts)
+            else:
+                for _ in range(n_targets):
+                    c = _balanced_pick(class_counts, weights, rng)
+                    class_counts[c] += 1
+                    classes.append(c)
 
-        errors = []
-        for _ in range(r["coverage"]["max_episode_attempts"]):
-            try:
-                targets, info = [], []
-                for c in classes:
-                    t, meta = plan_target(c, rng, terrain, duration, dt, centre, r["trajectory"])
-                    targets.append(t)
-                    info.append(meta)
-                aim = np.mean([m["trajectory"][len(m["trajectory"]) // 2, :2] for m in info], axis=0)
-                radars, fractions = plan_radars(n_radars, rng, terrain, centre, aim,
-                                                [m["trajectory"] for m in info], r["radar"],
-                                                r["coverage"], CHECK_STEP_S)
-                break
-            except ValueError as exc:
-                errors.append(str(exc))
-        else:
-            raise ValueError(f"episode_index={index}: planning failed: {errors[-3:]}")
+            errors = []
+            for _ in range(r["missile_focus"]["episode_attempts"] if focus else r["coverage"]["max_episode_attempts"]):
+                try:
+                    targets, info, rinfo = [], [], None
+                    if focus:
+                        targets, info, rinfo = _plan_focus_targets(r, rng, terrain, classes, pattern,
+                                                                   duration, dt, centre)
+                        aim = rinfo["anchor"]
+                    else:
+                        for c in classes:
+                            t, meta = plan_target(c, rng, terrain, duration, dt, centre, r["trajectory"])
+                            targets.append(t)
+                            info.append(meta)
+                        aim = np.mean([m["trajectory"][len(m["trajectory"]) // 2, :2] for m in info], axis=0)
+                    radars, fractions = plan_radars(n_radars, rng, terrain, centre, aim,
+                                                    [m["trajectory"] for m in info], r["radar"],
+                                                    r["coverage"], CHECK_STEP_S)
+                    break
+                except ValueError as exc:
+                    errors.append(str(exc))
+            else:
+                if retry == rerolls - 1:
+                    raise ValueError(f"episode_index={index}: planning failed: {errors[-3:]}")
+                continue                    # no route fits this terrain: draw one of the next profile
+            break
 
-        sc = validate_scenario({
+        zones = _build_zones(r, rng, terrain, rinfo, targets, info, radars) if focus else None
+        scenario = {
             "name": f"{family}_ep{index:04d}",
             "description": f"{n_radars} radar(s), targets: "
-                           + ", ".join(f"{t['target_class']}/{t['variant']}" for t in targets),
+                           + ", ".join(f"{t['target_class']}/{t['variant']}" for t in targets)
+                           + (f"; {pattern} routes" if focus else ""),
             "site": r["site"], "dt": dt, "duration_s": duration, "area_radius_m": r["area_radius_m"],
             "seed": terrain_spec["seed"], "max_track_slots": r["max_track_slots"],
             "terrain": terrain_spec, "radar_defaults": r["radar"]["defaults"],
             "radars": radars, "targets": targets,
-        })
+        }
+        if zones:
+            scenario["zones"] = zones
+        sc = validate_scenario(scenario)
         group = terrain_group_id(sc["terrain"])
         if terrain_owner.setdefault(group, split) != split:
             raise ValueError(f"episode_index={index}: terrain group crosses splits")
@@ -527,6 +831,15 @@ def plan_class_episodes(recipe: dict | None = None) -> dict:
             "resolved_configuration_hash": config_hash, "recipe_version": RECIPE_VERSION,
             "generation_status": "planned",
         })
+        if rugged_profile:
+            episodes[-1]["rugged_profile"] = rugged_profile
+        if focus:
+            episodes[-1].update({
+                "route_pattern": pattern, "missile_count": classes.count("missile"),
+                "route_phases": rinfo["phases"],
+                "route_headings_deg": [round(math.degrees(h), 1) for h in rinfo["headings"]],
+                "anchor": [round(float(x), 1) for x in rinfo["anchor"]], "zones": zones,
+            })
     return _json_value({
         "plan_schema_version": 1, "recipe_version": RECIPE_VERSION, "master_seed": master,
         "recipe": r, "split_ratios": dict(zip(SPLITS, map(float, ratios))),
@@ -594,7 +907,11 @@ def audit_episode(directory) -> dict:
         a_lat = np.linalg.norm(a_f - (a_f * u_mid).sum(1)[:, None] * u_mid, axis=1)
         heading = np.unwrap(np.arctan2(V[:, 1], V[:, 0]))
         # heading is undefined near standstill (multirotor leaving a hover): both ends must move
-        both_moving = moving & (np.linalg.norm(V[1:, :2], axis=1) > 1.0)
+        # it is also undefined in a near-vertical dive (azimuth of a vertical velocity): the horizontal speed
+        # must be a real share of the speed at both ends
+        h0, h1 = nh, np.linalg.norm(V[1:, :2], axis=1)
+        both_moving = (moving & (h1 > 1.0) & (h0 > 0.2 * np.linalg.norm(V[:-1], axis=1))
+                       & (h1 > 0.2 * np.linalg.norm(V[1:], axis=1)))
         turn = np.abs(np.diff(heading) / dt)[both_moving]
         model = rcs_model({"rcs_dbsm": spec_t["rcs_dbsm"]})
         rcs_seen = [m2_to_dbsm(model.mean_rcs(incidence_in_body(p.pos, r["p"], r["orientation"])))
@@ -612,6 +929,9 @@ def audit_episode(directory) -> dict:
         tracked = [r["step_index"] for r in rows
                    if any(np.linalg.norm(x - r["p"]) <= 500.0 for x in fused.get(r["step_index"], []))]
         first_report = min((r["step_index"] for r in reps), default=None)
+        # reference markers: closest approach of the realised path to every zone
+        zone_dist = {z["name"]: float(np.min(np.linalg.norm(P[:, :2] - np.asarray(z["position"]), axis=1)))
+                     for z in sc.get("zones", []) if z["kind"] != "facility"} if spec_t["target_class"] == "missile" else {}
         checks = {
             "speed_in_hard_band": bool(spec.speed_range_mps[0] - 0.5 <= speed.min()
                                        and speed.max() <= spec.speed_range_mps[1] + 0.5),
@@ -636,11 +956,16 @@ def audit_episode(directory) -> dict:
             "first_tracked_t_s": None if not tracked else min(tracked) * dt,
             "reports_per_radar": {int(k): int(v) for k, v in zip(*np.unique(
                 [r["radar_id"] for r in reps], return_counts=True))} if reps else {},
+            "zone_min_dist_m": zone_dist,
             "snr_db": _stats(snr), "abs_doppler_khz": _stats(np.array(doppler) / 1e3) if doppler else None,
             "abs_rdot_mps": _stats(rdot),
             "checks": checks,
         })
-    return {"radars": len(radars), "targets": out,
+    zones = sc.get("zones", [])
+    grid_ok = all(_inside_grid(terrain, np.asarray([z["position"]], float), 0.0) for z in zones)
+    return {"radars": len(radars), "targets": out, "zones": zones, "zones_inside_terrain": bool(grid_ok),
+            "terrain": {k: sc["terrain"].get(k) for k in ("family", "relief_height_m", "valley_width_m")},
+            "terrain_relief_m": float(terrain.H.max() - terrain.H.min()) if terrain.source != "flat" else 0.0,
             "false_alarm_reports": sum(a["is_false_alarm"] for a in rec["annotations"]),
             "label_space": meta.get("label_space")}
 
@@ -687,6 +1012,7 @@ def attach_previews(dataset_dir, plan: dict) -> None:
             "dataset_name": e["scenario_family"], "episode_id": e["dataset_episode_id"],
             "display_name": f"EP-{e['episode_index']:04d} · "
                             + (f"{e['dive_profile']} · " if "dive_profile" in e else "")
+                            + (f"{e['route_pattern']} · " if "route_pattern" in e else "")
                             + f"{e['radar_count']}R · " + ", ".join(kinds),
             "split": e["split"], "scenario_family": e["scenario_family"],
             "terrain_family": e["terrain_family"], "texture_family": e["texture_family"],
@@ -695,7 +1021,7 @@ def attach_previews(dataset_dir, plan: dict) -> None:
             "target_types": kinds, "target_profiles": e["target_variants"],
             "motion_profiles": ["+".join(m) for m in e["maneuvers"]], "class_labels": e["class_labels"],
             "physical_target_type_composition": composition, "target_profile_composition": composition,
-            "route_family": "sampled", "episode_seed": e["episode_seed"], "terrain_seed": e["terrain_seed"],
+            "route_family": e.get("route_pattern", "sampled"), "episode_seed": e["episode_seed"], "terrain_seed": e["terrain_seed"],
             "quality_summary": {"planned_visible_fraction": e["planned_visible_fraction"]},
         }
     _atomic_json(manifest, path)
@@ -720,6 +1046,28 @@ def audit_markdown(audit: dict, plan: dict) -> str:
             continue
         sc = p["resolved_scenario"]
         lines += [f"- Arazi: {p['terrain_family']} / {p['obstacle_profile']} / {p['texture_family']}",
+                  *([f"- Arazi profili: **{p['rugged_profile']}**, kabartı {e['terrain_relief_m']:.0f} m "
+                     f"(ayarlanan relief {e['terrain']['relief_height_m']:.0f} m, vadi {e['terrain']['valley_width_m']:.0f} m)"]
+                    if "rugged_profile" in p else []),
+                  *([f"- Rota deseni: **{p['route_pattern']}** ({p['missile_count']} füze, fazlar {p['route_phases']}, "
+                     f"yönler {p['route_headings_deg']}°)",
+                     "- Bölgeler: " + "; ".join(f"{z['name']} [{z['kind']}] ({z['position'][0]:.0f}, {z['position'][1]:.0f})"
+                                                for z in e['zones']) + f" — arazi içinde: {e['zones_inside_terrain']}",
+                     "- Füze–bölge en yakın geçiş (m): " + "; ".join(
+                         f"T{t['target_id']} " + ", ".join(f"{k} {v:.0f}" for k, v in t['zone_min_dist_m'].items())
+                         for t in e['targets'] if t['zone_min_dist_m'])] if "route_phases" in p else []),
+                  *([f"- Arazi: **{p['terrain_kind']}**, ölçülen kabartı {e['terrain_relief_m']:.0f} m",
+                     f"- Salvo: **{p['route_pattern']}**, {p['missile_count']} füze, süre {sc['duration_s']:g} s "
+                     f"(hedefe eşzamanlı varış)",
+                     "- Profiller: " + "; ".join(
+                         f"T{k} {prof} → {zone or '—'} (tehdit ekseni {ax if ax is not None else '—'}°, "
+                         f"giriş {lead:+.1f} s)" for k, (prof, zone, ax, lead) in enumerate(
+                             zip(p['salvo_profiles'], p['target_zones'], p['threat_axes_deg'], p['lead_in_s']))),
+                     "- Bölgeler: " + "; ".join(f"{z['name']} [{z['kind']}] ({z['position'][0]:.0f}, {z['position'][1]:.0f})"
+                                                for z in e['zones']) + f" — arazi içinde: {e['zones_inside_terrain']}",
+                     "- Füze–bölge en yakın geçiş (m): " + "; ".join(
+                         f"T{t['target_id']} " + ", ".join(f"{k} {v:.0f}" for k, v in t['zone_min_dist_m'].items())
+                         for t in e['targets'] if t['zone_min_dist_m'])] if "salvo_profiles" in p else []),
                   f"- Radar: {p['radar_count']} — " + ", ".join(
                       f"{r['name']} ({r['position'][0]:.0f}, {r['position'][1]:.0f}) yön {r['heading_deg']:.0f}°"
                       for r in sc["radars"]),

@@ -1,0 +1,417 @@
+{
+  "classifier": null,
+  "episodes": [
+    {
+      "counts": {
+        "annotations": 14,
+        "communication": 14,
+        "confirmed_track_rows": 0,
+        "deliveries": 14,
+        "fused_track_rows": 211,
+        "reports": 14,
+        "states": 61,
+        "tracks": 422,
+        "transitions": 60,
+        "truth": 122
+      },
+      "cpu_time_s": 0.140625,
+      "dataset_episode_id": "ep-000000-06a37b58a197",
+      "episode_index": 0,
+      "episode_preview": {
+        "class_labels": [
+          2,
+          2
+        ],
+        "dataset_name": "missile_routes_pilot5",
+        "display_name": "EP-0000 · converging · 2R · missile/subsonic_cruise, missile/subsonic_cruise",
+        "episode_id": "ep-000000-06a37b58a197",
+        "episode_seed": 4474440346618437414,
+        "motion_profiles": [
+          "CA+CV",
+          "CV+CV+CV"
+        ],
+        "obstacle_profile": "asymmetric",
+        "physical_target_type_composition": "all_same",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.903,
+            0.71
+          ]
+        },
+        "radar_count": 2,
+        "radar_placement_profile": "sampled",
+        "route_family": "converging",
+        "scenario_family": "missile_routes_pilot5",
+        "split": "train",
+        "target_count": 2,
+        "target_profile_composition": "all_same",
+        "target_profiles": [
+          "subsonic_cruise",
+          "subsonic_cruise"
+        ],
+        "target_types": [
+          "missile/subsonic_cruise",
+          "missile/subsonic_cruise"
+        ],
+        "terrain_family": "valley_linear_canyon",
+        "terrain_seed": 41972189,
+        "texture_family": "dry_canyon"
+      },
+      "episode_seed": 4474440346618437414,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "a64e8f8a065c326f7d30aa8e1022ce191d287e3f0a61fbccbcd48422dc7990ad",
+        "records.npz": "204ebbbd3358098463970a04af7b224a05042fad13d41764ee8ccf3704ea946c"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261125,
+      "output_bytes": 62822,
+      "output_paths": {
+        "metadata.json": "train/ep-000000-06a37b58a197/metadata.json",
+        "records.npz": "train/ep-000000-06a37b58a197/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "fbd9e42513a04ed53462a9f3fccda45e581fc4df628bbde8b56575d26819531d",
+      "runtime_episode_id": "18eac153e3ef643c-2536da98050-1",
+      "scenario_family": "missile_routes_pilot5",
+      "split": "train",
+      "terrain_group_id": "terrain-ca63ac6f10b261484d3a",
+      "wall_time_s": 0.149543999999878
+    },
+    {
+      "counts": {
+        "annotations": 24,
+        "communication": 24,
+        "confirmed_track_rows": 128,
+        "deliveries": 24,
+        "fused_track_rows": 142,
+        "reports": 24,
+        "states": 61,
+        "tracks": 284,
+        "transitions": 60,
+        "truth": 183
+      },
+      "cpu_time_s": 0.171875,
+      "dataset_episode_id": "ep-000001-4917b90ec27b",
+      "episode_index": 1,
+      "episode_preview": {
+        "class_labels": [
+          2,
+          2,
+          2
+        ],
+        "dataset_name": "missile_routes_pilot5",
+        "display_name": "EP-0001 · diverging · 1R · missile/subsonic_cruise, missile/subsonic_cruise, missile/supersonic",
+        "episode_id": "ep-000001-4917b90ec27b",
+        "episode_seed": 7967058699555305636,
+        "motion_profiles": [
+          "CV+CT",
+          "CV",
+          "CV"
+        ],
+        "obstacle_profile": "asymmetric",
+        "physical_target_type_composition": "all_same",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.387,
+            0.935,
+            0.387
+          ]
+        },
+        "radar_count": 1,
+        "radar_placement_profile": "sampled",
+        "route_family": "diverging",
+        "scenario_family": "missile_routes_pilot5",
+        "split": "train",
+        "target_count": 3,
+        "target_profile_composition": "all_same",
+        "target_profiles": [
+          "subsonic_cruise",
+          "subsonic_cruise",
+          "supersonic"
+        ],
+        "target_types": [
+          "missile/subsonic_cruise",
+          "missile/subsonic_cruise",
+          "missile/supersonic"
+        ],
+        "terrain_family": "ridge_multi_obstacle",
+        "terrain_seed": 1074075674,
+        "texture_family": "rocky_mountain"
+      },
+      "episode_seed": 7967058699555305636,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "19327ef06031f8575cea0933f1947ccefd3964f230a39a3e599ccc60f29a1654",
+        "records.npz": "12f4e4a07dbca61fa48f070b58c5cd3f9c9f7dfe8e7e4b0471c9105ae651213d"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261125,
+      "output_bytes": 56803,
+      "output_paths": {
+        "metadata.json": "train/ep-000001-4917b90ec27b/metadata.json",
+        "records.npz": "train/ep-000001-4917b90ec27b/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "d70826fc1131c5a8112184db8594387730ba578c26e3f40480cfd9df139eeb01",
+      "runtime_episode_id": "18eac153ed047f30-2536c913810-1",
+      "scenario_family": "missile_routes_pilot5",
+      "split": "train",
+      "terrain_group_id": "terrain-6aa03f9821ab40cc11cc",
+      "wall_time_s": 0.1914372999999614
+    },
+    {
+      "counts": {
+        "annotations": 14,
+        "communication": 14,
+        "confirmed_track_rows": 0,
+        "deliveries": 14,
+        "fused_track_rows": 203,
+        "reports": 14,
+        "states": 61,
+        "tracks": 406,
+        "transitions": 60,
+        "truth": 183
+      },
+      "cpu_time_s": 0.1875,
+      "dataset_episode_id": "ep-000002-c3e227794a9f",
+      "episode_index": 2,
+      "episode_preview": {
+        "class_labels": [
+          2,
+          2,
+          2
+        ],
+        "dataset_name": "missile_routes_pilot5",
+        "display_name": "EP-0002 · hub · 3R · missile/supersonic, missile/supersonic, missile/supersonic",
+        "episode_id": "ep-000002-c3e227794a9f",
+        "episode_seed": 8689893069832811935,
+        "motion_profiles": [
+          "CV",
+          "CA+CV+CV",
+          "CV"
+        ],
+        "obstacle_profile": "dense",
+        "physical_target_type_composition": "all_same",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.419,
+            0.484,
+            0.742
+          ]
+        },
+        "radar_count": 3,
+        "radar_placement_profile": "sampled",
+        "route_family": "hub",
+        "scenario_family": "missile_routes_pilot5",
+        "split": "validation",
+        "target_count": 3,
+        "target_profile_composition": "all_same",
+        "target_profiles": [
+          "supersonic",
+          "supersonic",
+          "supersonic"
+        ],
+        "target_types": [
+          "missile/supersonic",
+          "missile/supersonic",
+          "missile/supersonic"
+        ],
+        "terrain_family": "basin_highlands",
+        "terrain_seed": 1983953727,
+        "texture_family": "dry_canyon"
+      },
+      "episode_seed": 8689893069832811935,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "94cea3aeaa1458e88865cd4c76f37d0ce4c5a50736aa18e8a7d82d693491a05a",
+        "records.npz": "28655e9288259557c5f48d611154885c76c9dc0366c45a37998c96f6083f7989"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261125,
+      "output_bytes": 66876,
+      "output_paths": {
+        "metadata.json": "validation/ep-000002-c3e227794a9f/metadata.json",
+        "records.npz": "validation/ep-000002-c3e227794a9f/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "2c46943d00fb894db722a83263562d19b4db65607fe38b05a37df85aecb516bc",
+      "runtime_episode_id": "18eac153f88808b8-2536c98a4d0-1",
+      "scenario_family": "missile_routes_pilot5",
+      "split": "validation",
+      "terrain_group_id": "terrain-cfc763d547cdd9e254a4",
+      "wall_time_s": 0.21389880000060657
+    },
+    {
+      "counts": {
+        "annotations": 11,
+        "communication": 11,
+        "confirmed_track_rows": 0,
+        "deliveries": 11,
+        "fused_track_rows": 159,
+        "reports": 11,
+        "states": 61,
+        "tracks": 318,
+        "transitions": 60,
+        "truth": 122
+      },
+      "cpu_time_s": 0.09375,
+      "dataset_episode_id": "ep-000003-b15e73b9d8a4",
+      "episode_index": 3,
+      "episode_preview": {
+        "class_labels": [
+          2,
+          2
+        ],
+        "dataset_name": "missile_routes_pilot5",
+        "display_name": "EP-0003 · diverging · 1R · missile/subsonic_cruise, missile/subsonic_cruise",
+        "episode_id": "ep-000003-b15e73b9d8a4",
+        "episode_seed": 4724209572628961330,
+        "motion_profiles": [
+          "CV",
+          "CA"
+        ],
+        "obstacle_profile": "dense",
+        "physical_target_type_composition": "all_same",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.355,
+            0.323
+          ]
+        },
+        "radar_count": 1,
+        "radar_placement_profile": "sampled",
+        "route_family": "diverging",
+        "scenario_family": "missile_routes_pilot5",
+        "split": "train",
+        "target_count": 2,
+        "target_profile_composition": "all_same",
+        "target_profiles": [
+          "subsonic_cruise",
+          "subsonic_cruise"
+        ],
+        "target_types": [
+          "missile/subsonic_cruise",
+          "missile/subsonic_cruise"
+        ],
+        "terrain_family": "valley_sinuous_pass",
+        "terrain_seed": 1230028793,
+        "texture_family": "grassland_valley"
+      },
+      "episode_seed": 4724209572628961330,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "52f08377ce0283c94eef51a2b1f45e8dbdf034a9106a1dc6ae7d8e63a01ff071",
+        "records.npz": "b005072ab179946c2e7db70df93d2785518805cd5902283132a76a7726b85e5b"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261125,
+      "output_bytes": 54286,
+      "output_paths": {
+        "metadata.json": "train/ep-000003-b15e73b9d8a4/metadata.json",
+        "records.npz": "train/ep-000003-b15e73b9d8a4/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "287befb1df875cc22e27d39ce76f0360b2fc92352702ecb4aeba7acdbb8eb884",
+      "runtime_episode_id": "18eac1540555d5e8-2536c973550-1",
+      "scenario_family": "missile_routes_pilot5",
+      "split": "train",
+      "terrain_group_id": "terrain-e393d1ddbd35be461db4",
+      "wall_time_s": 0.10143049999896903
+    },
+    {
+      "counts": {
+        "annotations": 28,
+        "communication": 28,
+        "confirmed_track_rows": 66,
+        "deliveries": 28,
+        "fused_track_rows": 281,
+        "reports": 28,
+        "states": 61,
+        "tracks": 580,
+        "transitions": 60,
+        "truth": 183
+      },
+      "cpu_time_s": 0.21875,
+      "dataset_episode_id": "ep-000004-de2e4072ea78",
+      "episode_index": 4,
+      "episode_preview": {
+        "class_labels": [
+          1,
+          2,
+          2
+        ],
+        "dataset_name": "missile_routes_pilot5",
+        "display_name": "EP-0004 · hub · 2R · aircraft/transport, missile/subsonic_cruise, missile/supersonic",
+        "episode_id": "ep-000004-de2e4072ea78",
+        "episode_seed": 7859925214371535490,
+        "motion_profiles": [
+          "CT+CV",
+          "CV",
+          "CV+CV"
+        ],
+        "obstacle_profile": "dense",
+        "physical_target_type_composition": "two_plus_one",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            1.0,
+            0.806,
+            0.387
+          ]
+        },
+        "radar_count": 2,
+        "radar_placement_profile": "sampled",
+        "route_family": "hub",
+        "scenario_family": "missile_routes_pilot5",
+        "split": "test",
+        "target_count": 3,
+        "target_profile_composition": "two_plus_one",
+        "target_profiles": [
+          "transport",
+          "subsonic_cruise",
+          "supersonic"
+        ],
+        "target_types": [
+          "aircraft/transport",
+          "missile/subsonic_cruise",
+          "missile/supersonic"
+        ],
+        "terrain_family": "mountain_chokepoint",
+        "terrain_seed": 118003790,
+        "texture_family": "rocky_mountain"
+      },
+      "episode_seed": 7859925214371535490,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "b01dd4d60d3003ab0279713375c20f19b29085494820750652843579e9008649",
+        "records.npz": "3694117d05316823bd6593b28841be74f1bce8b68e10a4b23b2b778d7972e363"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261125,
+      "output_bytes": 86036,
+      "output_paths": {
+        "metadata.json": "test/ep-000004-de2e4072ea78/metadata.json",
+        "records.npz": "test/ep-000004-de2e4072ea78/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "c82ee567098fedfae1efd3bb2af1ec36068987ef4c4a223832954ae7ff678502",
+      "runtime_episode_id": "18eac1540b89dea0-2536c331d50-1",
+      "scenario_family": "missile_routes_pilot5",
+      "split": "test",
+      "terrain_group_id": "terrain-24fa72485e053c0fcaab",
+      "wall_time_s": 0.24450530000103754
+    }
+  ],
+  "generation_status": "completed",
+  "last_run": {
+    "cpu_time_s": 0.828125,
+    "skipped_verified": 0,
+    "wall_time_s": 0.9110524999996414
+  },
+  "manifest_schema_version": 1,
+  "numpy_version": "1.26.4",
+  "plan_hash": "ffcee042e54e5e242e46b23c17f28b8755b275296598d497d184dc07abc6bf9b",
+  "policy_name": "central_greedy",
+  "recipe_hash": "e2837a6eec4679468f7487c3228b4e1e81d4e18dacee317eb17c3f74399c5baf",
+  "worker_count": 1
+}

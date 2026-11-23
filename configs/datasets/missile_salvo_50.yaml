@@ -1,0 +1,20 @@
+# Missile salvo dataset: 50 episodes for radar resource-management / tracking / classification training.
+# Each episode: 1-3 missiles in a time-on-target salvo, each flying a realistic attack profile inside its
+# variant envelope (src/core/target_classes.py):
+#   missile/terminal_dive   steep_dive, shallow_dive, jink_dive, dive_pullout, popup_dive, barrel_roll_dive,
+#                           dogleg_serpentine, break_turn_dive, random_jink_dive (missile_dive_service)
+#   missile/subsonic_cruise cruise_weave     terrain following, dogleg, S-weave, terminal pop-up
+#   missile/supersonic      supersonic_skim  low-level dash, dogleg, terminal high-g weave
+# plus 0-1 UAV / aircraft traffic; routes converge on Zone A or diverge to Zones A/B/C from one threat axis;
+# terrain: rolling hills and the rugged pool; radars on local high ground facing the threat.
+# Unset fields take DEFAULT_RECIPE of src/services/missile_salvo_service.py.
+kind: missile_salvo
+recipe_version: 2
+dataset_name: missile_salvo_50
+master_seed: 20261128
+episodes: 50
+missile_count: [1, 3]
+other_targets: [0, 1]
+patterns: [converging, diverging]
+radar_count: [1, 3]
+split_ratios: {train: 0.70, validation: 0.15, test: 0.15}

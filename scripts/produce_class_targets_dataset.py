@@ -1,7 +1,9 @@
 """Plan, generate and audit a UAV / aircraft / missile dataset.
 
 The recipe's ``kind`` selects the planner: ``class_targets`` (mixed classes,
-default) or ``missile_dive`` (missile terminal dives, missile_dive_service).
+default), ``missile_dive`` (missile terminal dives, missile_dive_service) or
+``missile_salvo`` (1-3 missile time-on-target salvos with dive / evasive /
+low-level profiles, missile_salvo_service).
 
     python scripts/produce_class_targets_dataset.py \
         --recipe configs/datasets/class_targets_pilot5.yaml \
@@ -27,9 +29,11 @@ from src.services.class_dataset_service import (  # noqa: E402
     attach_previews, audit_class_dataset, audit_markdown, plan_class_episodes,
 )
 from src.services.missile_dive_service import plan_missile_dive_episodes  # noqa: E402
+from src.services.missile_salvo_service import plan_salvo_episodes  # noqa: E402
 from src.services.scenario_planner import export_plan, load_recipe  # noqa: E402
 
-PLANNERS = {"class_targets": plan_class_episodes, "missile_dive": plan_missile_dive_episodes}
+PLANNERS = {"class_targets": plan_class_episodes, "missile_dive": plan_missile_dive_episodes,
+            "missile_salvo": plan_salvo_episodes}
 from src.services.synthetic_dataset_service import generate_dataset  # noqa: E402
 
 

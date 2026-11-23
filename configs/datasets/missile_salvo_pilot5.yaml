@@ -1,0 +1,6 @@
+# Missile salvo pilot: 5 episodes, same recipe as missile_salvo_50.
+kind: missile_salvo
+recipe_version: 2
+dataset_name: missile_salvo_pilot5
+master_seed: 20261127
+episodes: 5

@@ -1,0 +1,3680 @@
+{
+  "configuration_hash_basis": "canonical config_snapshot JSON, SHA-256",
+  "episodes": [
+    {
+      "anchor": [
+        85.3,
+        -1164.3
+      ],
+      "class_labels": [
+        2,
+        2
+      ],
+      "config_snapshot": {
+        "effective_duration_s": 30.0,
+        "effective_radars": [
+          {
+            "bandwidth_hz": 1000000.0,
+            "beamwidth_az_deg": 3.0,
+            "beamwidth_el_deg": 6.0,
+            "bias_rho": 0.995,
+            "bias_std": [
+              2.0,
+              0.0001,
+              0.0001,
+              0.05
+            ],
+            "c_max": 4,
+            "clutter_notch_mps": 1.0,
+            "e_max_j": 1000.0,
+            "e_processing_j": 1.0,
+            "e_recovery_w": 60.0,
+            "efficiency": 0.5,
+            "el_max_deg": 60.0,
+            "el_min_deg": -2.0,
+            "false_alarms_per_beam": 0.03,
+            "fc_hz": 10000000000.0,
+            "floor_ang_rad": 0.0002,
+            "floor_r_m": 5.0,
+            "floor_rdot_mps": 0.2,
+            "fov_az_deg": 60.0,
+            "gain_dbi": 36.0,
+            "h_ambient_k": 300.0,
+            "h_max_k": 360.0,
+            "heading_deg": -57.12,
+            "k_ang": 1.0,
+            "k_r": 1.0,
+            "k_rdot": 1.0,
+            "losses_db": 5.0,
+            "name": "R1",
+            "noise_figure_db": 4.0,
+            "pd_model": "marcum",
+            "pfa": 1e-06,
+            "position": [
+              -4550.7,
+              2742.3,
+              20.2
+            ],
+            "prf_stagger_hz": [
+              14000.0,
+              16000.0,
+              18000.0
+            ],
+            "profiles": {
+              "INTERLEAVED": {
+                "beams_per_look": 1,
+                "n_pulses": 192,
+                "pri_s": 6.25e-05
+              },
+              "SEARCH": {
+                "beams_per_look": 8,
+                "n_pulses": 32,
+                "pri_s": 6.25e-05
+              },
+              "TRACK": {
+                "beams_per_look": 1,
+                "n_pulses": 384,
+                "pri_s": 6.25e-05
+              }
+            },
+            "pt_w": 1000.0,
+            "quantize": false,
+            "r_max_m": 14000.0,
+            "r_min_m": 300.0,
+            "search_bars_deg": [
+              2.0,
+              7.0,
+              15.0,
+              25.0
+            ],
+            "search_sector_deg": 120.0,
+            "snr_good_db": 25.0,
+            "snr_threshold_db": 10.0,
+            "t0_k": 290.0,
+            "thermal_a": 0.04,
+            "thermal_b": 0.03
+          },
+          {
+            "bandwidth_hz": 1000000.0,
+            "beamwidth_az_deg": 3.0,
+            "beamwidth_el_deg": 6.0,
+            "bias_rho": 0.995,
+            "bias_std": [
+              2.0,
+              0.0001,
+              0.0001,
+              0.05
+            ],
+            "c_max": 4,
+            "clutter_notch_mps": 1.0,
+            "e_max_j": 1000.0,
+            "e_processing_j": 1.0,
+            "e_recovery_w": 60.0,
+            "efficiency": 0.5,
+            "el_max_deg": 60.0,
+            "el_min_deg": -2.0,
+            "false_alarms_per_beam": 0.03,
+            "fc_hz": 10000000000.0,
+            "floor_ang_rad": 0.0002,
+            "floor_r_m": 5.0,
+            "floor_rdot_mps": 0.2,
+            "fov_az_deg": 60.0,
+            "gain_dbi": 36.0,
+            "h_ambient_k": 300.0,
+            "h_max_k": 360.0,
+            "heading_deg": 12.66,
+            "k_ang": 1.0,
+            "k_r": 1.0,
+            "k_rdot": 1.0,
+            "losses_db": 5.0,
+            "name": "R2",
+            "noise_figure_db": 4.0,
+            "pd_model": "marcum",
+            "pfa": 1e-06,
+            "position": [
+              -1707.7,
+              -2285.6,
+              18.2
+            ],
+            "prf_stagger_hz": [
+              14000.0,
+              16000.0,
+              18000.0
+            ],
+            "profiles": {
+              "INTERLEAVED": {
+                "beams_per_look": 1,
+                "n_pulses": 192,
+                "pri_s": 6.25e-05
+              },
+              "SEARCH": {
+                "beams_per_look": 8,
+                "n_pulses": 32,
+                "pri_s": 6.25e-05
+              },
+              "TRACK": {
+                "beams_per_look": 1,
+                "n_pulses": 384,
+                "pri_s": 6.25e-05
+              }
+            },
+            "pt_w": 1000.0,
+            "quantize": false,
+            "r_max_m": 14000.0,
+            "r_min_m": 300.0,
+            "search_bars_deg": [
+              2.0,
+              7.0,
+              15.0,
+              25.0
+            ],
+            "search_sector_deg": 120.0,
+            "snr_good_db": 25.0,
+            "snr_threshold_db": 10.0,
+            "t0_k": 290.0,
+            "thermal_a": 0.04,
+            "thermal_b": 0.03
+          }
+        ],
+        "episode_seed": 4474440346618437414,
+        "radar_position_reference": "input_mast_height",
+        "rng_layout_version": 1,
+        "scenario": {
+          "area_radius_m": 7500.0,
+          "description": "2 radar(s), targets: missile/subsonic_cruise, missile/subsonic_cruise; converging routes",
+          "difficulty_level": null,
+          "dt": 0.5,
+          "duration_s": 30.0,
+          "interleaved_actions": false,
+          "max_track_slots": 4,
+          "name": "missile_routes_pilot5_ep0000",
+          "radar_defaults": {
+            "fov_az_deg": 60.0,
+            "r_max_m": 14000.0,
+            "search_bars_deg": [
+              2.0,
+              7.0,
+              15.0,
+              25.0
+            ],
+            "search_sector_deg": 120.0
+          },
+          "radars": [
+            {
+              "heading_deg": -57.12,
+              "name": "R1",
+              "position": [
+                -4550.7,
+                2742.3,
+                20.2
+              ]
+            },
+            {
+              "heading_deg": 12.66,
+              "name": "R2",
+              "position": [
+                -1707.7,
+                -2285.6,
+                18.2
+              ]
+            }
+          ],
+          "reward": {
+            "err_scale_m": 150.0,
+            "w_class": 0.5,
+            "w_comm": 0.0,
+            "w_cost": 0.2,
+            "w_fair": 0.0,
+            "w_false": 0.2,
+            "w_interrupt": 0.5,
+            "w_loss": 1.0,
+            "w_miss": 1.0,
+            "w_track": 1.0
+          },
+          "seed": 41972189,
+          "share_actions": false,
+          "site": {
+            "lat": 40.3,
+            "lon": -111.7,
+            "name": "Valley Test Range"
+          },
+          "stress": {
+            "comm_drop_prob": 0.0,
+            "fail_radar": null,
+            "fail_time_s": 30.0,
+            "max_reports_per_radar": null,
+            "noise_scale": 1.0,
+            "outages": []
+          },
+          "targets": [
+            {
+              "label": 2,
+              "motion": {
+                "segments": [
+                  {
+                    "acceleration_mps2": [
+                      -1.50075,
+                      -1.21343,
+                      0.0
+                    ],
+                    "duration_s": 9.5,
+                    "model": "CA"
+                  },
+                  {
+                    "duration_s": 20.5,
+                    "model": "CV"
+                  }
+                ]
+              },
+              "position": [
+                4338.756,
+                2533.012,
+                50.383
+              ],
+              "rcs_dbsm": {
+                "nose": -12.145,
+                "side": 2.727,
+                "tail": -10.526,
+                "top": -1.386
+              },
+              "target_class": "missile",
+              "variant": "subsonic_cruise",
+              "velocity": [
+                -198.8463,
+                -160.7772,
+                0.7578
+              ]
+            },
+            {
+              "label": 2,
+              "motion": {
+                "segments": [
+                  {
+                    "duration_s": 16.0,
+                    "model": "CV"
+                  },
+                  {
+                    "duration_s": 7.5,
+                    "model": "CV"
+                  },
+                  {
+                    "duration_s": 6.5,
+                    "model": "CV"
+                  }
+                ]
+              },
+              "position": [
+                -3225.938,
+                -3453.554,
+                47.754
+              ],
+              "rcs_dbsm": {
+                "nose": -19.307,
+                "side": 1.969,
+                "tail": -6.648,
+                "top": -1.214
+              },
+              "target_class": "missile",
+              "variant": "subsonic_cruise",
+              "velocity": [
+                200.8585,
+                152.4542,
+                0.8533
+              ]
+            }
+          ],
+          "terrain": {
+            "family": "valley_linear_canyon",
+            "obstacle_profile": "asymmetric",
+            "parameters": {
+              "asymmetry_ratio": 1.47,
+              "ridge_width_m": 1014.9,
+              "valley_angle_deg": 123.0
+            },
+            "relief_height_m": 1256.5,
+            "resolution": 256,
+            "seed": 41972189,
+            "source": "procedural",
+            "texture_family": "dry_canyon",
+            "valley_width_m": 3232.7
+          },
+          "zones": [
+            {
+              "height_m": 214.6,
+              "kind": "zone",
+              "name": "Zone A",
+              "position": [
+                85.3,
+                -1164.3
+              ],
+              "radius_m": 519.6
+            },
+            {
+              "height_m": 96.9,
+              "kind": "facility",
+              "name": "Facility 1",
+              "position": [
+                3653.3,
+                1497.5
+              ],
+              "radius_m": 214.0
+            },
+            {
+              "height_m": 82.2,
+              "kind": "facility",
+              "name": "Facility 2",
+              "position": [
+                1994.6,
+                -5041.1
+              ],
+              "radius_m": 177.5
+            }
+          ]
+        },
+        "scenario_seed": 41972189,
+        "simulation_steps": 60,
+        "snapshot_version": 1,
+        "terrain_provenance": {
+          "actual_source": null,
+          "data_hash": null,
+          "missing": [
+            "actual_source",
+            "data_hash"
+          ],
+          "requested_source": "procedural"
+        },
+        "terrain_seed": 41972189
+      },
+      "dataset_episode_id": "ep-000000-06a37b58a197",
+      "episode_index": 0,
+      "episode_seed": 4474440346618437414,
+      "generation_status": "planned",
+      "geometry_group_id": "geometry-39fb93c29ba960c6994f",
+      "maneuvers": [
+        [
+          "CA",
+          "CV"
+        ],
+        [
+          "CV",
+          "CV",
+          "CV"
+        ]
+      ],
+      "master_seed": 20261125,
+      "missile_count": 2,
+      "obstacle_profile": "asymmetric",
+      "planned_visible_fraction": [
+        0.903,
+        0.71
+      ],
+      "radar_count": 2,
+      "recipe_version": 2,
+      "resolved_configuration_hash": "fbd9e42513a04ed53462a9f3fccda45e581fc4df628bbde8b56575d26819531d",
+      "resolved_scenario": {
+        "area_radius_m": 7500.0,
+        "description": "2 radar(s), targets: missile/subsonic_cruise, missile/subsonic_cruise; converging routes",
+        "difficulty_level": null,
+        "dt": 0.5,
+        "duration_s": 30.0,
+        "interleaved_actions": false,
+        "max_track_slots": 4,
+        "name": "missile_routes_pilot5_ep0000",
+        "radar_defaults": {
+          "fov_az_deg": 60.0,
+          "r_max_m": 14000.0,
+          "search_bars_deg": [
+            2.0,
+            7.0,
+            15.0,
+            25.0
+          ],
+          "search_sector_deg": 120.0
+        },
+        "radars": [
+          {
+            "heading_deg": -57.12,
+            "name": "R1",
+            "position": [
+              -4550.7,
+              2742.3,
+              20.2
+            ]
+          },
+          {
+            "heading_deg": 12.66,
+            "name": "R2",
+            "position": [
+              -1707.7,
+              -2285.6,
+              18.2
+            ]
+          }
+        ],
+        "reward": {
+          "err_scale_m": 150.0,
+          "w_class": 0.5,
+          "w_comm": 0.0,
+          "w_cost": 0.2,
+          "w_fair": 0.0,
+          "w_false": 0.2,
+          "w_interrupt": 0.5,
+          "w_loss": 1.0,
+          "w_miss": 1.0,
+          "w_track": 1.0
+        },
+        "seed": 41972189,
+        "share_actions": false,
+        "site": {
+          "lat": 40.3,
+          "lon": -111.7,
+          "name": "Valley Test Range"
+        },
+        "stress": {
+          "comm_drop_prob": 0.0,
+          "fail_radar": null,
+          "fail_time_s": 30.0,
+          "max_reports_per_radar": null,
+          "noise_scale": 1.0,
+          "outages": []
+        },
+        "targets": [
+          {
+            "label": 2,
+            "motion": {
+              "segments": [
+                {
+                  "acceleration_mps2": [
+                    -1.50075,
+                    -1.21343,
+                    0.0
+                  ],
+                  "duration_s": 9.5,
+                  "model": "CA"
+                },
+                {
+                  "duration_s": 20.5,
+                  "model": "CV"
+                }
+              ]
+            },
+            "position": [
+              4338.756,
+              2533.012,
+              50.383
+            ],
+            "rcs_dbsm": {
+              "nose": -12.145,
+              "side": 2.727,
+              "tail": -10.526,
+              "top": -1.386
+            },
+            "target_class": "missile",
+            "variant": "subsonic_cruise",
+            "velocity": [
+              -198.8463,
+              -160.7772,
+              0.7578
+            ]
+          },
+          {
+            "label": 2,
+            "motion": {
+              "segments": [
+                {
+                  "duration_s": 16.0,
+                  "model": "CV"
+                },
+                {
+                  "duration_s": 7.5,
+                  "model": "CV"
+                },
+                {
+                  "duration_s": 6.5,
+                  "model": "CV"
+                }
+              ]
+            },
+            "position": [
+              -3225.938,
+              -3453.554,
+              47.754
+            ],
+            "rcs_dbsm": {
+              "nose": -19.307,
+              "side": 1.969,
+              "tail": -6.648,
+              "top": -1.214
+            },
+            "target_class": "missile",
+            "variant": "subsonic_cruise",
+            "velocity": [
+              200.8585,
+              152.4542,
+              0.8533
+            ]
+          }
+        ],
+        "terrain": {
+          "family": "valley_linear_canyon",
+          "obstacle_profile": "asymmetric",
+          "parameters": {
+            "asymmetry_ratio": 1.47,
+            "ridge_width_m": 1014.9,
+            "valley_angle_deg": 123.0
+          },
+          "relief_height_m": 1256.5,
+          "resolution": 256,
+          "seed": 41972189,
+          "source": "procedural",
+          "texture_family": "dry_canyon",
+          "valley_width_m": 3232.7
+        },
+        "zones": [
+          {
+            "height_m": 214.6,
+            "kind": "zone",
+            "name": "Zone A",
+            "position": [
+              85.3,
+              -1164.3
+            ],
+            "radius_m": 519.6
+          },
+          {
+            "height_m": 96.9,
+            "kind": "facility",
+            "name": "Facility 1",
+            "position": [
+              3653.3,
+              1497.5
+            ],
+            "radius_m": 214.0
+          },
+          {
+            "height_m": 82.2,
+            "kind": "facility",
+            "name": "Facility 2",
+            "position": [
+              1994.6,
+              -5041.1
+            ],
+            "radius_m": 177.5
+          }
+        ]
+      },
+      "route_group_id": "route-898c88107905a507cd1b",
+      "route_headings_deg": [
+        -141.0,
+        37.2
+      ],
+      "route_pattern": "converging",
+      "route_phases": [
+        "in",
+        "in"
+      ],
+      "rugged_profile": "deep_canyon",
+      "scenario_family": "missile_routes_pilot5",
+      "split": "train",
+      "target_classes": [
+        "missile",
+        "missile"
+      ],
+      "target_count": 2,
+      "target_variants": [
+        "subsonic_cruise",
+        "subsonic_cruise"
+      ],
+      "terrain_family": "valley_linear_canyon",
+      "terrain_group_id": "terrain-ca63ac6f10b261484d3a",
+      "terrain_seed": 41972189,
+      "texture_family": "dry_canyon",
+      "trajectory_attempts": [
+        1,
+        1
+      ],
+      "zones": [
+        {
+          "height_m": 214.6,
+          "kind": "zone",
+          "name": "Zone A",
+          "position": [
+            85.3,
+            -1164.3
+          ],
+          "radius_m": 519.6
+        },
+        {
+          "height_m": 96.9,
+          "kind": "facility",
+          "name": "Facility 1",
+          "position": [
+            3653.3,
+            1497.5
+          ],
+          "radius_m": 214.0
+        },
+        {
+          "height_m": 82.2,
+          "kind": "facility",
+          "name": "Facility 2",
+          "position": [
+            1994.6,
+            -5041.1
+          ],
+          "radius_m": 177.5
+        }
+      ]
+    },
+    {
+      "anchor": [
+        357.1,
+        982.6
+      ],
+      "class_labels": [
+        2,
+        2,
+        2
+      ],
+      "config_snapshot": {
+        "effective_duration_s": 30.0,
+        "effective_radars": [
+          {
+            "bandwidth_hz": 1000000.0,
+            "beamwidth_az_deg": 3.0,
+            "beamwidth_el_deg": 6.0,
+            "bias_rho": 0.995,
+            "bias_std": [
+              2.0,
+              0.0001,
+              0.0001,
+              0.05
+            ],
+            "c_max": 4,
+            "clutter_notch_mps": 1.0,
+            "e_max_j": 1000.0,
+            "e_processing_j": 1.0,
+            "e_recovery_w": 60.0,
+            "efficiency": 0.5,
+            "el_max_deg": 60.0,
+            "el_min_deg": -2.0,
+            "false_alarms_per_beam": 0.03,
+            "fc_hz": 10000000000.0,
+            "floor_ang_rad": 0.0002,
+            "floor_r_m": 5.0,
+            "floor_rdot_mps": 0.2,
+            "fov_az_deg": 60.0,
+            "gain_dbi": 36.0,
+            "h_ambient_k": 300.0,
+            "h_max_k": 360.0,
+            "heading_deg": 36.01,
+            "k_ang": 1.0,
+            "k_r": 1.0,
+            "k_rdot": 1.0,
+            "losses_db": 5.0,
+            "name": "R1",
+            "noise_figure_db": 4.0,
+            "pd_model": "marcum",
+            "pfa": 1e-06,
+            "position": [
+              -2826.0,
+              -1474.2,
+              18.2
+            ],
+            "prf_stagger_hz": [
+              14000.0,
+              16000.0,
+              18000.0
+            ],
+            "profiles": {
+              "INTERLEAVED": {
+                "beams_per_look": 1,
+                "n_pulses": 192,
+                "pri_s": 6.25e-05
+              },
+              "SEARCH": {
+                "beams_per_look": 8,
+                "n_pulses": 32,
+                "pri_s": 6.25e-05
+              },
+              "TRACK": {
+                "beams_per_look": 1,
+                "n_pulses": 384,
+                "pri_s": 6.25e-05
+              }
+            },
+            "pt_w": 1000.0,
+            "quantize": false,
+            "r_max_m": 14000.0,
+            "r_min_m": 300.0,
+            "search_bars_deg": [
+              2.0,
+              7.0,
+              15.0,
+              25.0
+            ],
+            "search_sector_deg": 120.0,
+            "snr_good_db": 25.0,
+            "snr_threshold_db": 10.0,
+            "t0_k": 290.0,
+            "thermal_a": 0.04,
+            "thermal_b": 0.03
+          }
+        ],
+        "episode_seed": 7967058699555305636,
+        "radar_position_reference": "input_mast_height",
+        "rng_layout_version": 1,
+        "scenario": {
+          "area_radius_m": 7500.0,
+          "description": "1 radar(s), targets: missile/subsonic_cruise, missile/subsonic_cruise, missile/supersonic; diverging routes",
+          "difficulty_level": null,
+          "dt": 0.5,
+          "duration_s": 30.0,
+          "interleaved_actions": false,
+          "max_track_slots": 4,
+          "name": "missile_routes_pilot5_ep0001",
+          "radar_defaults": {
+            "fov_az_deg": 60.0,
+            "r_max_m": 14000.0,
+            "search_bars_deg": [
+              2.0,
+              7.0,
+              15.0,
+              25.0
+            ],
+            "search_sector_deg": 120.0
+          },
+          "radars": [
+            {
+              "heading_deg": 36.01,
+              "name": "R1",
+              "position": [
+                -2826.0,
+                -1474.2,
+                18.2
+              ]
+            }
+          ],
+          "reward": {
+            "err_scale_m": 150.0,
+            "w_class": 0.5,
+            "w_comm": 0.0,
+            "w_cost": 0.2,
+            "w_fair": 0.0,
+            "w_false": 0.2,
+            "w_interrupt": 0.5,
+            "w_loss": 1.0,
+            "w_miss": 1.0,
+            "w_track": 1.0
+          },
+          "seed": 1074075674,
+          "share_actions": false,
+          "site": {
+            "lat": 40.3,
+            "lon": -111.7,
+            "name": "Valley Test Range"
+          },
+          "stress": {
+            "comm_drop_prob": 0.0,
+            "fail_radar": null,
+            "fail_time_s": 30.0,
+            "max_reports_per_radar": null,
+            "noise_scale": 1.0,
+            "outages": []
+          },
+          "targets": [
+            {
+              "label": 2,
+              "motion": {
+                "segments": [
+                  {
+                    "duration_s": 24.5,
+                    "model": "CV"
+                  },
+                  {
+                    "duration_s": 5.5,
+                    "model": "CT",
+                    "turn_rate_rad_s": 0.04398
+                  }
+                ]
+              },
+              "position": [
+                -928.577,
+                1625.787,
+                214.961
+              ],
+              "rcs_dbsm": {
+                "nose": -10.535,
+                "side": -2.765,
+                "tail": -6.601,
+                "top": 2.201
+              },
+              "target_class": "missile",
+              "variant": "subsonic_cruise",
+              "velocity": [
+                208.2868,
+                -88.1559,
+                -3.6033
+              ]
+            },
+            {
+              "label": 2,
+              "motion": {
+                "segments": [
+                  {
+                    "duration_s": 30.0,
+                    "model": "CV"
+                  }
+                ]
+              },
+              "position": [
+                -112.318,
+                964.372,
+                81.173
+              ],
+              "rcs_dbsm": {
+                "nose": -18.739,
+                "side": 2.763,
+                "tail": -10.672,
+                "top": 2.98
+              },
+              "target_class": "missile",
+              "variant": "subsonic_cruise",
+              "velocity": [
+                249.344,
+                16.6811,
+                13.0936
+              ]
+            },
+            {
+              "label": 2,
+              "motion": {
+                "segments": [
+                  {
+                    "duration_s": 30.0,
+                    "model": "CV"
+                  }
+                ]
+              },
+              "position": [
+                4235.895,
+                1087.69,
+                430.059
+              ],
+              "rcs_dbsm": {
+                "nose": -5.716,
+                "side": 2.572,
+                "tail": -6.018,
+                "top": 4.983
+              },
+              "target_class": "missile",
+              "variant": "supersonic",
+              "velocity": [
+                -647.3063,
+                -29.0877,
+                -1.0635
+              ]
+            }
+          ],
+          "terrain": {
+            "family": "ridge_multi_obstacle",
+            "obstacle_profile": "asymmetric",
+            "parameters": {
+              "asymmetry_ratio": 1.52,
+              "ridge_width_m": 1444.4,
+              "valley_angle_deg": 86.7
+            },
+            "relief_height_m": 1099.6,
+            "resolution": 256,
+            "seed": 1074075674,
+            "source": "procedural",
+            "texture_family": "rocky_mountain",
+            "valley_width_m": 2912.0
+          },
+          "zones": [
+            {
+              "height_m": 113.6,
+              "kind": "zone",
+              "name": "Zone A",
+              "position": [
+                357.1,
+                982.6
+              ],
+              "radius_m": 467.1
+            },
+            {
+              "height_m": 79.5,
+              "kind": "zone",
+              "name": "Zone B",
+              "position": [
+                5367.2,
+                -876.3
+              ],
+              "radius_m": 559.5
+            },
+            {
+              "height_m": 126.0,
+              "kind": "zone",
+              "name": "Zone C",
+              "position": [
+                5847.0,
+                1363.1
+              ],
+              "radius_m": 375.2
+            },
+            {
+              "height_m": 146.9,
+              "kind": "zone",
+              "name": "Zone D",
+              "position": [
+                -5150.0,
+                665.9
+              ],
+              "radius_m": 480.0
+            },
+            {
+              "height_m": 78.7,
+              "kind": "facility",
+              "name": "Facility 1",
+              "position": [
+                2224.6,
+                4553.0
+              ],
+              "radius_m": 289.2
+            },
+            {
+              "height_m": 65.5,
+              "kind": "facility",
+              "name": "Facility 2",
+              "position": [
+                2807.3,
+                561.7
+              ],
+              "radius_m": 222.4
+            }
+          ]
+        },
+        "scenario_seed": 1074075674,
+        "simulation_steps": 60,
+        "snapshot_version": 1,
+        "terrain_provenance": {
+          "actual_source": null,
+          "data_hash": null,
+          "missing": [
+            "actual_source",
+            "data_hash"
+          ],
+          "requested_source": "procedural"
+        },
+        "terrain_seed": 1074075674
+      },
+      "dataset_episode_id": "ep-000001-4917b90ec27b",
+      "episode_index": 1,
+      "episode_seed": 7967058699555305636,
+      "generation_status": "planned",
+      "geometry_group_id": "geometry-caf3f5e949cd623a8084",
+      "maneuvers": [
+        [
+          "CV",
+          "CT"
+        ],
+        [
+          "CV"
+        ],
+        [
+          "CV"
+        ]
+      ],
+      "master_seed": 20261125,
+      "missile_count": 3,
+      "obstacle_profile": "asymmetric",
+      "planned_visible_fraction": [
+        0.387,
+        0.935,
+        0.387
+      ],
+      "radar_count": 1,
+      "recipe_version": 2,
+      "resolved_configuration_hash": "d70826fc1131c5a8112184db8594387730ba578c26e3f40480cfd9df139eeb01",
+      "resolved_scenario": {
+        "area_radius_m": 7500.0,
+        "description": "1 radar(s), targets: missile/subsonic_cruise, missile/subsonic_cruise, missile/supersonic; diverging routes",
+        "difficulty_level": null,
+        "dt": 0.5,
+        "duration_s": 30.0,
+        "interleaved_actions": false,
+        "max_track_slots": 4,
+        "name": "missile_routes_pilot5_ep0001",
+        "radar_defaults": {
+          "fov_az_deg": 60.0,
+          "r_max_m": 14000.0,
+          "search_bars_deg": [
+            2.0,
+            7.0,
+            15.0,
+            25.0
+          ],
+          "search_sector_deg": 120.0
+        },
+        "radars": [
+          {
+            "heading_deg": 36.01,
+            "name": "R1",
+            "position": [
+              -2826.0,
+              -1474.2,
+              18.2
+            ]
+          }
+        ],
+        "reward": {
+          "err_scale_m": 150.0,
+          "w_class": 0.5,
+          "w_comm": 0.0,
+          "w_cost": 0.2,
+          "w_fair": 0.0,
+          "w_false": 0.2,
+          "w_interrupt": 0.5,
+          "w_loss": 1.0,
+          "w_miss": 1.0,
+          "w_track": 1.0
+        },
+        "seed": 1074075674,
+        "share_actions": false,
+        "site": {
+          "lat": 40.3,
+          "lon": -111.7,
+          "name": "Valley Test Range"
+        },
+        "stress": {
+          "comm_drop_prob": 0.0,
+          "fail_radar": null,
+          "fail_time_s": 30.0,
+          "max_reports_per_radar": null,
+          "noise_scale": 1.0,
+          "outages": []
+        },
+        "targets": [
+          {
+            "label": 2,
+            "motion": {
+              "segments": [
+                {
+                  "duration_s": 24.5,
+                  "model": "CV"
+                },
+                {
+                  "duration_s": 5.5,
+                  "model": "CT",
+                  "turn_rate_rad_s": 0.04398
+                }
+              ]
+            },
+            "position": [
+              -928.577,
+              1625.787,
+              214.961
+            ],
+            "rcs_dbsm": {
+              "nose": -10.535,
+              "side": -2.765,
+              "tail": -6.601,
+              "top": 2.201
+            },
+            "target_class": "missile",
+            "variant": "subsonic_cruise",
+            "velocity": [
+              208.2868,
+              -88.1559,
+              -3.6033
+            ]
+          },
+          {
+            "label": 2,
+            "motion": {
+              "segments": [
+                {
+                  "duration_s": 30.0,
+                  "model": "CV"
+                }
+              ]
+            },
+            "position": [
+              -112.318,
+              964.372,
+              81.173
+            ],
+            "rcs_dbsm": {
+              "nose": -18.739,
+              "side": 2.763,
+              "tail": -10.672,
+              "top": 2.98
+            },
+            "target_class": "missile",
+            "variant": "subsonic_cruise",
+            "velocity": [
+              249.344,
+              16.6811,
+              13.0936
+            ]
+          },
+          {
+            "label": 2,
+            "motion": {
+              "segments": [
+                {
+                  "duration_s": 30.0,
+                  "model": "CV"
+                }
+              ]
+            },
+            "position": [
+              4235.895,
+              1087.69,
+              430.059
+            ],
+            "rcs_dbsm": {
+              "nose": -5.716,
+              "side": 2.572,
+              "tail": -6.018,
+              "top": 4.983
+            },
+            "target_class": "missile",
+            "variant": "supersonic",
+            "velocity": [
+              -647.3063,
+              -29.0877,
+              -1.0635
+            ]
+          }
+        ],
+        "terrain": {
+          "family": "ridge_multi_obstacle",
+          "obstacle_profile": "asymmetric",
+          "parameters": {
+            "asymmetry_ratio": 1.52,
+            "ridge_width_m": 1444.4,
+            "valley_angle_deg": 86.7
+          },
+          "relief_height_m": 1099.6,
+          "resolution": 256,
+          "seed": 1074075674,
+          "source": "procedural",
+          "texture_family": "rocky_mountain",
+          "valley_width_m": 2912.0
+        },
+        "zones": [
+          {
+            "height_m": 113.6,
+            "kind": "zone",
+            "name": "Zone A",
+            "position": [
+              357.1,
+              982.6
+            ],
+            "radius_m": 467.1
+          },
+          {
+            "height_m": 79.5,
+            "kind": "zone",
+            "name": "Zone B",
+            "position": [
+              5367.2,
+              -876.3
+            ],
+            "radius_m": 559.5
+          },
+          {
+            "height_m": 126.0,
+            "kind": "zone",
+            "name": "Zone C",
+            "position": [
+              5847.0,
+              1363.1
+            ],
+            "radius_m": 375.2
+          },
+          {
+            "height_m": 146.9,
+            "kind": "zone",
+            "name": "Zone D",
+            "position": [
+              -5150.0,
+              665.9
+            ],
+            "radius_m": 480.0
+          },
+          {
+            "height_m": 78.7,
+            "kind": "facility",
+            "name": "Facility 1",
+            "position": [
+              2224.6,
+              4553.0
+            ],
+            "radius_m": 289.2
+          },
+          {
+            "height_m": 65.5,
+            "kind": "facility",
+            "name": "Facility 2",
+            "position": [
+              2807.3,
+              561.7
+            ],
+            "radius_m": 222.4
+          }
+        ]
+      },
+      "route_group_id": "route-5dc6738c467064a99b13",
+      "route_headings_deg": [
+        -22.9,
+        3.8,
+        -177.4
+      ],
+      "route_pattern": "diverging",
+      "route_phases": [
+        "out",
+        "out",
+        "out"
+      ],
+      "rugged_profile": "knife_ridges",
+      "scenario_family": "missile_routes_pilot5",
+      "split": "train",
+      "target_classes": [
+        "missile",
+        "missile",
+        "missile"
+      ],
+      "target_count": 3,
+      "target_variants": [
+        "subsonic_cruise",
+        "subsonic_cruise",
+        "supersonic"
+      ],
+      "terrain_family": "ridge_multi_obstacle",
+      "terrain_group_id": "terrain-6aa03f9821ab40cc11cc",
+      "terrain_seed": 1074075674,
+      "texture_family": "rocky_mountain",
+      "trajectory_attempts": [
+        32,
+        115,
+        55
+      ],
+      "zones": [
+        {
+          "height_m": 113.6,
+          "kind": "zone",
+          "name": "Zone A",
+          "position": [
+            357.1,
+            982.6
+          ],
+          "radius_m": 467.1
+        },
+        {
+          "height_m": 79.5,
+          "kind": "zone",
+          "name": "Zone B",
+          "position": [
+            5367.2,
+            -876.3
+          ],
+          "radius_m": 559.5
+        },
+        {
+          "height_m": 126.0,
+          "kind": "zone",
+          "name": "Zone C",
+          "position": [
+            5847.0,
+            1363.1
+          ],
+          "radius_m": 375.2
+        },
+        {
+          "height_m": 146.9,
+          "kind": "zone",
+          "name": "Zone D",
+          "position": [
+            -5150.0,
+            665.9
+          ],
+          "radius_m": 480.0
+        },
+        {
+          "height_m": 78.7,
+          "kind": "facility",
+          "name": "Facility 1",
+          "position": [
+            2224.6,
+            4553.0
+          ],
+          "radius_m": 289.2
+        },
+        {
+          "height_m": 65.5,
+          "kind": "facility",
+          "name": "Facility 2",
+          "position": [
+            2807.3,
+            561.7
+          ],
+          "radius_m": 222.4
+        }
+      ]
+    },
+    {
+      "anchor": [
+        -1620.4,
+        79.8
+      ],
+      "class_labels": [
+        2,
+        2,
+        2
+      ],
+      "config_snapshot": {
+        "effective_duration_s": 30.0,
+        "effective_radars": [
+          {
+            "bandwidth_hz": 1000000.0,
+            "beamwidth_az_deg": 3.0,
+            "beamwidth_el_deg": 6.0,
+            "bias_rho": 0.995,
+            "bias_std": [
+              2.0,
+              0.0001,
+              0.0001,
+              0.05
+            ],
+            "c_max": 4,
+            "clutter_notch_mps": 1.0,
+            "e_max_j": 1000.0,
+            "e_processing_j": 1.0,
+            "e_recovery_w": 60.0,
+            "efficiency": 0.5,
+            "el_max_deg": 60.0,
+            "el_min_deg": -2.0,
+            "false_alarms_per_beam": 0.03,
+            "fc_hz": 10000000000.0,
+            "floor_ang_rad": 0.0002,
+            "floor_r_m": 5.0,
+            "floor_rdot_mps": 0.2,
+            "fov_az_deg": 60.0,
+            "gain_dbi": 36.0,
+            "h_ambient_k": 300.0,
+            "h_max_k": 360.0,
+            "heading_deg": 25.88,
+            "k_ang": 1.0,
+            "k_r": 1.0,
+            "k_rdot": 1.0,
+            "losses_db": 5.0,
+            "name": "R1",
+            "noise_figure_db": 4.0,
+            "pd_model": "marcum",
+            "pfa": 1e-06,
+            "position": [
+              -5457.9,
+              -1385.2,
+              14.7
+            ],
+            "prf_stagger_hz": [
+              14000.0,
+              16000.0,
+              18000.0
+            ],
+            "profiles": {
+              "INTERLEAVED": {
+                "beams_per_look": 1,
+                "n_pulses": 192,
+                "pri_s": 6.25e-05
+              },
+              "SEARCH": {
+                "beams_per_look": 8,
+                "n_pulses": 32,
+                "pri_s": 6.25e-05
+              },
+              "TRACK": {
+                "beams_per_look": 1,
+                "n_pulses": 384,
+                "pri_s": 6.25e-05
+              }
+            },
+            "pt_w": 1000.0,
+            "quantize": false,
+            "r_max_m": 14000.0,
+            "r_min_m": 300.0,
+            "search_bars_deg": [
+              2.0,
+              7.0,
+              15.0,
+              25.0
+            ],
+            "search_sector_deg": 120.0,
+            "snr_good_db": 25.0,
+            "snr_threshold_db": 10.0,
+            "t0_k": 290.0,
+            "thermal_a": 0.04,
+            "thermal_b": 0.03
+          },
+          {
+            "bandwidth_hz": 1000000.0,
+            "beamwidth_az_deg": 3.0,
+            "beamwidth_el_deg": 6.0,
+            "bias_rho": 0.995,
+            "bias_std": [
+              2.0,
+              0.0001,
+              0.0001,
+              0.05
+            ],
+            "c_max": 4,
+            "clutter_notch_mps": 1.0,
+            "e_max_j": 1000.0,
+            "e_processing_j": 1.0,
+            "e_recovery_w": 60.0,
+            "efficiency": 0.5,
+            "el_max_deg": 60.0,
+            "el_min_deg": -2.0,
+            "false_alarms_per_beam": 0.03,
+            "fc_hz": 10000000000.0,
+            "floor_ang_rad": 0.0002,
+            "floor_r_m": 5.0,
+            "floor_rdot_mps": 0.2,
+            "fov_az_deg": 60.0,
+            "gain_dbi": 36.0,
+            "h_ambient_k": 300.0,
+            "h_max_k": 360.0,
+            "heading_deg": 151.55,
+            "k_ang": 1.0,
+            "k_r": 1.0,
+            "k_rdot": 1.0,
+            "losses_db": 5.0,
+            "name": "R2",
+            "noise_figure_db": 4.0,
+            "pd_model": "marcum",
+            "pfa": 1e-06,
+            "position": [
+              954.7,
+              -2567.1,
+              10.8
+            ],
+            "prf_stagger_hz": [
+              14000.0,
+              16000.0,
+              18000.0
+            ],
+            "profiles": {
+              "INTERLEAVED": {
+                "beams_per_look": 1,
+                "n_pulses": 192,
+                "pri_s": 6.25e-05
+              },
+              "SEARCH": {
+                "beams_per_look": 8,
+                "n_pulses": 32,
+                "pri_s": 6.25e-05
+              },
+              "TRACK": {
+                "beams_per_look": 1,
+                "n_pulses": 384,
+                "pri_s": 6.25e-05
+              }
+            },
+            "pt_w": 1000.0,
+            "quantize": false,
+            "r_max_m": 14000.0,
+            "r_min_m": 300.0,
+            "search_bars_deg": [
+              2.0,
+              7.0,
+              15.0,
+              25.0
+            ],
+            "search_sector_deg": 120.0,
+            "snr_good_db": 25.0,
+            "snr_threshold_db": 10.0,
+            "t0_k": 290.0,
+            "thermal_a": 0.04,
+            "thermal_b": 0.03
+          },
+          {
+            "bandwidth_hz": 1000000.0,
+            "beamwidth_az_deg": 3.0,
+            "beamwidth_el_deg": 6.0,
+            "bias_rho": 0.995,
+            "bias_std": [
+              2.0,
+              0.0001,
+              0.0001,
+              0.05
+            ],
+            "c_max": 4,
+            "clutter_notch_mps": 1.0,
+            "e_max_j": 1000.0,
+            "e_processing_j": 1.0,
+            "e_recovery_w": 60.0,
+            "efficiency": 0.5,
+            "el_max_deg": 60.0,
+            "el_min_deg": -2.0,
+            "false_alarms_per_beam": 0.03,
+            "fc_hz": 10000000000.0,
+            "floor_ang_rad": 0.0002,
+            "floor_r_m": 5.0,
+            "floor_rdot_mps": 0.2,
+            "fov_az_deg": 60.0,
+            "gain_dbi": 36.0,
+            "h_ambient_k": 300.0,
+            "h_max_k": 360.0,
+            "heading_deg": -134.46,
+            "k_ang": 1.0,
+            "k_r": 1.0,
+            "k_rdot": 1.0,
+            "losses_db": 5.0,
+            "name": "R3",
+            "noise_figure_db": 4.0,
+            "pd_model": "marcum",
+            "pfa": 1e-06,
+            "position": [
+              270.4,
+              4071.7,
+              11.0
+            ],
+            "prf_stagger_hz": [
+              14000.0,
+              16000.0,
+              18000.0
+            ],
+            "profiles": {
+              "INTERLEAVED": {
+                "beams_per_look": 1,
+                "n_pulses": 192,
+                "pri_s": 6.25e-05
+              },
+              "SEARCH": {
+                "beams_per_look": 8,
+                "n_pulses": 32,
+                "pri_s": 6.25e-05
+              },
+              "TRACK": {
+                "beams_per_look": 1,
+                "n_pulses": 384,
+                "pri_s": 6.25e-05
+              }
+            },
+            "pt_w": 1000.0,
+            "quantize": false,
+            "r_max_m": 14000.0,
+            "r_min_m": 300.0,
+            "search_bars_deg": [
+              2.0,
+              7.0,
+              15.0,
+              25.0
+            ],
+            "search_sector_deg": 120.0,
+            "snr_good_db": 25.0,
+            "snr_threshold_db": 10.0,
+            "t0_k": 290.0,
+            "thermal_a": 0.04,
+            "thermal_b": 0.03
+          }
+        ],
+        "episode_seed": 8689893069832811935,
+        "radar_position_reference": "input_mast_height",
+        "rng_layout_version": 1,
+        "scenario": {
+          "area_radius_m": 7500.0,
+          "description": "3 radar(s), targets: missile/supersonic, missile/supersonic, missile/supersonic; hub routes",
+          "difficulty_level": null,
+          "dt": 0.5,
+          "duration_s": 30.0,
+          "interleaved_actions": false,
+          "max_track_slots": 4,
+          "name": "missile_routes_pilot5_ep0002",
+          "radar_defaults": {
+            "fov_az_deg": 60.0,
+            "r_max_m": 14000.0,
+            "search_bars_deg": [
+              2.0,
+              7.0,
+              15.0,
+              25.0
+            ],
+            "search_sector_deg": 120.0
+          },
+          "radars": [
+            {
+              "heading_deg": 25.88,
+              "name": "R1",
+              "position": [
+                -5457.9,
+                -1385.2,
+                14.7
+              ]
+            },
+            {
+              "heading_deg": 151.55,
+              "name": "R2",
+              "position": [
+                954.7,
+                -2567.1,
+                10.8
+              ]
+            },
+            {
+              "heading_deg": -134.46,
+              "name": "R3",
+              "position": [
+                270.4,
+                4071.7,
+                11.0
+              ]
+            }
+          ],
+          "reward": {
+            "err_scale_m": 150.0,
+            "w_class": 0.5,
+            "w_comm": 0.0,
+            "w_cost": 0.2,
+            "w_fair": 0.0,
+            "w_false": 0.2,
+            "w_interrupt": 0.5,
+            "w_loss": 1.0,
+            "w_miss": 1.0,
+            "w_track": 1.0
+          },
+          "seed": 1983953727,
+          "share_actions": false,
+          "site": {
+            "lat": 40.3,
+            "lon": -111.7,
+            "name": "Valley Test Range"
+          },
+          "stress": {
+            "comm_drop_prob": 0.0,
+            "fail_radar": null,
+            "fail_time_s": 30.0,
+            "max_reports_per_radar": null,
+            "noise_scale": 1.0,
+            "outages": []
+          },
+          "targets": [
+            {
+              "label": 2,
+              "motion": {
+                "segments": [
+                  {
+                    "duration_s": 30.0,
+                    "model": "CV"
+                  }
+                ]
+              },
+              "position": [
+                -14091.584,
+                -2955.392,
+                322.602
+              ],
+              "rcs_dbsm": {
+                "nose": -11.15,
+                "side": 3.306,
+                "tail": -6.677,
+                "top": 7.323
+              },
+              "target_class": "missile",
+              "variant": "supersonic",
+              "velocity": [
+                561.7069,
+                131.2599,
+                2.8532
+              ]
+            },
+            {
+              "label": 2,
+              "motion": {
+                "segments": [
+                  {
+                    "acceleration_mps2": [
+                      21.1163,
+                      5.1048,
+                      0.0
+                    ],
+                    "duration_s": 12.5,
+                    "model": "CA"
+                  },
+                  {
+                    "duration_s": 12.0,
+                    "model": "CV"
+                  },
+                  {
+                    "duration_s": 5.5,
+                    "model": "CV"
+                  }
+                ]
+              },
+              "position": [
+                2418.834,
+                1131.158,
+                401.87
+              ],
+              "rcs_dbsm": {
+                "nose": -7.708,
+                "side": 0.864,
+                "tail": -3.552,
+                "top": 2.734
+              },
+              "target_class": "missile",
+              "variant": "supersonic",
+              "velocity": [
+                -701.3515,
+                -169.5497,
+                1.5365
+              ]
+            },
+            {
+              "label": 2,
+              "motion": {
+                "segments": [
+                  {
+                    "duration_s": 30.0,
+                    "model": "CV"
+                  }
+                ]
+              },
+              "position": [
+                1099.912,
+                -1278.105,
+                211.039
+              ],
+              "rcs_dbsm": {
+                "nose": -6.252,
+                "side": 3.618,
+                "tail": -3.076,
+                "top": 6.067
+              },
+              "target_class": "missile",
+              "variant": "supersonic",
+              "velocity": [
+                -525.2402,
+                232.5385,
+                12.1144
+              ]
+            }
+          ],
+          "terrain": {
+            "family": "basin_highlands",
+            "obstacle_profile": "dense",
+            "parameters": {
+              "ridge_width_m": 1408.4,
+              "valley_angle_deg": 176.4
+            },
+            "relief_height_m": 1086.4,
+            "resolution": 256,
+            "seed": 1983953727,
+            "source": "procedural",
+            "texture_family": "dry_canyon",
+            "valley_width_m": 4163.0
+          },
+          "zones": [
+            {
+              "height_m": 165.0,
+              "kind": "zone",
+              "name": "Zone A",
+              "position": [
+                -1620.4,
+                79.8
+              ],
+              "radius_m": 420.0
+            },
+            {
+              "height_m": 176.8,
+              "kind": "zone",
+              "name": "Zone B",
+              "position": [
+                -7016.6,
+                -1149.8
+              ],
+              "radius_m": 567.0
+            },
+            {
+              "height_m": 154.7,
+              "kind": "zone",
+              "name": "Zone C",
+              "position": [
+                -6726.2,
+                2186.7
+              ],
+              "radius_m": 355.6
+            },
+            {
+              "height_m": 62.0,
+              "kind": "facility",
+              "name": "Facility 1",
+              "position": [
+                -4566.5,
+                1816.7
+              ],
+              "radius_m": 170.3
+            },
+            {
+              "height_m": 98.5,
+              "kind": "facility",
+              "name": "Facility 2",
+              "position": [
+                1789.3,
+                -637.7
+              ],
+              "radius_m": 280.9
+            }
+          ]
+        },
+        "scenario_seed": 1983953727,
+        "simulation_steps": 60,
+        "snapshot_version": 1,
+        "terrain_provenance": {
+          "actual_source": null,
+          "data_hash": null,
+          "missing": [
+            "actual_source",
+            "data_hash"
+          ],
+          "requested_source": "procedural"
+        },
+        "terrain_seed": 1983953727
+      },
+      "dataset_episode_id": "ep-000002-c3e227794a9f",
+      "episode_index": 2,
+      "episode_seed": 8689893069832811935,
+      "generation_status": "planned",
+      "geometry_group_id": "geometry-3c4801ab2cfd7b404cdb",
+      "maneuvers": [
+        [
+          "CV"
+        ],
+        [
+          "CA",
+          "CV",
+          "CV"
+        ],
+        [
+          "CV"
+        ]
+      ],
+      "master_seed": 20261125,
+      "missile_count": 3,
+      "obstacle_profile": "dense",
+      "planned_visible_fraction": [
+        0.419,
+        0.484,
+        0.742
+      ],
+      "radar_count": 3,
+      "recipe_version": 2,
+      "resolved_configuration_hash": "2c46943d00fb894db722a83263562d19b4db65607fe38b05a37df85aecb516bc",
+      "resolved_scenario": {
+        "area_radius_m": 7500.0,
+        "description": "3 radar(s), targets: missile/supersonic, missile/supersonic, missile/supersonic; hub routes",
+        "difficulty_level": null,
+        "dt": 0.5,
+        "duration_s": 30.0,
+        "interleaved_actions": false,
+        "max_track_slots": 4,
+        "name": "missile_routes_pilot5_ep0002",
+        "radar_defaults": {
+          "fov_az_deg": 60.0,
+          "r_max_m": 14000.0,
+          "search_bars_deg": [
+            2.0,
+            7.0,
+            15.0,
+            25.0
+          ],
+          "search_sector_deg": 120.0
+        },
+        "radars": [
+          {
+            "heading_deg": 25.88,
+            "name": "R1",
+            "position": [
+              -5457.9,
+              -1385.2,
+              14.7
+            ]
+          },
+          {
+            "heading_deg": 151.55,
+            "name": "R2",
+            "position": [
+              954.7,
+              -2567.1,
+              10.8
+            ]
+          },
+          {
+            "heading_deg": -134.46,
+            "name": "R3",
+            "position": [
+              270.4,
+              4071.7,
+              11.0
+            ]
+          }
+        ],
+        "reward": {
+          "err_scale_m": 150.0,
+          "w_class": 0.5,
+          "w_comm": 0.0,
+          "w_cost": 0.2,
+          "w_fair": 0.0,
+          "w_false": 0.2,
+          "w_interrupt": 0.5,
+          "w_loss": 1.0,
+          "w_miss": 1.0,
+          "w_track": 1.0
+        },
+        "seed": 1983953727,
+        "share_actions": false,
+        "site": {
+          "lat": 40.3,
+          "lon": -111.7,
+          "name": "Valley Test Range"
+        },
+        "stress": {
+          "comm_drop_prob": 0.0,
+          "fail_radar": null,
+          "fail_time_s": 30.0,
+          "max_reports_per_radar": null,
+          "noise_scale": 1.0,
+          "outages": []
+        },
+        "targets": [
+          {
+            "label": 2,
+            "motion": {
+              "segments": [
+                {
+                  "duration_s": 30.0,
+                  "model": "CV"
+                }
+              ]
+            },
+            "position": [
+              -14091.584,
+              -2955.392,
+              322.602
+            ],
+            "rcs_dbsm": {
+              "nose": -11.15,
+              "side": 3.306,
+              "tail": -6.677,
+              "top": 7.323
+            },
+            "target_class": "missile",
+            "variant": "supersonic",
+            "velocity": [
+              561.7069,
+              131.2599,
+              2.8532
+            ]
+          },
+          {
+            "label": 2,
+            "motion": {
+              "segments": [
+                {
+                  "acceleration_mps2": [
+                    21.1163,
+                    5.1048,
+                    0.0
+                  ],
+                  "duration_s": 12.5,
+                  "model": "CA"
+                },
+                {
+                  "duration_s": 12.0,
+                  "model": "CV"
+                },
+                {
+                  "duration_s": 5.5,
+                  "model": "CV"
+                }
+              ]
+            },
+            "position": [
+              2418.834,
+              1131.158,
+              401.87
+            ],
+            "rcs_dbsm": {
+              "nose": -7.708,
+              "side": 0.864,
+              "tail": -3.552,
+              "top": 2.734
+            },
+            "target_class": "missile",
+            "variant": "supersonic",
+            "velocity": [
+              -701.3515,
+              -169.5497,
+              1.5365
+            ]
+          },
+          {
+            "label": 2,
+            "motion": {
+              "segments": [
+                {
+                  "duration_s": 30.0,
+                  "model": "CV"
+                }
+              ]
+            },
+            "position": [
+              1099.912,
+              -1278.105,
+              211.039
+            ],
+            "rcs_dbsm": {
+              "nose": -6.252,
+              "side": 3.618,
+              "tail": -3.076,
+              "top": 6.067
+            },
+            "target_class": "missile",
+            "variant": "supersonic",
+            "velocity": [
+              -525.2402,
+              232.5385,
+              12.1144
+            ]
+          }
+        ],
+        "terrain": {
+          "family": "basin_highlands",
+          "obstacle_profile": "dense",
+          "parameters": {
+            "ridge_width_m": 1408.4,
+            "valley_angle_deg": 176.4
+          },
+          "relief_height_m": 1086.4,
+          "resolution": 256,
+          "seed": 1983953727,
+          "source": "procedural",
+          "texture_family": "dry_canyon",
+          "valley_width_m": 4163.0
+        },
+        "zones": [
+          {
+            "height_m": 165.0,
+            "kind": "zone",
+            "name": "Zone A",
+            "position": [
+              -1620.4,
+              79.8
+            ],
+            "radius_m": 420.0
+          },
+          {
+            "height_m": 176.8,
+            "kind": "zone",
+            "name": "Zone B",
+            "position": [
+              -7016.6,
+              -1149.8
+            ],
+            "radius_m": 567.0
+          },
+          {
+            "height_m": 154.7,
+            "kind": "zone",
+            "name": "Zone C",
+            "position": [
+              -6726.2,
+              2186.7
+            ],
+            "radius_m": 355.6
+          },
+          {
+            "height_m": 62.0,
+            "kind": "facility",
+            "name": "Facility 1",
+            "position": [
+              -4566.5,
+              1816.7
+            ],
+            "radius_m": 170.3
+          },
+          {
+            "height_m": 98.5,
+            "kind": "facility",
+            "name": "Facility 2",
+            "position": [
+              1789.3,
+              -637.7
+            ],
+            "radius_m": 280.9
+          }
+        ]
+      },
+      "route_group_id": "route-a7bcd1b3c6f6fab1829d",
+      "route_headings_deg": [
+        13.2,
+        -166.4,
+        156.1
+      ],
+      "route_pattern": "hub",
+      "route_phases": [
+        "in",
+        "out",
+        "out"
+      ],
+      "rugged_profile": "highland_bowl",
+      "scenario_family": "missile_routes_pilot5",
+      "split": "validation",
+      "target_classes": [
+        "missile",
+        "missile",
+        "missile"
+      ],
+      "target_count": 3,
+      "target_variants": [
+        "supersonic",
+        "supersonic",
+        "supersonic"
+      ],
+      "terrain_family": "basin_highlands",
+      "terrain_group_id": "terrain-cfc763d547cdd9e254a4",
+      "terrain_seed": 1983953727,
+      "texture_family": "dry_canyon",
+      "trajectory_attempts": [
+        2,
+        6,
+        117
+      ],
+      "zones": [
+        {
+          "height_m": 165.0,
+          "kind": "zone",
+          "name": "Zone A",
+          "position": [
+            -1620.4,
+            79.8
+          ],
+          "radius_m": 420.0
+        },
+        {
+          "height_m": 176.8,
+          "kind": "zone",
+          "name": "Zone B",
+          "position": [
+            -7016.6,
+            -1149.8
+          ],
+          "radius_m": 567.0
+        },
+        {
+          "height_m": 154.7,
+          "kind": "zone",
+          "name": "Zone C",
+          "position": [
+            -6726.2,
+            2186.7
+          ],
+          "radius_m": 355.6
+        },
+        {
+          "height_m": 62.0,
+          "kind": "facility",
+          "name": "Facility 1",
+          "position": [
+            -4566.5,
+            1816.7
+          ],
+          "radius_m": 170.3
+        },
+        {
+          "height_m": 98.5,
+          "kind": "facility",
+          "name": "Facility 2",
+          "position": [
+            1789.3,
+            -637.7
+          ],
+          "radius_m": 280.9
+        }
+      ]
+    },
+    {
+      "anchor": [
+        -1028.3,
+        766.3
+      ],
+      "class_labels": [
+        2,
+        2
+      ],
+      "config_snapshot": {
+        "effective_duration_s": 30.0,
+        "effective_radars": [
+          {
+            "bandwidth_hz": 1000000.0,
+            "beamwidth_az_deg": 3.0,
+            "beamwidth_el_deg": 6.0,
+            "bias_rho": 0.995,
+            "bias_std": [
+              2.0,
+              0.0001,
+              0.0001,
+              0.05
+            ],
+            "c_max": 4,
+            "clutter_notch_mps": 1.0,
+            "e_max_j": 1000.0,
+            "e_processing_j": 1.0,
+            "e_recovery_w": 60.0,
+            "efficiency": 0.5,
+            "el_max_deg": 60.0,
+            "el_min_deg": -2.0,
+            "false_alarms_per_beam": 0.03,
+            "fc_hz": 10000000000.0,
+            "floor_ang_rad": 0.0002,
+            "floor_r_m": 5.0,
+            "floor_rdot_mps": 0.2,
+            "fov_az_deg": 60.0,
+            "gain_dbi": 36.0,
+            "h_ambient_k": 300.0,
+            "h_max_k": 360.0,
+            "heading_deg": -99.49,
+            "k_ang": 1.0,
+            "k_r": 1.0,
+            "k_rdot": 1.0,
+            "losses_db": 5.0,
+            "name": "R1",
+            "noise_figure_db": 4.0,
+            "pd_model": "marcum",
+            "pfa": 1e-06,
+            "position": [
+              -958.9,
+              2111.9,
+              11.4
+            ],
+            "prf_stagger_hz": [
+              14000.0,
+              16000.0,
+              18000.0
+            ],
+            "profiles": {
+              "INTERLEAVED": {
+                "beams_per_look": 1,
+                "n_pulses": 192,
+                "pri_s": 6.25e-05
+              },
+              "SEARCH": {
+                "beams_per_look": 8,
+                "n_pulses": 32,
+                "pri_s": 6.25e-05
+              },
+              "TRACK": {
+                "beams_per_look": 1,
+                "n_pulses": 384,
+                "pri_s": 6.25e-05
+              }
+            },
+            "pt_w": 1000.0,
+            "quantize": false,
+            "r_max_m": 14000.0,
+            "r_min_m": 300.0,
+            "search_bars_deg": [
+              2.0,
+              7.0,
+              15.0,
+              25.0
+            ],
+            "search_sector_deg": 120.0,
+            "snr_good_db": 25.0,
+            "snr_threshold_db": 10.0,
+            "t0_k": 290.0,
+            "thermal_a": 0.04,
+            "thermal_b": 0.03
+          }
+        ],
+        "episode_seed": 4724209572628961330,
+        "radar_position_reference": "input_mast_height",
+        "rng_layout_version": 1,
+        "scenario": {
+          "area_radius_m": 7500.0,
+          "description": "1 radar(s), targets: missile/subsonic_cruise, missile/subsonic_cruise; diverging routes",
+          "difficulty_level": null,
+          "dt": 0.5,
+          "duration_s": 30.0,
+          "interleaved_actions": false,
+          "max_track_slots": 4,
+          "name": "missile_routes_pilot5_ep0003",
+          "radar_defaults": {
+            "fov_az_deg": 60.0,
+            "r_max_m": 14000.0,
+            "search_bars_deg": [
+              2.0,
+              7.0,
+              15.0,
+              25.0
+            ],
+            "search_sector_deg": 120.0
+          },
+          "radars": [
+            {
+              "heading_deg": -99.49,
+              "name": "R1",
+              "position": [
+                -958.9,
+                2111.9,
+                11.4
+              ]
+            }
+          ],
+          "reward": {
+            "err_scale_m": 150.0,
+            "w_class": 0.5,
+            "w_comm": 0.0,
+            "w_cost": 0.2,
+            "w_fair": 0.0,
+            "w_false": 0.2,
+            "w_interrupt": 0.5,
+            "w_loss": 1.0,
+            "w_miss": 1.0,
+            "w_track": 1.0
+          },
+          "seed": 1230028793,
+          "share_actions": false,
+          "site": {
+            "lat": 40.3,
+            "lon": -111.7,
+            "name": "Valley Test Range"
+          },
+          "stress": {
+            "comm_drop_prob": 0.0,
+            "fail_radar": null,
+            "fail_time_s": 30.0,
+            "max_reports_per_radar": null,
+            "noise_scale": 1.0,
+            "outages": []
+          },
+          "targets": [
+            {
+              "label": 2,
+              "motion": {
+                "segments": [
+                  {
+                    "duration_s": 30.0,
+                    "model": "CV"
+                  }
+                ]
+              },
+              "position": [
+                -319.528,
+                421.0,
+                213.945
+              ],
+              "rcs_dbsm": {
+                "nose": -19.327,
+                "side": -0.003,
+                "tail": -7.869,
+                "top": -1.074
+              },
+              "target_class": "missile",
+              "variant": "subsonic_cruise",
+              "velocity": [
+                -197.8067,
+                104.1835,
+                -3.2767
+              ]
+            },
+            {
+              "label": 2,
+              "motion": {
+                "segments": [
+                  {
+                    "acceleration_mps2": [
+                      0.89316,
+                      -0.64513,
+                      0.0
+                    ],
+                    "duration_s": 30.0,
+                    "model": "CA"
+                  }
+                ]
+              },
+              "position": [
+                -351.492,
+                426.168,
+                178.424
+              ],
+              "rcs_dbsm": {
+                "nose": -15.448,
+                "side": 2.993,
+                "tail": -6.893,
+                "top": 3.196
+              },
+              "target_class": "missile",
+              "variant": "subsonic_cruise",
+              "velocity": [
+                -188.9238,
+                136.4596,
+                -0.6483
+              ]
+            }
+          ],
+          "terrain": {
+            "family": "valley_sinuous_pass",
+            "obstacle_profile": "dense",
+            "parameters": {
+              "ridge_width_m": 1207.6,
+              "valley_angle_deg": 38.2
+            },
+            "relief_height_m": 1257.8,
+            "resolution": 256,
+            "seed": 1230028793,
+            "source": "procedural",
+            "texture_family": "grassland_valley",
+            "valley_width_m": 3043.9
+          },
+          "zones": [
+            {
+              "height_m": 144.6,
+              "kind": "zone",
+              "name": "Zone A",
+              "position": [
+                -1028.3,
+                766.3
+              ],
+              "radius_m": 505.7
+            },
+            {
+              "height_m": 165.0,
+              "kind": "zone",
+              "name": "Zone B",
+              "position": [
+                -5897.7,
+                3359.0
+              ],
+              "radius_m": 421.7
+            },
+            {
+              "height_m": 104.5,
+              "kind": "zone",
+              "name": "Zone C",
+              "position": [
+                -5422.1,
+                4088.7
+              ],
+              "radius_m": 383.4
+            },
+            {
+              "height_m": 115.3,
+              "kind": "facility",
+              "name": "Facility 1",
+              "position": [
+                4139.5,
+                -2524.0
+              ],
+              "radius_m": 201.0
+            }
+          ]
+        },
+        "scenario_seed": 1230028793,
+        "simulation_steps": 60,
+        "snapshot_version": 1,
+        "terrain_provenance": {
+          "actual_source": null,
+          "data_hash": null,
+          "missing": [
+            "actual_source",
+            "data_hash"
+          ],
+          "requested_source": "procedural"
+        },
+        "terrain_seed": 1230028793
+      },
+      "dataset_episode_id": "ep-000003-b15e73b9d8a4",
+      "episode_index": 3,
+      "episode_seed": 4724209572628961330,
+      "generation_status": "planned",
+      "geometry_group_id": "geometry-50e76c033ccfa81f6b09",
+      "maneuvers": [
+        [
+          "CV"
+        ],
+        [
+          "CA"
+        ]
+      ],
+      "master_seed": 20261125,
+      "missile_count": 2,
+      "obstacle_profile": "dense",
+      "planned_visible_fraction": [
+        0.355,
+        0.323
+      ],
+      "radar_count": 1,
+      "recipe_version": 2,
+      "resolved_configuration_hash": "287befb1df875cc22e27d39ce76f0360b2fc92352702ecb4aeba7acdbb8eb884",
+      "resolved_scenario": {
+        "area_radius_m": 7500.0,
+        "description": "1 radar(s), targets: missile/subsonic_cruise, missile/subsonic_cruise; diverging routes",
+        "difficulty_level": null,
+        "dt": 0.5,
+        "duration_s": 30.0,
+        "interleaved_actions": false,
+        "max_track_slots": 4,
+        "name": "missile_routes_pilot5_ep0003",
+        "radar_defaults": {
+          "fov_az_deg": 60.0,
+          "r_max_m": 14000.0,
+          "search_bars_deg": [
+            2.0,
+            7.0,
+            15.0,
+            25.0
+          ],
+          "search_sector_deg": 120.0
+        },
+        "radars": [
+          {
+            "heading_deg": -99.49,
+            "name": "R1",
+            "position": [
+              -958.9,
+              2111.9,
+              11.4
+            ]
+          }
+        ],
+        "reward": {
+          "err_scale_m": 150.0,
+          "w_class": 0.5,
+          "w_comm": 0.0,
+          "w_cost": 0.2,
+          "w_fair": 0.0,
+          "w_false": 0.2,
+          "w_interrupt": 0.5,
+          "w_loss": 1.0,
+          "w_miss": 1.0,
+          "w_track": 1.0
+        },
+        "seed": 1230028793,
+        "share_actions": false,
+        "site": {
+          "lat": 40.3,
+          "lon": -111.7,
+          "name": "Valley Test Range"
+        },
+        "stress": {
+          "comm_drop_prob": 0.0,
+          "fail_radar": null,
+          "fail_time_s": 30.0,
+          "max_reports_per_radar": null,
+          "noise_scale": 1.0,
+          "outages": []
+        },
+        "targets": [
+          {
+            "label": 2,
+            "motion": {
+              "segments": [
+                {
+                  "duration_s": 30.0,
+                  "model": "CV"
+                }
+              ]
+            },
+            "position": [
+              -319.528,
+              421.0,
+              213.945
+            ],
+            "rcs_dbsm": {
+              "nose": -19.327,
+              "side": -0.003,
+              "tail": -7.869,
+              "top": -1.074
+            },
+            "target_class": "missile",
+            "variant": "subsonic_cruise",
+            "velocity": [
+              -197.8067,
+              104.1835,
+              -3.2767
+            ]
+          },
+          {
+            "label": 2,
+            "motion": {
+              "segments": [
+                {
+                  "acceleration_mps2": [
+                    0.89316,
+                    -0.64513,
+                    0.0
+                  ],
+                  "duration_s": 30.0,
+                  "model": "CA"
+                }
+              ]
+            },
+            "position": [
+              -351.492,
+              426.168,
+              178.424
+            ],
+            "rcs_dbsm": {
+              "nose": -15.448,
+              "side": 2.993,
+              "tail": -6.893,
+              "top": 3.196
+            },
+            "target_class": "missile",
+            "variant": "subsonic_cruise",
+            "velocity": [
+              -188.9238,
+              136.4596,
+              -0.6483
+            ]
+          }
+        ],
+        "terrain": {
+          "family": "valley_sinuous_pass",
+          "obstacle_profile": "dense",
+          "parameters": {
+            "ridge_width_m": 1207.6,
+            "valley_angle_deg": 38.2
+          },
+          "relief_height_m": 1257.8,
+          "resolution": 256,
+          "seed": 1230028793,
+          "source": "procedural",
+          "texture_family": "grassland_valley",
+          "valley_width_m": 3043.9
+        },
+        "zones": [
+          {
+            "height_m": 144.6,
+            "kind": "zone",
+            "name": "Zone A",
+            "position": [
+              -1028.3,
+              766.3
+            ],
+            "radius_m": 505.7
+          },
+          {
+            "height_m": 165.0,
+            "kind": "zone",
+            "name": "Zone B",
+            "position": [
+              -5897.7,
+              3359.0
+            ],
+            "radius_m": 421.7
+          },
+          {
+            "height_m": 104.5,
+            "kind": "zone",
+            "name": "Zone C",
+            "position": [
+              -5422.1,
+              4088.7
+            ],
+            "radius_m": 383.4
+          },
+          {
+            "height_m": 115.3,
+            "kind": "facility",
+            "name": "Facility 1",
+            "position": [
+              4139.5,
+              -2524.0
+            ],
+            "radius_m": 201.0
+          }
+        ]
+      },
+      "route_group_id": "route-47d822886fe8e6d104bc",
+      "route_headings_deg": [
+        152.2,
+        144.2
+      ],
+      "route_pattern": "diverging",
+      "route_phases": [
+        "out",
+        "out"
+      ],
+      "rugged_profile": "twisting_gorge",
+      "scenario_family": "missile_routes_pilot5",
+      "split": "train",
+      "target_classes": [
+        "missile",
+        "missile"
+      ],
+      "target_count": 2,
+      "target_variants": [
+        "subsonic_cruise",
+        "subsonic_cruise"
+      ],
+      "terrain_family": "valley_sinuous_pass",
+      "terrain_group_id": "terrain-e393d1ddbd35be461db4",
+      "terrain_seed": 1230028793,
+      "texture_family": "grassland_valley",
+      "trajectory_attempts": [
+        33,
+        54
+      ],
+      "zones": [
+        {
+          "height_m": 144.6,
+          "kind": "zone",
+          "name": "Zone A",
+          "position": [
+            -1028.3,
+            766.3
+          ],
+          "radius_m": 505.7
+        },
+        {
+          "height_m": 165.0,
+          "kind": "zone",
+          "name": "Zone B",
+          "position": [
+            -5897.7,
+            3359.0
+          ],
+          "radius_m": 421.7
+        },
+        {
+          "height_m": 104.5,
+          "kind": "zone",
+          "name": "Zone C",
+          "position": [
+            -5422.1,
+            4088.7
+          ],
+          "radius_m": 383.4
+        },
+        {
+          "height_m": 115.3,
+          "kind": "facility",
+          "name": "Facility 1",
+          "position": [
+            4139.5,
+            -2524.0
+          ],
+          "radius_m": 201.0
+        }
+      ]
+    },
+    {
+      "anchor": [
+        -909.6,
+        121.3
+      ],
+      "class_labels": [
+        1,
+        2,
+        2
+      ],
+      "config_snapshot": {
+        "effective_duration_s": 30.0,
+        "effective_radars": [
+          {
+            "bandwidth_hz": 1000000.0,
+            "beamwidth_az_deg": 3.0,
+            "beamwidth_el_deg": 6.0,
+            "bias_rho": 0.995,
+            "bias_std": [
+              2.0,
+              0.0001,
+              0.0001,
+              0.05
+            ],
+            "c_max": 4,
+            "clutter_notch_mps": 1.0,
+            "e_max_j": 1000.0,
+            "e_processing_j": 1.0,
+            "e_recovery_w": 60.0,
+            "efficiency": 0.5,
+            "el_max_deg": 60.0,
+            "el_min_deg": -2.0,
+            "false_alarms_per_beam": 0.03,
+            "fc_hz": 10000000000.0,
+            "floor_ang_rad": 0.0002,
+            "floor_r_m": 5.0,
+            "floor_rdot_mps": 0.2,
+            "fov_az_deg": 60.0,
+            "gain_dbi": 36.0,
+            "h_ambient_k": 300.0,
+            "h_max_k": 360.0,
+            "heading_deg": -10.32,
+            "k_ang": 1.0,
+            "k_r": 1.0,
+            "k_rdot": 1.0,
+            "losses_db": 5.0,
+            "name": "R1",
+            "noise_figure_db": 4.0,
+            "pd_model": "marcum",
+            "pfa": 1e-06,
+            "position": [
+              -4747.5,
+              2239.2,
+              17.4
+            ],
+            "prf_stagger_hz": [
+              14000.0,
+              16000.0,
+              18000.0
+            ],
+            "profiles": {
+              "INTERLEAVED": {
+                "beams_per_look": 1,
+                "n_pulses": 192,
+                "pri_s": 6.25e-05
+              },
+              "SEARCH": {
+                "beams_per_look": 8,
+                "n_pulses": 32,
+                "pri_s": 6.25e-05
+              },
+              "TRACK": {
+                "beams_per_look": 1,
+                "n_pulses": 384,
+                "pri_s": 6.25e-05
+              }
+            },
+            "pt_w": 1000.0,
+            "quantize": false,
+            "r_max_m": 14000.0,
+            "r_min_m": 300.0,
+            "search_bars_deg": [
+              2.0,
+              7.0,
+              15.0,
+              25.0
+            ],
+            "search_sector_deg": 120.0,
+            "snr_good_db": 25.0,
+            "snr_threshold_db": 10.0,
+            "t0_k": 290.0,
+            "thermal_a": 0.04,
+            "thermal_b": 0.03
+          },
+          {
+            "bandwidth_hz": 1000000.0,
+            "beamwidth_az_deg": 3.0,
+            "beamwidth_el_deg": 6.0,
+            "bias_rho": 0.995,
+            "bias_std": [
+              2.0,
+              0.0001,
+              0.0001,
+              0.05
+            ],
+            "c_max": 4,
+            "clutter_notch_mps": 1.0,
+            "e_max_j": 1000.0,
+            "e_processing_j": 1.0,
+            "e_recovery_w": 60.0,
+            "efficiency": 0.5,
+            "el_max_deg": 60.0,
+            "el_min_deg": -2.0,
+            "false_alarms_per_beam": 0.03,
+            "fc_hz": 10000000000.0,
+            "floor_ang_rad": 0.0002,
+            "floor_r_m": 5.0,
+            "floor_rdot_mps": 0.2,
+            "fov_az_deg": 60.0,
+            "gain_dbi": 36.0,
+            "h_ambient_k": 300.0,
+            "h_max_k": 360.0,
+            "heading_deg": 151.02,
+            "k_ang": 1.0,
+            "k_r": 1.0,
+            "k_rdot": 1.0,
+            "losses_db": 5.0,
+            "name": "R2",
+            "noise_figure_db": 4.0,
+            "pd_model": "marcum",
+            "pfa": 1e-06,
+            "position": [
+              5365.9,
+              -2362.1,
+              19.9
+            ],
+            "prf_stagger_hz": [
+              14000.0,
+              16000.0,
+              18000.0
+            ],
+            "profiles": {
+              "INTERLEAVED": {
+                "beams_per_look": 1,
+                "n_pulses": 192,
+                "pri_s": 6.25e-05
+              },
+              "SEARCH": {
+                "beams_per_look": 8,
+                "n_pulses": 32,
+                "pri_s": 6.25e-05
+              },
+              "TRACK": {
+                "beams_per_look": 1,
+                "n_pulses": 384,
+                "pri_s": 6.25e-05
+              }
+            },
+            "pt_w": 1000.0,
+            "quantize": false,
+            "r_max_m": 14000.0,
+            "r_min_m": 300.0,
+            "search_bars_deg": [
+              2.0,
+              7.0,
+              15.0,
+              25.0
+            ],
+            "search_sector_deg": 120.0,
+            "snr_good_db": 25.0,
+            "snr_threshold_db": 10.0,
+            "t0_k": 290.0,
+            "thermal_a": 0.04,
+            "thermal_b": 0.03
+          }
+        ],
+        "episode_seed": 7859925214371535490,
+        "radar_position_reference": "input_mast_height",
+        "rng_layout_version": 1,
+        "scenario": {
+          "area_radius_m": 7500.0,
+          "description": "2 radar(s), targets: aircraft/transport, missile/subsonic_cruise, missile/supersonic; hub routes",
+          "difficulty_level": null,
+          "dt": 0.5,
+          "duration_s": 30.0,
+          "interleaved_actions": false,
+          "max_track_slots": 4,
+          "name": "missile_routes_pilot5_ep0004",
+          "radar_defaults": {
+            "fov_az_deg": 60.0,
+            "r_max_m": 14000.0,
+            "search_bars_deg": [
+              2.0,
+              7.0,
+              15.0,
+              25.0
+            ],
+            "search_sector_deg": 120.0
+          },
+          "radars": [
+            {
+              "heading_deg": -10.32,
+              "name": "R1",
+              "position": [
+                -4747.5,
+                2239.2,
+                17.4
+              ]
+            },
+            {
+              "heading_deg": 151.02,
+              "name": "R2",
+              "position": [
+                5365.9,
+                -2362.1,
+                19.9
+              ]
+            }
+          ],
+          "reward": {
+            "err_scale_m": 150.0,
+            "w_class": 0.5,
+            "w_comm": 0.0,
+            "w_cost": 0.2,
+            "w_fair": 0.0,
+            "w_false": 0.2,
+            "w_interrupt": 0.5,
+            "w_loss": 1.0,
+            "w_miss": 1.0,
+            "w_track": 1.0
+          },
+          "seed": 118003790,
+          "share_actions": false,
+          "site": {
+            "lat": 40.3,
+            "lon": -111.7,
+            "name": "Valley Test Range"
+          },
+          "stress": {
+            "comm_drop_prob": 0.0,
+            "fail_radar": null,
+            "fail_time_s": 30.0,
+            "max_reports_per_radar": null,
+            "noise_scale": 1.0,
+            "outages": []
+          },
+          "targets": [
+            {
+              "label": 1,
+              "motion": {
+                "segments": [
+                  {
+                    "duration_s": 7.5,
+                    "model": "CT",
+                    "turn_rate_rad_s": 0.04677
+                  },
+                  {
+                    "duration_s": 22.5,
+                    "model": "CV"
+                  }
+                ]
+              },
+              "position": [
+                -3896.686,
+                178.938,
+                2187.669
+              ],
+              "rcs_dbsm": {
+                "nose": 11.571,
+                "side": 19.801,
+                "tail": 16.656,
+                "top": 25.654
+              },
+              "target_class": "aircraft",
+              "variant": "transport",
+              "velocity": [
+                118.9733,
+                43.6613,
+                7.7538
+              ]
+            },
+            {
+              "label": 2,
+              "motion": {
+                "segments": [
+                  {
+                    "duration_s": 30.0,
+                    "model": "CV"
+                  }
+                ]
+              },
+              "position": [
+                -6003.719,
+                2658.368,
+                129.939
+              ],
+              "rcs_dbsm": {
+                "nose": -11.551,
+                "side": -2.907,
+                "tail": -11.079,
+                "top": -1.805
+              },
+              "target_class": "missile",
+              "variant": "subsonic_cruise",
+              "velocity": [
+                230.5221,
+                -117.0564,
+                0.991
+              ]
+            },
+            {
+              "label": 2,
+              "motion": {
+                "segments": [
+                  {
+                    "duration_s": 21.0,
+                    "model": "CV"
+                  },
+                  {
+                    "duration_s": 9.0,
+                    "model": "CV"
+                  }
+                ]
+              },
+              "position": [
+                1057.752,
+                -2557.856,
+                415.688
+              ],
+              "rcs_dbsm": {
+                "nose": -6.463,
+                "side": 0.308,
+                "tail": -3.427,
+                "top": 5.108
+              },
+              "target_class": "missile",
+              "variant": "supersonic",
+              "velocity": [
+                -402.4031,
+                489.4318,
+                -8.4609
+              ]
+            }
+          ],
+          "terrain": {
+            "family": "mountain_chokepoint",
+            "obstacle_profile": "dense",
+            "parameters": {
+              "ridge_width_m": 1517.3,
+              "valley_angle_deg": 46.2
+            },
+            "relief_height_m": 910.8,
+            "resolution": 256,
+            "seed": 118003790,
+            "source": "procedural",
+            "texture_family": "rocky_mountain",
+            "valley_width_m": 3397.3
+          },
+          "zones": [
+            {
+              "height_m": 130.7,
+              "kind": "zone",
+              "name": "Zone A",
+              "position": [
+                -909.6,
+                121.3
+              ],
+              "radius_m": 387.3
+            },
+            {
+              "height_m": 149.5,
+              "kind": "zone",
+              "name": "Zone B",
+              "position": [
+                -4575.9,
+                4294.2
+              ],
+              "radius_m": 430.9
+            }
+          ]
+        },
+        "scenario_seed": 118003790,
+        "simulation_steps": 60,
+        "snapshot_version": 1,
+        "terrain_provenance": {
+          "actual_source": null,
+          "data_hash": null,
+          "missing": [
+            "actual_source",
+            "data_hash"
+          ],
+          "requested_source": "procedural"
+        },
+        "terrain_seed": 118003790
+      },
+      "dataset_episode_id": "ep-000004-de2e4072ea78",
+      "episode_index": 4,
+      "episode_seed": 7859925214371535490,
+      "generation_status": "planned",
+      "geometry_group_id": "geometry-b7996096b255f32f7358",
+      "maneuvers": [
+        [
+          "CT",
+          "CV"
+        ],
+        [
+          "CV"
+        ],
+        [
+          "CV",
+          "CV"
+        ]
+      ],
+      "master_seed": 20261125,
+      "missile_count": 2,
+      "obstacle_profile": "dense",
+      "planned_visible_fraction": [
+        1.0,
+        0.806,
+        0.387
+      ],
+      "radar_count": 2,
+      "recipe_version": 2,
+      "resolved_configuration_hash": "c82ee567098fedfae1efd3bb2af1ec36068987ef4c4a223832954ae7ff678502",
+      "resolved_scenario": {
+        "area_radius_m": 7500.0,
+        "description": "2 radar(s), targets: aircraft/transport, missile/subsonic_cruise, missile/supersonic; hub routes",
+        "difficulty_level": null,
+        "dt": 0.5,
+        "duration_s": 30.0,
+        "interleaved_actions": false,
+        "max_track_slots": 4,
+        "name": "missile_routes_pilot5_ep0004",
+        "radar_defaults": {
+          "fov_az_deg": 60.0,
+          "r_max_m": 14000.0,
+          "search_bars_deg": [
+            2.0,
+            7.0,
+            15.0,
+            25.0
+          ],
+          "search_sector_deg": 120.0
+        },
+        "radars": [
+          {
+            "heading_deg": -10.32,
+            "name": "R1",
+            "position": [
+              -4747.5,
+              2239.2,
+              17.4
+            ]
+          },
+          {
+            "heading_deg": 151.02,
+            "name": "R2",
+            "position": [
+              5365.9,
+              -2362.1,
+              19.9
+            ]
+          }
+        ],
+        "reward": {
+          "err_scale_m": 150.0,
+          "w_class": 0.5,
+          "w_comm": 0.0,
+          "w_cost": 0.2,
+          "w_fair": 0.0,
+          "w_false": 0.2,
+          "w_interrupt": 0.5,
+          "w_loss": 1.0,
+          "w_miss": 1.0,
+          "w_track": 1.0
+        },
+        "seed": 118003790,
+        "share_actions": false,
+        "site": {
+          "lat": 40.3,
+          "lon": -111.7,
+          "name": "Valley Test Range"
+        },
+        "stress": {
+          "comm_drop_prob": 0.0,
+          "fail_radar": null,
+          "fail_time_s": 30.0,
+          "max_reports_per_radar": null,
+          "noise_scale": 1.0,
+          "outages": []
+        },
+        "targets": [
+          {
+            "label": 1,
+            "motion": {
+              "segments": [
+                {
+                  "duration_s": 7.5,
+                  "model": "CT",
+                  "turn_rate_rad_s": 0.04677
+                },
+                {
+                  "duration_s": 22.5,
+                  "model": "CV"
+                }
+              ]
+            },
+            "position": [
+              -3896.686,
+              178.938,
+              2187.669
+            ],
+            "rcs_dbsm": {
+              "nose": 11.571,
+              "side": 19.801,
+              "tail": 16.656,
+              "top": 25.654
+            },
+            "target_class": "aircraft",
+            "variant": "transport",
+            "velocity": [
+              118.9733,
+              43.6613,
+              7.7538
+            ]
+          },
+          {
+            "label": 2,
+            "motion": {
+              "segments": [
+                {
+                  "duration_s": 30.0,
+                  "model": "CV"
+                }
+              ]
+            },
+            "position": [
+              -6003.719,
+              2658.368,
+              129.939
+            ],
+            "rcs_dbsm": {
+              "nose": -11.551,
+              "side": -2.907,
+              "tail": -11.079,
+              "top": -1.805
+            },
+            "target_class": "missile",
+            "variant": "subsonic_cruise",
+            "velocity": [
+              230.5221,
+              -117.0564,
+              0.991
+            ]
+          },
+          {
+            "label": 2,
+            "motion": {
+              "segments": [
+                {
+                  "duration_s": 21.0,
+                  "model": "CV"
+                },
+                {
+                  "duration_s": 9.0,
+                  "model": "CV"
+                }
+              ]
+            },
+            "position": [
+              1057.752,
+              -2557.856,
+              415.688
+            ],
+            "rcs_dbsm": {
+              "nose": -6.463,
+              "side": 0.308,
+              "tail": -3.427,
+              "top": 5.108
+            },
+            "target_class": "missile",
+            "variant": "supersonic",
+            "velocity": [
+              -402.4031,
+              489.4318,
+              -8.4609
+            ]
+          }
+        ],
+        "terrain": {
+          "family": "mountain_chokepoint",
+          "obstacle_profile": "dense",
+          "parameters": {
+            "ridge_width_m": 1517.3,
+            "valley_angle_deg": 46.2
+          },
+          "relief_height_m": 910.8,
+          "resolution": 256,
+          "seed": 118003790,
+          "source": "procedural",
+          "texture_family": "rocky_mountain",
+          "valley_width_m": 3397.3
+        },
+        "zones": [
+          {
+            "height_m": 130.7,
+            "kind": "zone",
+            "name": "Zone A",
+            "position": [
+              -909.6,
+              121.3
+            ],
+            "radius_m": 387.3
+          },
+          {
+            "height_m": 149.5,
+            "kind": "zone",
+            "name": "Zone B",
+            "position": [
+              -4575.9,
+              4294.2
+            ],
+            "radius_m": 430.9
+          }
+        ]
+      },
+      "route_group_id": "route-86d1b378810ca1efdada",
+      "route_headings_deg": [
+        -26.9,
+        129.4
+      ],
+      "route_pattern": "hub",
+      "route_phases": [
+        "in",
+        "out"
+      ],
+      "rugged_profile": "alpine_chokepoint",
+      "scenario_family": "missile_routes_pilot5",
+      "split": "test",
+      "target_classes": [
+        "aircraft",
+        "missile",
+        "missile"
+      ],
+      "target_count": 3,
+      "target_variants": [
+        "transport",
+        "subsonic_cruise",
+        "supersonic"
+      ],
+      "terrain_family": "mountain_chokepoint",
+      "terrain_group_id": "terrain-24fa72485e053c0fcaab",
+      "terrain_seed": 118003790,
+      "texture_family": "rocky_mountain",
+      "trajectory_attempts": [
+        1,
+        50,
+        42
+      ],
+      "zones": [
+        {
+          "height_m": 130.7,
+          "kind": "zone",
+          "name": "Zone A",
+          "position": [
+            -909.6,
+            121.3
+          ],
+          "radius_m": 387.3
+        },
+        {
+          "height_m": 149.5,
+          "kind": "zone",
+          "name": "Zone B",
+          "position": [
+            -4575.9,
+            4294.2
+          ],
+          "radius_m": 430.9
+        }
+      ]
+    }
+  ],
+  "fixed_dimensions": "dt and max_track_slots fixed; radar count varies per episode",
+  "geometry_validation": "full trajectory propagated against terrain and variant envelope; radar layout accepted only above the minimum visible fraction",
+  "grouping_policy": "terrain seeds are split-owned; terrain and route groups disjoint across splits",
+  "label_space": {
+    "aircraft": 1,
+    "missile": 2,
+    "uav": 0
+  },
+  "master_seed": 20261125,
+  "plan_schema_version": 1,
+  "recipe": {
+    "area_radius_m": 7500.0,
+    "class_weights": {
+      "aircraft": 1.0,
+      "missile": 1.0,
+      "uav": 1.0
+    },
+    "coverage": {
+      "max_episode_attempts": 30,
+      "max_radar_attempts": 300,
+      "min_visible_fraction": 0.3,
+      "sample_step_s": 1.0
+    },
+    "dataset_name": "missile_routes_pilot5",
+    "dt": 0.5,
+    "duration_s": 30.0,
+    "episodes": 5,
+    "master_seed": 20261125,
+    "max_track_slots": 4,
+    "missile_focus": {
+      "anchor_radius_m": 2000.0,
+      "anchor_tolerance_m": 700.0,
+      "downrange_zone_m": 5500.0,
+      "episode_attempts": 10,
+      "facility_count": [
+        0,
+        2
+      ],
+      "facility_height_m": [
+        40.0,
+        120.0
+      ],
+      "facility_radius_m": [
+        150.0,
+        300.0
+      ],
+      "inbound_phase": [
+        0.5,
+        0.85
+      ],
+      "max_route_attempts": 150,
+      "min_heading_separation_deg": 40.0,
+      "missile_count": [
+        2,
+        3
+      ],
+      "outbound_phase": [
+        0.05,
+        0.2
+      ],
+      "relaxed_heading_separation_deg": 8.0,
+      "route_patterns": [
+        "converging",
+        "diverging",
+        "hub"
+      ],
+      "variant_weights": {
+        "subsonic_cruise": 0.5,
+        "supersonic": 0.5
+      },
+      "zone_height_m": [
+        60.0,
+        220.0
+      ],
+      "zone_radius_m": [
+        350.0,
+        600.0
+      ]
+    },
+    "radar": {
+      "defaults": {
+        "fov_az_deg": 60.0,
+        "r_max_m": 14000.0,
+        "search_bars_deg": [
+          2.0,
+          7.0,
+          15.0,
+          25.0
+        ],
+        "search_sector_deg": 120.0
+      },
+      "distance_from_centre_m": [
+        1500.0,
+        6000.0
+      ],
+      "heading_jitter_deg": 20.0,
+      "mast_m": [
+        10.0,
+        25.0
+      ],
+      "min_separation_m": 2500.0
+    },
+    "radar_count": [
+      1,
+      3
+    ],
+    "recipe_version": 2,
+    "site": {
+      "lat": 40.3,
+      "lon": -111.7,
+      "name": "Valley Test Range"
+    },
+    "split_ratios": {
+      "test": 0.15,
+      "train": 0.7,
+      "validation": 0.15
+    },
+    "target_count": [
+      2,
+      3
+    ],
+    "terrain": {
+      "families": [
+        "valley_linear_canyon",
+        "valley_sinuous_pass",
+        "mountain_chokepoint",
+        "basin_highlands",
+        "ridge_multi_obstacle"
+      ],
+      "obstacle_profiles": [
+        "clear",
+        "sparse",
+        "dense",
+        "asymmetric"
+      ],
+      "relief_height_m": [
+        650.0,
+        1050.0
+      ],
+      "resolution": 256,
+      "rugged_profiles": [
+        "deep_canyon",
+        "twisting_gorge",
+        "alpine_chokepoint",
+        "knife_ridges",
+        "highland_bowl"
+      ],
+      "terrain_rerolls": 4,
+      "textures": [
+        "rocky_mountain",
+        "green_forest_valley",
+        "dry_canyon",
+        "snowy_highlands",
+        "grassland_valley",
+        "mixed_rock_vegetation"
+      ],
+      "valley_width_m": [
+        2200.0,
+        3800.0
+      ]
+    },
+    "trajectory": {
+      "cpa_radius_m": 3500.0,
+      "max_attempts": 600,
+      "segments": [
+        1,
+        3
+      ]
+    }
+  },
+  "recipe_version": 2,
+  "split_allocation": "prefix-stable largest-deficit allocation",
+  "split_counts": {
+    "test": 1,
+    "train": 3,
+    "validation": 1
+  },
+  "split_ratios": {
+    "test": 0.15,
+    "train": 0.7,
+    "validation": 0.15
+  }
+}

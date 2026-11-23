@@ -244,14 +244,28 @@ def _rotate(vec, psi):
     return [c * vec[0] - s * vec[1], s * vec[0] + c * vec[1], vec[2]]
 
 
-def plan_dive_target(profile, rng, terrain, point, dt):
-    """Missile on ``profile`` ending near the defended ``point``; returns (target, info) or raises."""
+def in_sector(angle, sector):
+    """Map an angle drawn on [-pi, pi) into ``sector`` = (centre, half width) without another draw."""
+    if sector is None:
+        return angle
+    centre, half = sector
+    return float(centre + angle / math.pi * half)
+
+
+def plan_dive_target(profile, rng, terrain, point, dt, sector=None):
+    """Missile on ``profile`` ending near the defended ``point``; returns (target, info) or raises.
+
+    ``sector`` (centre, half width in rad) limits the threat axis: the direction from
+    the defended point towards the side the missile comes from.
+    """
     spec = variant_spec(CLASS, VARIANT)
     rejected = {}
     for _ in range(200):
         v0, segs, kinds, terminal_agl, h0 = dive_profile(profile, rng, dt, spec)
         duration = sum(s["duration_s"] for s in segs)
         approach = float(rng.uniform(-math.pi, math.pi))      # direction the missile flies towards
+        if sector is not None:
+            approach = in_sector(approach, sector) + math.pi
         v0w = _rotate(v0, approach)
         segw = []
         for s in segs:
@@ -376,7 +390,7 @@ def _tf_gamma(ap, agl_cmd, lim_deg=25.0):
     return float(np.clip(math.atan2(z_cmd - ap.p[2], lead), -math.radians(lim_deg), math.radians(lim_deg)))
 
 
-def fly_evasive(profile, rng, terrain, aim, dt, spec, max_t=60.0):
+def fly_evasive(profile, rng, terrain, aim, dt, spec, max_t=60.0, sector=None):
     """Fly one evasive profile; returns (position, velocity, segments, phases, start_agl, approach_deg)."""
     g = G
     aim = np.asarray(aim, float)
@@ -384,7 +398,7 @@ def fly_evasive(profile, rng, terrain, aim, dt, spec, max_t=60.0):
     terminal_agl = float(rng.uniform(150.0, 350.0))
     low = profile in LOW_LEVEL_PROFILES
     speed = float(rng.uniform(500.0, 650.0) if low else rng.uniform(700.0, 900.0))
-    bearing = float(rng.uniform(-math.pi, math.pi))        # from the aim point towards the launch side
+    bearing = in_sector(float(rng.uniform(-math.pi, math.pi)), sector)   # from the aim point towards the launch side
 
     if profile == "dogleg_serpentine":
         r_w = float(rng.uniform(5000.0, 7000.0))
@@ -539,14 +553,14 @@ def fly_evasive(profile, rng, terrain, aim, dt, spec, max_t=60.0):
             math.degrees(psi0))
 
 
-def plan_evasive_target(profile, rng, terrain, point, dt):
+def plan_evasive_target(profile, rng, terrain, point, dt, sector=None):
     """Missile flying an evasive profile onto the defended ``point``; returns (target, info) or raises."""
     spec = variant_spec(CLASS, VARIANT)
     rejected = {}
     for _ in range(200):
         aim = np.asarray(point, float) + rng.uniform(-300.0, 300.0, 2)
         try:
-            position, velocity, segs, phases, start_agl, approach = fly_evasive(profile, rng, terrain, aim, dt, spec)
+            position, velocity, segs, phases, start_agl, approach = fly_evasive(profile, rng, terrain, aim, dt, spec, sector=sector)
         except ValueError as exc:
             reason = str(exc).split(":")[-1].strip()
             rejected[reason] = rejected.get(reason, 0) + 1
