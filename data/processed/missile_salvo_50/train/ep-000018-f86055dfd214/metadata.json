@@ -1,0 +1,1801 @@
+{
+  "agent_ids": [
+    "radar_0",
+    "radar_1"
+  ],
+  "communication_order": [
+    "outage",
+    "bandwidth",
+    "packet_loss",
+    "sharing",
+    "delivery"
+  ],
+  "completed": true,
+  "config_snapshot": {
+    "effective_duration_s": 19.0,
+    "effective_radars": [
+      {
+        "bandwidth_hz": 1000000.0,
+        "beamwidth_az_deg": 3.0,
+        "beamwidth_el_deg": 6.0,
+        "bias_rho": 0.995,
+        "bias_std": [
+          2.0,
+          0.0001,
+          0.0001,
+          0.05
+        ],
+        "c_max": 4,
+        "clutter_notch_mps": 1.0,
+        "e_max_j": 1000.0,
+        "e_processing_j": 1.0,
+        "e_recovery_w": 60.0,
+        "efficiency": 0.5,
+        "el_max_deg": 70.0,
+        "el_min_deg": -20.0,
+        "false_alarms_per_beam": 0.03,
+        "fc_hz": 10000000000.0,
+        "floor_ang_rad": 0.0002,
+        "floor_r_m": 5.0,
+        "floor_rdot_mps": 0.2,
+        "fov_az_deg": 45.0,
+        "gain_dbi": 36.0,
+        "h_ambient_k": 300.0,
+        "h_max_k": 360.0,
+        "heading_deg": 37.65,
+        "k_ang": 1.0,
+        "k_r": 1.0,
+        "k_rdot": 1.0,
+        "losses_db": 5.0,
+        "name": "R1",
+        "noise_figure_db": 4.0,
+        "pd_model": "marcum",
+        "pfa": 1e-06,
+        "position": [
+          -3130.1,
+          629.5,
+          796.0645345828558
+        ],
+        "prf_stagger_hz": [
+          14000.0,
+          16000.0,
+          18000.0
+        ],
+        "profiles": {
+          "INTERLEAVED": {
+            "beams_per_look": 1,
+            "n_pulses": 192,
+            "pri_s": 6.25e-05
+          },
+          "SEARCH": {
+            "beams_per_look": 8,
+            "n_pulses": 32,
+            "pri_s": 6.25e-05
+          },
+          "TRACK": {
+            "beams_per_look": 1,
+            "n_pulses": 384,
+            "pri_s": 6.25e-05
+          }
+        },
+        "pt_w": 1000.0,
+        "quantize": false,
+        "r_max_m": 20000.0,
+        "r_min_m": 300.0,
+        "search_bars_deg": [
+          -11.7,
+          -5.7,
+          0.3
+        ],
+        "search_sector_deg": 70.0,
+        "snr_good_db": 25.0,
+        "snr_threshold_db": 10.0,
+        "t0_k": 290.0,
+        "thermal_a": 0.04,
+        "thermal_b": 0.03
+      },
+      {
+        "bandwidth_hz": 1000000.0,
+        "beamwidth_az_deg": 3.0,
+        "beamwidth_el_deg": 6.0,
+        "bias_rho": 0.995,
+        "bias_std": [
+          2.0,
+          0.0001,
+          0.0001,
+          0.05
+        ],
+        "c_max": 4,
+        "clutter_notch_mps": 1.0,
+        "e_max_j": 1000.0,
+        "e_processing_j": 1.0,
+        "e_recovery_w": 60.0,
+        "efficiency": 0.5,
+        "el_max_deg": 70.0,
+        "el_min_deg": -20.0,
+        "false_alarms_per_beam": 0.03,
+        "fc_hz": 10000000000.0,
+        "floor_ang_rad": 0.0002,
+        "floor_r_m": 5.0,
+        "floor_rdot_mps": 0.2,
+        "fov_az_deg": 45.0,
+        "gain_dbi": 36.0,
+        "h_ambient_k": 300.0,
+        "h_max_k": 360.0,
+        "heading_deg": 163.64,
+        "k_ang": 1.0,
+        "k_r": 1.0,
+        "k_rdot": 1.0,
+        "losses_db": 5.0,
+        "name": "R2",
+        "noise_figure_db": 4.0,
+        "pd_model": "marcum",
+        "pfa": 1e-06,
+        "position": [
+          3369.9,
+          4379.5,
+          18.1
+        ],
+        "prf_stagger_hz": [
+          14000.0,
+          16000.0,
+          18000.0
+        ],
+        "profiles": {
+          "INTERLEAVED": {
+            "beams_per_look": 1,
+            "n_pulses": 192,
+            "pri_s": 6.25e-05
+          },
+          "SEARCH": {
+            "beams_per_look": 8,
+            "n_pulses": 32,
+            "pri_s": 6.25e-05
+          },
+          "TRACK": {
+            "beams_per_look": 1,
+            "n_pulses": 384,
+            "pri_s": 6.25e-05
+          }
+        },
+        "pt_w": 1000.0,
+        "quantize": false,
+        "r_max_m": 20000.0,
+        "r_min_m": 300.0,
+        "search_bars_deg": [
+          3.3,
+          9.3
+        ],
+        "search_sector_deg": 70.0,
+        "snr_good_db": 25.0,
+        "snr_threshold_db": 10.0,
+        "t0_k": 290.0,
+        "thermal_a": 0.04,
+        "thermal_b": 0.03
+      }
+    ],
+    "episode_seed": 3716122654650848293,
+    "radar_position_reference": "terrain_adjusted",
+    "rng_layout_version": 1,
+    "scenario": {
+      "area_radius_m": 12000.0,
+      "description": "2-missile diverging salvo (supersonic_skim, cruise_weave), 0 traffic, 2 radar(s) on high ground",
+      "difficulty_level": null,
+      "dt": 0.5,
+      "duration_s": 19.0,
+      "interleaved_actions": false,
+      "max_track_slots": 4,
+      "name": "missile_salvo_50_ep0018",
+      "radar_defaults": {
+        "el_max_deg": 70.0,
+        "fov_az_deg": 45.0,
+        "r_max_m": 20000.0,
+        "search_sector_deg": 70.0
+      },
+      "radars": [
+        {
+          "el_min_deg": -20.0,
+          "heading_deg": 37.65,
+          "name": "R1",
+          "position": [
+            -3130.1,
+            629.5,
+            17.9
+          ],
+          "search_bars_deg": [
+            -11.7,
+            -5.7,
+            0.3
+          ]
+        },
+        {
+          "el_min_deg": -20.0,
+          "heading_deg": 163.64,
+          "name": "R2",
+          "position": [
+            3369.9,
+            4379.5,
+            18.1
+          ],
+          "search_bars_deg": [
+            3.3,
+            9.3
+          ]
+        }
+      ],
+      "reward": {
+        "err_scale_m": 150.0,
+        "w_class": 0.5,
+        "w_comm": 0.0,
+        "w_cost": 0.2,
+        "w_fair": 0.0,
+        "w_false": 0.2,
+        "w_interrupt": 0.5,
+        "w_loss": 1.0,
+        "w_miss": 1.0,
+        "w_track": 1.0
+      },
+      "seed": 282448431,
+      "share_actions": false,
+      "site": {
+        "lat": 40.3,
+        "lon": -111.7,
+        "name": "Salvo Test Range"
+      },
+      "stress": {
+        "comm_drop_prob": 0.0,
+        "fail_radar": null,
+        "fail_time_s": 30.0,
+        "max_reports_per_radar": null,
+        "noise_scale": 1.0,
+        "outages": []
+      },
+      "targets": [
+        {
+          "label": 2,
+          "motion": {
+            "segments": [
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -41.1761,
+                  15.9514,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -64.7232,
+                  26.6621,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -65.6745,
+                  30.0392,
+                  0.0
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -45.321,
+                  23.759,
+                  3.1074
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -10.1646,
+                  8.031,
+                  8.9357
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  30.5795,
+                  -12.8114,
+                  12.8724
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  67.2961,
+                  -31.6687,
+                  9.0837
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  91.5126,
+                  -41.6082,
+                  1.0545
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  96.791,
+                  -39.7905,
+                  -5.65
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  80.3742,
+                  -28.7166,
+                  -7.3813
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  45.0455,
+                  -13.585,
+                  -6.7841
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.8143,
+                  1.3463,
+                  -6.0414
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -45.4872,
+                  14.3471,
+                  -5.2906
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -77.3661,
+                  24.9389,
+                  -4.5461
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -88.3465,
+                  31.5657,
+                  -3.8208
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -76.1786,
+                  31.1206,
+                  -2.85
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -44.8352,
+                  21.2352,
+                  -0.514
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -2.6565,
+                  3.2576,
+                  1.2537
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  40.414,
+                  -17.1233,
+                  1.7024
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  74.8687,
+                  -32.3954,
+                  -1.321
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  92.7307,
+                  -37.2989,
+                  -1.3447
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  88.9059,
+                  -31.4776,
+                  -1.533
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  63.1013,
+                  -18.8619,
+                  -1.0462
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  20.9483,
+                  -4.3616,
+                  -0.8841
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -27.0607,
+                  9.1092,
+                  -0.6401
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -68.5031,
+                  20.8512,
+                  -0.1823
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              }
+            ]
+          },
+          "position": [
+            3652.85,
+            10709.92,
+            50.47
+          ],
+          "rcs_dbsm": {
+            "nose": -10.89,
+            "side": 0.191,
+            "tail": -5.007,
+            "top": 6.671
+          },
+          "target_class": "missile",
+          "variant": "supersonic",
+          "velocity": [
+            -208.496,
+            -538.2014,
+            0.0
+          ]
+        },
+        {
+          "label": 2,
+          "motion": {
+            "segments": [
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0026,
+                  -0.0907
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0014,
+                  -0.0454
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  -0.0003,
+                  -0.0074
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0005,
+                  0.0205
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.001,
+                  0.0427
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0015,
+                  0.0584
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0018,
+                  0.0697
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.002,
+                  0.0774
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0021,
+                  0.0814
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  0.0,
+                  0.0022,
+                  0.0842
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0022,
+                  0.0836
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0023,
+                  0.0838
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0022,
+                  0.0813
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0021,
+                  0.0795
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.002,
+                  0.0762
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.002,
+                  0.0733
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0019,
+                  0.07
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0018,
+                  0.0664
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0017,
+                  0.0633
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0016,
+                  0.0595
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0015,
+                  0.0568
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0015,
+                  0.0531
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0014,
+                  0.0504
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0013,
+                  0.047
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0012,
+                  0.044
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0011,
+                  0.0407
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0001,
+                  0.001,
+                  0.0374
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0009,
+                  0.0342
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0009,
+                  0.0307
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0007,
+                  0.0272
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0007,
+                  0.0237
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0005,
+                  0.0198
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0005,
+                  0.016
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0003,
+                  0.0118
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0002,
+                  0.0076
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  0.0001,
+                  0.0032
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -0.0,
+                  -0.0,
+                  -0.0008
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -8.492,
+                  -0.0489,
+                  -0.0033
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -14.8465,
+                  0.0481,
+                  -0.0285
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -18.7408,
+                  0.3824,
+                  -0.0671
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -20.0212,
+                  0.8898,
+                  -0.1241
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -18.7288,
+                  1.3933,
+                  -0.1967
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -15.1055,
+                  1.6836,
+                  -0.258
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -9.5758,
+                  1.605,
+                  -0.2965
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -2.7048,
+                  1.1207,
+                  -0.306
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  4.8552,
+                  0.3348,
+                  -0.2816
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  12.4189,
+                  -0.5357,
+                  -0.2241
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  19.3146,
+                  -1.2294,
+                  -0.1395
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  24.9261,
+                  -1.5269,
+                  -0.0363
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  28.7342,
+                  -1.3259,
+                  0.0705
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  30.362,
+                  -0.6808,
+                  0.1712
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  29.6173,
+                  0.2095,
+                  0.2494
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  26.5229,
+                  1.0621,
+                  0.2605
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  21.319,
+                  1.6023,
+                  0.248
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  14.4375,
+                  1.6496,
+                  0.2172
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  6.4504,
+                  1.1761,
+                  0.1714
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -1.99,
+                  0.3159,
+                  0.1071
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -10.2078,
+                  -0.6754,
+                  0.0423
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -17.5494,
+                  -1.5018,
+                  -0.0127
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -23.4225,
+                  -1.919,
+                  -0.0599
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -27.3354,
+                  -1.8123,
+                  -0.1245
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -28.9403,
+                  -1.2304,
+                  -0.1858
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -28.0752,
+                  -0.3701,
+                  -0.2487
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -24.7932,
+                  0.4897,
+                  -0.3047
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -19.3648,
+                  1.08,
+                  -0.3698
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -12.2512,
+                  1.2307,
+                  -0.433
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -4.0531,
+                  0.9243,
+                  -0.4653
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  4.5488,
+                  0.2988,
+                  -0.4666
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  12.8503,
+                  -0.3988,
+                  -0.4351
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  20.1709,
+                  -0.8968,
+                  -0.3832
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  25.8964,
+                  -0.99,
+                  -0.3122
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  29.5219,
+                  -0.6128,
+                  -0.2439
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  30.6995,
+                  0.1341,
+                  -0.2023
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  29.2802,
+                  1.0137,
+                  -0.1963
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  25.3395,
+                  1.7286,
+                  -0.2023
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  19.1733,
+                  2.0193,
+                  -0.2214
+                ],
+                "duration_s": 0.25,
+                "model": "CA"
+              }
+            ]
+          },
+          "position": [
+            -2087.24,
+            8899.38,
+            686.59
+          ],
+          "rcs_dbsm": {
+            "nose": -10.286,
+            "side": 2.889,
+            "tail": -11.583,
+            "top": 4.181
+          },
+          "target_class": "missile",
+          "variant": "subsonic_cruise",
+          "velocity": [
+            1.4803,
+            -257.4983,
+            6.7402
+          ]
+        }
+      ],
+      "terrain": {
+        "family": "mountain_chokepoint",
+        "obstacle_profile": "asymmetric",
+        "parameters": {
+          "asymmetry_ratio": 1.66,
+          "ridge_width_m": 1293.3,
+          "valley_angle_deg": 155.2
+        },
+        "relief_height_m": 983.9,
+        "resolution": 256,
+        "seed": 282448431,
+        "source": "procedural",
+        "texture_family": "rocky_mountain",
+        "valley_width_m": 4178.1
+      },
+      "tracker": {
+        "init_v_std_mps": 400.0,
+        "q": 10000.0,
+        "tentative_timeout_s": 1.0
+      },
+      "zones": [
+        {
+          "height_m": 183.5,
+          "kind": "zone",
+          "name": "Zone A",
+          "position": [
+            -786.1,
+            -688.7
+          ],
+          "radius_m": 350.8
+        },
+        {
+          "height_m": 121.5,
+          "kind": "zone",
+          "name": "Zone B",
+          "position": [
+            -1974.0,
+            3447.6
+          ],
+          "radius_m": 413.4
+        },
+        {
+          "height_m": 67.4,
+          "kind": "facility",
+          "name": "Facility 1",
+          "position": [
+            2462.5,
+            -1805.3
+          ],
+          "radius_m": 190.4
+        },
+        {
+          "height_m": 56.3,
+          "kind": "facility",
+          "name": "Facility 2",
+          "position": [
+            3038.4,
+            -4222.2
+          ],
+          "radius_m": 196.7
+        }
+      ]
+    },
+    "scenario_seed": 282448431,
+    "simulation_steps": 38,
+    "snapshot_version": 1,
+    "terrain_provenance": {
+      "actual_source": "procedural",
+      "data_hash": null,
+      "missing": [
+        "data_hash"
+      ],
+      "requested_source": "procedural"
+    },
+    "terrain_seed": 282448431
+  },
+  "coordinates": "ENU metres; orientation R_WT maps body to world",
+  "dataset_provenance": {
+    "dataset_episode_id": "ep-000018-f86055dfd214",
+    "episode_index": 18,
+    "episode_seed": 3716122654650848293,
+    "master_seed": 20261128,
+    "plan_hash": "02eb987a7a95ab5e6bb54ebdb8b3cc130e00d11c6659f8b7b8da34a13a22d3b7",
+    "policy_name": "central_greedy_confirm",
+    "recipe_hash": "5a47a0092c51ba686e09c73534a1ca51a926e9a8c800e1ed3763281c75d2430c",
+    "recipe_version": 2,
+    "resolved_configuration_hash": "8fa8e513a76e00bb61ac4186cfda36814e0fbfcd328e4bae9ea2cd4d03e90941",
+    "scenario_family": "missile_salvo_50",
+    "split": "train",
+    "terrain_group_id": "terrain-2646f04351f029c59936"
+  },
+  "episode_id": "18eac5855b975078-24d21fa9dd0-1",
+  "label_space": "target_classes_v1",
+  "local_tracks_enabled": true,
+  "measurement_order": [
+    "range_m",
+    "azimuth_rad",
+    "elevation_rad",
+    "radial_velocity_mps"
+  ],
+  "record_schema_version": 2,
+  "recorded_steps": 38,
+  "report_scope": "radar_generated_before_outage_and_communication",
+  "sentinels": {
+    "fused_radar_id": -1,
+    "missing_truth_id": -1
+  },
+  "state_order": [
+    "px_m",
+    "py_m",
+    "pz_m",
+    "vx_mps",
+    "vy_mps",
+    "vz_mps"
+  ],
+  "target_classes": [
+    "missile",
+    "missile"
+  ],
+  "target_types": [
+    "missile/supersonic",
+    "missile/subsonic_cruise"
+  ],
+  "target_variants": [
+    "supersonic",
+    "subsonic_cruise"
+  ],
+  "time_convention": "transition step_index identifies its ending state; reports are at end_t_s"
+}

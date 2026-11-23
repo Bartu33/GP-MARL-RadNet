@@ -44,7 +44,7 @@ def test_cpu_generation_and_pickle_free_roundtrip(tmp_path, episodes, demo):
         records = load_episode_records(directory)
         assert entry["runtime_episode_id"] == records["metadata"]["episode_id"]
         assert entry["runtime_episode_id"] != entry["dataset_episode_id"]
-        assert records["metadata"]["record_schema_version"] == 2
+        assert records["metadata"]["record_schema_version"] == 3
         assert records["metadata"]["config_snapshot"]["episode_seed"] == entry["episode_seed"]
         for table, rows in records.items():
             if table != "metadata":

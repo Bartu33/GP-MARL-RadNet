@@ -1,0 +1,20 @@
+# Missile-route pilot: 5 episodes (same recipe as missile_routes_100, shorter).
+# Class 2 (missile) dominates: 2-3 missiles per episode, converging on / diverging from
+# a reference point ("Zone A"), over the rugged terrain pool, with abstract zone markers.
+kind: class_targets
+recipe_version: 2
+dataset_name: missile_routes_pilot5
+master_seed: 20261125
+episodes: 5
+duration_s: 30.0
+dt: 0.5
+radar_count: [1, 3]
+target_count: [2, 3]
+class_weights: {uav: 1.0, aircraft: 1.0, missile: 1.0}
+split_ratios: {train: 0.70, validation: 0.15, test: 0.15}
+terrain:
+  rugged_profiles: [deep_canyon, twisting_gorge, alpine_chokepoint, knife_ridges, highland_bowl]
+missile_focus:
+  missile_count: [2, 3]
+  route_patterns: [converging, diverging, hub]
+  variant_weights: {subsonic_cruise: 0.5, supersonic: 0.5}

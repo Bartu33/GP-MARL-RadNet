@@ -1,0 +1,1296 @@
+{
+  "dataset_dir": "C:\\Users\\tahau\\Desktop\\marl\\demo\\data\\processed\\missile_routes_pilot5",
+  "episodes": [
+    {
+      "dataset_episode_id": "ep-000000-06a37b58a197",
+      "split": "train",
+      "status": "completed",
+      "radars": 2,
+      "targets": [
+        {
+          "target_id": 0,
+          "class": "missile",
+          "variant": "subsonic_cruise",
+          "label": 2,
+          "swerling": 3,
+          "speed_mps": {
+            "min": 255.71416332375884,
+            "p50": 274.0485047240109,
+            "max": 274.0485047240109
+          },
+          "agl_m": {
+            "min": 50.383,
+            "p50": 61.75000000000026,
+            "max": 72.94818849246968
+          },
+          "vz_mps": {
+            "min": 0.7578,
+            "p50": 0.7578,
+            "max": 0.7578
+          },
+          "lateral_accel_g": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0005819097745945111
+          },
+          "turn_rate_deg_s": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 2.767992974845282e-07
+          },
+          "rcs_seen_dbsm": {
+            "min": -10.491255121753348,
+            "p50": -2.913973561273066,
+            "max": 2.1312130238846687
+          },
+          "rcs_table_dbsm": {
+            "nose": -12.145,
+            "side": 2.727,
+            "tail": -10.526,
+            "top": -1.386
+          },
+          "reports": 3,
+          "detected_step_share": 0.05,
+          "tracked_step_share": 0.0,
+          "first_report_t_s": 1.0,
+          "first_tracked_t_s": null,
+          "reports_per_radar": {
+            "1": 3
+          },
+          "zone_min_dist_m": {
+            "Zone A": 203.9150394319097
+          },
+          "snr_db": {
+            "min": 19.825020281506657,
+            "p50": 23.671511559512027,
+            "max": 60.99080822128901
+          },
+          "abs_doppler_khz": {
+            "min": 17.164945924862053,
+            "p50": 18.253301858076437,
+            "max": 18.304206042015164
+          },
+          "abs_rdot_mps": {
+            "min": 257.2960665125739,
+            "p50": 273.6101115324351,
+            "max": 274.37314605370887
+          },
+          "checks": {
+            "speed_in_hard_band": true,
+            "agl_in_hard_band": true,
+            "climb_within_limit": true,
+            "lateral_accel_within_limit": true,
+            "turn_rate_within_limit": true,
+            "never_clamped": true
+          }
+        },
+        {
+          "target_id": 1,
+          "class": "missile",
+          "variant": "subsonic_cruise",
+          "label": 2,
+          "swerling": 3,
+          "speed_mps": {
+            "min": 252.16492270095776,
+            "p50": 252.16492270095776,
+            "max": 252.16492270095776
+          },
+          "agl_m": {
+            "min": 46.09987674019181,
+            "p50": 60.55349999999985,
+            "max": 73.35299999999971
+          },
+          "vz_mps": {
+            "min": 0.8533,
+            "p50": 0.8533,
+            "max": 0.8533
+          },
+          "lateral_accel_g": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0
+          },
+          "turn_rate_deg_s": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0
+          },
+          "rcs_seen_dbsm": {
+            "min": -17.374227174347475,
+            "p50": -1.5280734260083182,
+            "max": 1.6514434086517942
+          },
+          "rcs_table_dbsm": {
+            "nose": -19.307,
+            "side": 1.969,
+            "tail": -6.648,
+            "top": -1.214
+          },
+          "reports": 2,
+          "detected_step_share": 0.03333333333333333,
+          "tracked_step_share": 0.0,
+          "first_report_t_s": 19.5,
+          "first_tracked_t_s": null,
+          "reports_per_radar": {
+            "1": 2
+          },
+          "zone_min_dist_m": {
+            "Zone A": 178.9150641456469
+          },
+          "snr_db": {
+            "min": 14.27290415364074,
+            "p50": 33.077529738975734,
+            "max": 51.88215532431073
+          },
+          "abs_doppler_khz": {
+            "min": 16.845556972423847,
+            "p50": 16.90246864725432,
+            "max": 16.959380322084794
+          },
+          "abs_rdot_mps": {
+            "min": 252.5085465570991,
+            "p50": 253.36163110141536,
+            "max": 254.2147156457316
+          },
+          "checks": {
+            "speed_in_hard_band": true,
+            "agl_in_hard_band": true,
+            "climb_within_limit": true,
+            "lateral_accel_within_limit": true,
+            "turn_rate_within_limit": true,
+            "never_clamped": true
+          }
+        }
+      ],
+      "zones": [
+        {
+          "height_m": 214.6,
+          "kind": "zone",
+          "name": "Zone A",
+          "position": [
+            85.3,
+            -1164.3
+          ],
+          "radius_m": 519.6
+        },
+        {
+          "height_m": 96.9,
+          "kind": "facility",
+          "name": "Facility 1",
+          "position": [
+            3653.3,
+            1497.5
+          ],
+          "radius_m": 214.0
+        },
+        {
+          "height_m": 82.2,
+          "kind": "facility",
+          "name": "Facility 2",
+          "position": [
+            1994.6,
+            -5041.1
+          ],
+          "radius_m": 177.5
+        }
+      ],
+      "zones_inside_terrain": true,
+      "terrain": {
+        "family": "valley_linear_canyon",
+        "relief_height_m": 1256.5,
+        "valley_width_m": 3232.7
+      },
+      "terrain_relief_m": 2472.0071512447134,
+      "false_alarm_reports": 9,
+      "label_space": "target_classes_v1"
+    },
+    {
+      "dataset_episode_id": "ep-000001-4917b90ec27b",
+      "split": "train",
+      "status": "completed",
+      "radars": 1,
+      "targets": [
+        {
+          "target_id": 0,
+          "class": "missile",
+          "variant": "subsonic_cruise",
+          "label": 2,
+          "swerling": 3,
+          "speed_mps": {
+            "min": 226.20308912554665,
+            "p50": 226.20308912554665,
+            "max": 226.20308912554725
+          },
+          "agl_m": {
+            "min": 37.18329488837651,
+            "p50": 108.2511602868904,
+            "max": 187.20372158688312
+          },
+          "vz_mps": {
+            "min": -3.6033,
+            "p50": -3.6033,
+            "max": -3.6033
+          },
+          "lateral_accel_g": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 1.0139601594485332
+          },
+          "turn_rate_deg_s": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 2.519868382985368
+          },
+          "rcs_seen_dbsm": {
+            "min": -6.1971096080688115,
+            "p50": -3.6596717169039907,
+            "max": -1.8981493218328573
+          },
+          "rcs_table_dbsm": {
+            "nose": -10.535,
+            "side": -2.765,
+            "tail": -6.601,
+            "top": 2.201
+          },
+          "reports": 0,
+          "detected_step_share": 0.0,
+          "tracked_step_share": 0.03333333333333333,
+          "first_report_t_s": null,
+          "first_tracked_t_s": 6.0,
+          "reports_per_radar": {},
+          "zone_min_dist_m": {
+            "Zone A": 97.845977935543,
+            "Zone B": 0.04396083275182115,
+            "Zone C": 2290.2116019107925,
+            "Zone D": 4329.1795062919255
+          },
+          "snr_db": null,
+          "abs_doppler_khz": null,
+          "abs_rdot_mps": null,
+          "checks": {
+            "speed_in_hard_band": true,
+            "agl_in_hard_band": true,
+            "climb_within_limit": true,
+            "lateral_accel_within_limit": true,
+            "turn_rate_within_limit": true,
+            "never_clamped": true
+          }
+        },
+        {
+          "target_id": 1,
+          "class": "missile",
+          "variant": "subsonic_cruise",
+          "label": 2,
+          "swerling": 3,
+          "speed_mps": {
+            "min": 250.24414437538792,
+            "p50": 250.24414437538792,
+            "max": 250.24414437538792
+          },
+          "agl_m": {
+            "min": 42.796238060076746,
+            "p50": 133.43742049056405,
+            "max": 176.744289456986
+          },
+          "vz_mps": {
+            "min": 13.0936,
+            "p50": 13.0936,
+            "max": 13.0936
+          },
+          "lateral_accel_g": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0
+          },
+          "turn_rate_deg_s": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0
+          },
+          "rcs_seen_dbsm": {
+            "min": -7.181403192034759,
+            "p50": -6.617177379965411,
+            "max": -3.0740857305398
+          },
+          "rcs_table_dbsm": {
+            "nose": -18.739,
+            "side": 2.763,
+            "tail": -10.672,
+            "top": 2.98
+          },
+          "reports": 11,
+          "detected_step_share": 0.18333333333333332,
+          "tracked_step_share": 0.3333333333333333,
+          "first_report_t_s": 19.5,
+          "first_tracked_t_s": 4.5,
+          "reports_per_radar": {
+            "0": 11
+          },
+          "zone_min_dist_m": {
+            "Zone A": 32.95112911024401,
+            "Zone B": 2202.5123171548826,
+            "Zone C": 24.990459430745346,
+            "Zone D": 5046.516171370899
+          },
+          "snr_db": {
+            "min": 14.577694321496287,
+            "p50": 22.91752315742623,
+            "max": 31.79707805465683
+          },
+          "abs_doppler_khz": {
+            "min": 16.022015842850816,
+            "p50": 16.179990011450563,
+            "max": 16.26289507576729
+          },
+          "abs_rdot_mps": {
+            "min": 240.1639755821594,
+            "p50": 242.53194879741062,
+            "max": 243.77466444801857
+          },
+          "checks": {
+            "speed_in_hard_band": true,
+            "agl_in_hard_band": true,
+            "climb_within_limit": true,
+            "lateral_accel_within_limit": true,
+            "turn_rate_within_limit": true,
+            "never_clamped": true
+          }
+        },
+        {
+          "target_id": 2,
+          "class": "missile",
+          "variant": "supersonic",
+          "label": 2,
+          "swerling": 3,
+          "speed_mps": {
+            "min": 647.9603933445546,
+            "p50": 647.9603933445546,
+            "max": 647.9603933445546
+          },
+          "agl_m": {
+            "min": 116.60543578030934,
+            "p50": 401.1771988490188,
+            "max": 423.9177140793425
+          },
+          "vz_mps": {
+            "min": -1.0635,
+            "p50": -1.0635,
+            "max": -1.0635
+          },
+          "lateral_accel_g": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0
+          },
+          "turn_rate_deg_s": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0
+          },
+          "rcs_seen_dbsm": {
+            "min": -3.650775997839811,
+            "p50": -3.292755637456392,
+            "max": 3.1871118471839743
+          },
+          "rcs_table_dbsm": {
+            "nose": -5.716,
+            "side": 2.572,
+            "tail": -6.018,
+            "top": 4.983
+          },
+          "reports": 6,
+          "detected_step_share": 0.1,
+          "tracked_step_share": 0.7666666666666667,
+          "first_report_t_s": 2.0,
+          "first_tracked_t_s": 3.5,
+          "reports_per_radar": {
+            "0": 6
+          },
+          "zone_min_dist_m": {
+            "Zone A": 69.61907570687806,
+            "Zone B": 2266.518855673828,
+            "Zone C": 1634.475447697211,
+            "Zone D": 0.04985022567428683
+          },
+          "snr_db": {
+            "min": 26.16596145738528,
+            "p50": 39.363032304324655,
+            "max": 63.34265335841252
+          },
+          "abs_doppler_khz": {
+            "min": 0.8233392148457709,
+            "p50": 38.40267969249615,
+            "max": 40.38155470445544
+          },
+          "abs_rdot_mps": {
+            "min": 12.341544349320188,
+            "p50": 575.6416869400051,
+            "max": 605.304277135508
+          },
+          "checks": {
+            "speed_in_hard_band": true,
+            "agl_in_hard_band": true,
+            "climb_within_limit": true,
+            "lateral_accel_within_limit": true,
+            "turn_rate_within_limit": true,
+            "never_clamped": true
+          }
+        }
+      ],
+      "zones": [
+        {
+          "height_m": 113.6,
+          "kind": "zone",
+          "name": "Zone A",
+          "position": [
+            357.1,
+            982.6
+          ],
+          "radius_m": 467.1
+        },
+        {
+          "height_m": 79.5,
+          "kind": "zone",
+          "name": "Zone B",
+          "position": [
+            5367.2,
+            -876.3
+          ],
+          "radius_m": 559.5
+        },
+        {
+          "height_m": 126.0,
+          "kind": "zone",
+          "name": "Zone C",
+          "position": [
+            5847.0,
+            1363.1
+          ],
+          "radius_m": 375.2
+        },
+        {
+          "height_m": 146.9,
+          "kind": "zone",
+          "name": "Zone D",
+          "position": [
+            -5150.0,
+            665.9
+          ],
+          "radius_m": 480.0
+        },
+        {
+          "height_m": 78.7,
+          "kind": "facility",
+          "name": "Facility 1",
+          "position": [
+            2224.6,
+            4553.0
+          ],
+          "radius_m": 289.2
+        },
+        {
+          "height_m": 65.5,
+          "kind": "facility",
+          "name": "Facility 2",
+          "position": [
+            2807.3,
+            561.7
+          ],
+          "radius_m": 222.4
+        }
+      ],
+      "zones_inside_terrain": true,
+      "terrain": {
+        "family": "ridge_multi_obstacle",
+        "relief_height_m": 1099.6,
+        "valley_width_m": 2912.0
+      },
+      "terrain_relief_m": 1099.5999995280888,
+      "false_alarm_reports": 7,
+      "label_space": "target_classes_v1"
+    },
+    {
+      "dataset_episode_id": "ep-000002-c3e227794a9f",
+      "split": "validation",
+      "status": "completed",
+      "radars": 3,
+      "targets": [
+        {
+          "target_id": 0,
+          "class": "missile",
+          "variant": "supersonic",
+          "label": 2,
+          "swerling": 3,
+          "speed_mps": {
+            "min": 576.8465511779194,
+            "p50": 576.8465511779194,
+            "max": 576.8465511779194
+          },
+          "agl_m": {
+            "min": 38.763585643786655,
+            "p50": 92.54193383437632,
+            "max": 404.5781249799477
+          },
+          "vz_mps": {
+            "min": 2.8532,
+            "p50": 2.8532,
+            "max": 2.8532
+          },
+          "lateral_accel_g": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0
+          },
+          "turn_rate_deg_s": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0
+          },
+          "rcs_seen_dbsm": {
+            "min": -8.788257873060406,
+            "p50": -4.781877546362369,
+            "max": 4.498799729733399
+          },
+          "rcs_table_dbsm": {
+            "nose": -11.15,
+            "side": 3.306,
+            "tail": -6.677,
+            "top": 7.323
+          },
+          "reports": 1,
+          "detected_step_share": 0.016666666666666666,
+          "tracked_step_share": 0.0,
+          "first_report_t_s": 30.0,
+          "first_tracked_t_s": null,
+          "reports_per_radar": {
+            "0": 1
+          },
+          "zone_min_dist_m": {
+            "Zone A": 186.17442504940385,
+            "Zone B": 173.35333325501426,
+            "Zone C": 3331.2743477778117
+          },
+          "snr_db": {
+            "min": 24.51286913094234,
+            "p50": 24.51286913094234,
+            "max": 24.51286913094234
+          },
+          "abs_doppler_khz": {
+            "min": 38.40353315429461,
+            "p50": 38.40353315429461,
+            "max": 38.40353315429461
+          },
+          "abs_rdot_mps": {
+            "min": 575.6544800105237,
+            "p50": 575.6544800105237,
+            "max": 575.6544800105237
+          },
+          "checks": {
+            "speed_in_hard_band": true,
+            "agl_in_hard_band": true,
+            "climb_within_limit": true,
+            "lateral_accel_within_limit": true,
+            "turn_rate_within_limit": true,
+            "never_clamped": true
+          }
+        },
+        {
+          "target_id": 1,
+          "class": "missile",
+          "variant": "supersonic",
+          "label": 2,
+          "swerling": 3,
+          "speed_mps": {
+            "min": 450.00004077044605,
+            "p50": 450.00004077044605,
+            "max": 721.5562266064856
+          },
+          "agl_m": {
+            "min": 153.42804859120844,
+            "p50": 202.66038051677475,
+            "max": 413.38125369891605
+          },
+          "vz_mps": {
+            "min": 1.5365,
+            "p50": 1.5365,
+            "max": 1.5365
+          },
+          "lateral_accel_g": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.007471229732768331
+          },
+          "turn_rate_deg_s": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 8.821258740152832e-07
+          },
+          "rcs_seen_dbsm": {
+            "min": -5.665983864227386,
+            "p50": -2.3536965665518768,
+            "max": 1.7410308153091294
+          },
+          "rcs_table_dbsm": {
+            "nose": -7.708,
+            "side": 0.864,
+            "tail": -3.552,
+            "top": 2.734
+          },
+          "reports": 1,
+          "detected_step_share": 0.016666666666666666,
+          "tracked_step_share": 0.0,
+          "first_report_t_s": 1.5,
+          "first_tracked_t_s": null,
+          "reports_per_radar": {
+            "0": 1
+          },
+          "zone_min_dist_m": {
+            "Zone A": 93.0635016682463,
+            "Zone B": 89.96255553009,
+            "Zone C": 3175.0266105830888
+          },
+          "snr_db": {
+            "min": 27.026840495437227,
+            "p50": 27.026840495437227,
+            "max": 27.026840495437227
+          },
+          "abs_doppler_khz": {
+            "min": 45.81636777199782,
+            "p50": 45.81636777199782,
+            "max": 45.81636777199782
+          },
+          "abs_rdot_mps": {
+            "min": 686.7700755499604,
+            "p50": 686.7700755499604,
+            "max": 686.7700755499604
+          },
+          "checks": {
+            "speed_in_hard_band": true,
+            "agl_in_hard_band": true,
+            "climb_within_limit": true,
+            "lateral_accel_within_limit": true,
+            "turn_rate_within_limit": true,
+            "never_clamped": true
+          }
+        },
+        {
+          "target_id": 2,
+          "class": "missile",
+          "variant": "supersonic",
+          "label": 2,
+          "swerling": 3,
+          "speed_mps": {
+            "min": 574.5417133382484,
+            "p50": 574.5417133382484,
+            "max": 574.5417133382484
+          },
+          "agl_m": {
+            "min": 46.58352478330363,
+            "p50": 168.81792321317704,
+            "max": 306.24825186096854
+          },
+          "vz_mps": {
+            "min": 12.1144,
+            "p50": 12.1144,
+            "max": 12.1144
+          },
+          "lateral_accel_g": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0
+          },
+          "turn_rate_deg_s": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0
+          },
+          "rcs_seen_dbsm": {
+            "min": -3.0659363946851945,
+            "p50": -1.0638801804651936,
+            "max": 4.358771408275094
+          },
+          "rcs_table_dbsm": {
+            "nose": -6.252,
+            "side": 3.618,
+            "tail": -3.076,
+            "top": 6.067
+          },
+          "reports": 0,
+          "detected_step_share": 0.0,
+          "tracked_step_share": 0.0,
+          "first_report_t_s": null,
+          "first_tracked_t_s": null,
+          "reports_per_radar": {},
+          "zone_min_dist_m": {
+            "Zone A": 186.08426452382375,
+            "Zone B": 3168.4711271767337,
+            "Zone C": 57.41876293730255
+          },
+          "snr_db": null,
+          "abs_doppler_khz": null,
+          "abs_rdot_mps": null,
+          "checks": {
+            "speed_in_hard_band": true,
+            "agl_in_hard_band": true,
+            "climb_within_limit": true,
+            "lateral_accel_within_limit": true,
+            "turn_rate_within_limit": true,
+            "never_clamped": true
+          }
+        }
+      ],
+      "zones": [
+        {
+          "height_m": 165.0,
+          "kind": "zone",
+          "name": "Zone A",
+          "position": [
+            -1620.4,
+            79.8
+          ],
+          "radius_m": 420.0
+        },
+        {
+          "height_m": 176.8,
+          "kind": "zone",
+          "name": "Zone B",
+          "position": [
+            -7016.6,
+            -1149.8
+          ],
+          "radius_m": 567.0
+        },
+        {
+          "height_m": 154.7,
+          "kind": "zone",
+          "name": "Zone C",
+          "position": [
+            -6726.2,
+            2186.7
+          ],
+          "radius_m": 355.6
+        },
+        {
+          "height_m": 62.0,
+          "kind": "facility",
+          "name": "Facility 1",
+          "position": [
+            -4566.5,
+            1816.7
+          ],
+          "radius_m": 170.3
+        },
+        {
+          "height_m": 98.5,
+          "kind": "facility",
+          "name": "Facility 2",
+          "position": [
+            1789.3,
+            -637.7
+          ],
+          "radius_m": 280.9
+        }
+      ],
+      "zones_inside_terrain": true,
+      "terrain": {
+        "family": "basin_highlands",
+        "relief_height_m": 1086.4,
+        "valley_width_m": 4163.0
+      },
+      "terrain_relief_m": 1307.2953607583,
+      "false_alarm_reports": 12,
+      "label_space": "target_classes_v1"
+    },
+    {
+      "dataset_episode_id": "ep-000003-b15e73b9d8a4",
+      "split": "train",
+      "status": "completed",
+      "radars": 1,
+      "targets": [
+        {
+          "target_id": 0,
+          "class": "missile",
+          "variant": "subsonic_cruise",
+          "label": 2,
+          "swerling": 3,
+          "speed_mps": {
+            "min": 223.58986783848235,
+            "p50": 223.58986783848235,
+            "max": 223.58986783848235
+          },
+          "agl_m": {
+            "min": 72.19576224068138,
+            "p50": 149.71921745422017,
+            "max": 197.9362363707132
+          },
+          "vz_mps": {
+            "min": -3.2767,
+            "p50": -3.2767,
+            "max": -3.2767
+          },
+          "lateral_accel_g": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0
+          },
+          "turn_rate_deg_s": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0
+          },
+          "rcs_seen_dbsm": {
+            "min": -6.072076895615476,
+            "p50": -5.507289116241074,
+            "max": 0.048893294964279674
+          },
+          "rcs_table_dbsm": {
+            "nose": -19.327,
+            "side": -0.003,
+            "tail": -7.869,
+            "top": -1.074
+          },
+          "reports": 2,
+          "detected_step_share": 0.03333333333333333,
+          "tracked_step_share": 0.0,
+          "first_report_t_s": 1.0,
+          "first_tracked_t_s": null,
+          "reports_per_radar": {
+            "0": 2
+          },
+          "zone_min_dist_m": {
+            "Zone A": 25.390498856167362,
+            "Zone B": 44.745365875817626,
+            "Zone C": 868.0166584157879
+          },
+          "snr_db": {
+            "min": 38.52826353033972,
+            "p50": 49.69243725470887,
+            "max": 60.85661097907802
+          },
+          "abs_doppler_khz": {
+            "min": 3.8034811907510315,
+            "p50": 7.007372303315261,
+            "max": 10.21126341587949
+          },
+          "abs_rdot_mps": {
+            "min": 57.01274875660093,
+            "p50": 105.03786834660018,
+            "max": 153.06298793659943
+          },
+          "checks": {
+            "speed_in_hard_band": true,
+            "agl_in_hard_band": true,
+            "climb_within_limit": true,
+            "lateral_accel_within_limit": true,
+            "turn_rate_within_limit": true,
+            "never_clamped": true
+          }
+        },
+        {
+          "target_id": 1,
+          "class": "missile",
+          "variant": "subsonic_cruise",
+          "label": 2,
+          "swerling": 3,
+          "speed_mps": {
+            "min": 199.99994476594227,
+            "p50": 216.5266212983348,
+            "max": 233.0533092051902
+          },
+          "agl_m": {
+            "min": 43.39490667983509,
+            "p50": 144.37924141785072,
+            "max": 173.67778016363178
+          },
+          "vz_mps": {
+            "min": -0.6483,
+            "p50": -0.6483,
+            "max": -0.6483
+          },
+          "lateral_accel_g": {
+            "min": 0.00031279638156502134,
+            "p50": 0.0003362736233595527,
+            "max": 0.0003635597660628053
+          },
+          "turn_rate_deg_s": {
+            "min": 1.6364264258266706e-07,
+            "p50": 1.8912975035598168e-07,
+            "max": 2.2106809168967732e-07
+          },
+          "rcs_seen_dbsm": {
+            "min": -5.27093822018042,
+            "p50": -3.702942454364351,
+            "max": 3.119272012958519
+          },
+          "rcs_table_dbsm": {
+            "nose": -15.448,
+            "side": 2.993,
+            "tail": -6.893,
+            "top": 3.196
+          },
+          "reports": 1,
+          "detected_step_share": 0.016666666666666666,
+          "tracked_step_share": 0.0,
+          "first_report_t_s": 1.0,
+          "first_tracked_t_s": null,
+          "reports_per_radar": {
+            "0": 1
+          },
+          "zone_min_dist_m": {
+            "Zone A": 131.94778738529047,
+            "Zone B": 870.1847679537095,
+            "Zone C": 40.20526669334204
+          },
+          "snr_db": {
+            "min": 46.62839827704194,
+            "p50": 46.62839827704194,
+            "max": 46.62839827704194
+          },
+          "abs_doppler_khz": {
+            "min": 11.957238646226617,
+            "p50": 11.957238646226617,
+            "max": 11.957238646226617
+          },
+          "abs_rdot_mps": {
+            "min": 179.23449823224348,
+            "p50": 179.23449823224348,
+            "max": 179.23449823224348
+          },
+          "checks": {
+            "speed_in_hard_band": true,
+            "agl_in_hard_band": true,
+            "climb_within_limit": true,
+            "lateral_accel_within_limit": true,
+            "turn_rate_within_limit": true,
+            "never_clamped": true
+          }
+        }
+      ],
+      "zones": [
+        {
+          "height_m": 144.6,
+          "kind": "zone",
+          "name": "Zone A",
+          "position": [
+            -1028.3,
+            766.3
+          ],
+          "radius_m": 505.7
+        },
+        {
+          "height_m": 165.0,
+          "kind": "zone",
+          "name": "Zone B",
+          "position": [
+            -5897.7,
+            3359.0
+          ],
+          "radius_m": 421.7
+        },
+        {
+          "height_m": 104.5,
+          "kind": "zone",
+          "name": "Zone C",
+          "position": [
+            -5422.1,
+            4088.7
+          ],
+          "radius_m": 383.4
+        },
+        {
+          "height_m": 115.3,
+          "kind": "facility",
+          "name": "Facility 1",
+          "position": [
+            4139.5,
+            -2524.0
+          ],
+          "radius_m": 201.0
+        }
+      ],
+      "zones_inside_terrain": true,
+      "terrain": {
+        "family": "valley_sinuous_pass",
+        "relief_height_m": 1257.8,
+        "valley_width_m": 3043.9
+      },
+      "terrain_relief_m": 1509.1804107845658,
+      "false_alarm_reports": 8,
+      "label_space": "target_classes_v1"
+    },
+    {
+      "dataset_episode_id": "ep-000004-de2e4072ea78",
+      "split": "test",
+      "status": "completed",
+      "radars": 2,
+      "targets": [
+        {
+          "target_id": 0,
+          "class": "aircraft",
+          "variant": "transport",
+          "label": 1,
+          "swerling": 1,
+          "speed_mps": {
+            "min": 126.96880185707,
+            "p50": 126.96880185707,
+            "max": 126.96880185707037
+          },
+          "agl_m": {
+            "min": 1110.863417239613,
+            "p50": 2303.9165451115055,
+            "max": 2398.765168484605
+          },
+          "vz_mps": {
+            "min": 7.7538,
+            "p50": 7.7538,
+            "max": 7.7538
+          },
+          "lateral_accel_g": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.6041908619328895
+          },
+          "turn_rate_deg_s": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 2.6797236078268716
+          },
+          "rcs_seen_dbsm": {
+            "min": 16.655044444716918,
+            "p50": 21.802559035594545,
+            "max": 25.431211122195997
+          },
+          "rcs_table_dbsm": {
+            "nose": 11.571,
+            "side": 19.801,
+            "tail": 16.656,
+            "top": 25.654
+          },
+          "reports": 2,
+          "detected_step_share": 0.03333333333333333,
+          "tracked_step_share": 0.0,
+          "first_report_t_s": 23.0,
+          "first_tracked_t_s": null,
+          "reports_per_radar": {
+            "1": 2
+          },
+          "zone_min_dist_m": {},
+          "snr_db": {
+            "min": 11.158507518040356,
+            "p50": 32.99114622318192,
+            "max": 54.82378492832349
+          },
+          "abs_doppler_khz": {
+            "min": 2.0815884487922114,
+            "p50": 2.2217294670919934,
+            "max": 2.361870485391776
+          },
+          "abs_rdot_mps": {
+            "min": 31.202225880391204,
+            "p50": 33.30288689752694,
+            "max": 35.403547914662674
+          },
+          "checks": {
+            "speed_in_hard_band": true,
+            "agl_in_hard_band": true,
+            "climb_within_limit": true,
+            "lateral_accel_within_limit": true,
+            "turn_rate_within_limit": true,
+            "never_clamped": true
+          }
+        },
+        {
+          "target_id": 1,
+          "class": "missile",
+          "variant": "subsonic_cruise",
+          "label": 2,
+          "swerling": 3,
+          "speed_mps": {
+            "min": 258.54133412352076,
+            "p50": 258.54133412352076,
+            "max": 258.54133412352076
+          },
+          "agl_m": {
+            "min": 48.818265604197336,
+            "p50": 99.68924505828024,
+            "max": 148.91771878908972
+          },
+          "vz_mps": {
+            "min": 0.991,
+            "p50": 0.991,
+            "max": 0.991
+          },
+          "lateral_accel_g": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0
+          },
+          "turn_rate_deg_s": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0
+          },
+          "rcs_seen_dbsm": {
+            "min": -9.656745695066304,
+            "p50": -9.272974449261024,
+            "max": -2.312752718585892
+          },
+          "rcs_table_dbsm": {
+            "nose": -11.551,
+            "side": -2.907,
+            "tail": -11.079,
+            "top": -1.805
+          },
+          "reports": 13,
+          "detected_step_share": 0.21666666666666667,
+          "tracked_step_share": 0.55,
+          "first_report_t_s": 7.5,
+          "first_tracked_t_s": 14.0,
+          "reports_per_radar": {
+            "0": 11,
+            "1": 2
+          },
+          "zone_min_dist_m": {
+            "Zone A": 44.377993371501944,
+            "Zone B": 2105.0764995510485
+          },
+          "snr_db": {
+            "min": 12.661349671719302,
+            "p50": 42.10209058729945,
+            "max": 57.54559517316616
+          },
+          "abs_doppler_khz": {
+            "min": 16.28858148584134,
+            "p50": 17.178350127344256,
+            "max": 17.236096527626955
+          },
+          "abs_rdot_mps": {
+            "min": 244.15969404868338,
+            "p50": 257.4969904530574,
+            "max": 258.3625872171275
+          },
+          "checks": {
+            "speed_in_hard_band": true,
+            "agl_in_hard_band": true,
+            "climb_within_limit": true,
+            "lateral_accel_within_limit": true,
+            "turn_rate_within_limit": true,
+            "never_clamped": true
+          }
+        },
+        {
+          "target_id": 2,
+          "class": "missile",
+          "variant": "supersonic",
+          "label": 2,
+          "swerling": 3,
+          "speed_mps": {
+            "min": 633.6744657706037,
+            "p50": 633.6744657706037,
+            "max": 633.6744657706037
+          },
+          "agl_m": {
+            "min": 115.19698456933426,
+            "p50": 233.7786499999995,
+            "max": 359.97584607605125
+          },
+          "vz_mps": {
+            "min": -8.4609,
+            "p50": -8.4609,
+            "max": -8.4609
+          },
+          "lateral_accel_g": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0
+          },
+          "turn_rate_deg_s": {
+            "min": 0.0,
+            "p50": 0.0,
+            "max": 0.0
+          },
+          "rcs_seen_dbsm": {
+            "min": -4.195837166577868,
+            "p50": -2.124532064661083,
+            "max": 1.8063571674447318
+          },
+          "rcs_table_dbsm": {
+            "nose": -6.463,
+            "side": 0.308,
+            "tail": -3.427,
+            "top": 5.108
+          },
+          "reports": 3,
+          "detected_step_share": 0.05,
+          "tracked_step_share": 0.0,
+          "first_report_t_s": 1.5,
+          "first_tracked_t_s": null,
+          "reports_per_radar": {
+            "0": 1,
+            "1": 2
+          },
+          "zone_min_dist_m": {
+            "Zone A": 236.25714008522448,
+            "Zone B": 0.01380579588668932
+          },
+          "snr_db": {
+            "min": 28.474314100989417,
+            "p50": 31.15575100681039,
+            "max": 38.23516230672334
+          },
+          "abs_doppler_khz": {
+            "min": 30.14995398339847,
+            "p50": 35.63153646316364,
+            "max": 39.12693987792943
+          },
+          "abs_rdot_mps": {
+            "min": 451.9364406634959,
+            "p50": 534.1032949304226,
+            "max": 586.4980740011341
+          },
+          "checks": {
+            "speed_in_hard_band": true,
+            "agl_in_hard_band": true,
+            "climb_within_limit": true,
+            "lateral_accel_within_limit": true,
+            "turn_rate_within_limit": true,
+            "never_clamped": true
+          }
+        }
+      ],
+      "zones": [
+        {
+          "height_m": 130.7,
+          "kind": "zone",
+          "name": "Zone A",
+          "position": [
+            -909.6,
+            121.3
+          ],
+          "radius_m": 387.3
+        },
+        {
+          "height_m": 149.5,
+          "kind": "zone",
+          "name": "Zone B",
+          "position": [
+            -4575.9,
+            4294.2
+          ],
+          "radius_m": 430.9
+        }
+      ],
+      "zones_inside_terrain": true,
+      "terrain": {
+        "family": "mountain_chokepoint",
+        "relief_height_m": 910.8,
+        "valley_width_m": 3397.3
+      },
+      "terrain_relief_m": 1230.7864635336362,
+      "false_alarm_reports": 10,
+      "label_space": "target_classes_v1"
+    }
+  ],
+  "targets_checked": 13,
+  "targets_passing_all_checks": 13
+}

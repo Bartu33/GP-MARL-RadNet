@@ -330,7 +330,7 @@ def test_explicit_motion_recording_and_policy_independence(tmp_path):
         assert a.rng_radars[0].bit_generator.state == b.rng_radars[0].bit_generator.state
     export_episode_records(b.episode_records, tmp_path)
     loaded = load_episode_records(tmp_path)
-    assert loaded["metadata"]["record_schema_version"] == 2
+    assert loaded["metadata"]["record_schema_version"] == 3
     assert loaded["metadata"]["config_snapshot"]["scenario"]["targets"][0]["motion"] == {"segments": SEGMENTS}
     c = RadarNetEnv(loaded["metadata"]["config_snapshot"]["scenario"], seed=7)
     c.reset()

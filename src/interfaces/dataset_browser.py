@@ -12,6 +12,21 @@ from typing import Any, Dict, List, Optional, Tuple
 import streamlit as st
 
 DATASET_OPTIONS = {
+    "missile_salvo_50 (Missile salvos: dives, jinks, pop-up, weave; time-on-target - 50 episodes)": {
+        "kind": "pilot_group",
+        "group_name": "missile_salvo_50",
+        "relative_dir": "data/processed/missile_salvo_50",
+    },
+    "missile_salvo_pilot5 (Missile salvo pilot - 5 episodes)": {
+        "kind": "pilot_group",
+        "group_name": "missile_salvo_pilot5",
+        "relative_dir": "data/processed/missile_salvo_pilot5",
+    },
+    "missile_routes_pilot5 (Multi-missile routes pilot - 5 episodes)": {
+        "kind": "pilot_group",
+        "group_name": "missile_routes_pilot5",
+        "relative_dir": "data/processed/missile_routes_pilot5",
+    },
     "missile_dive_pilot10 (Missile dives and evasive manoeuvres - 10 episodes)": {
         "kind": "pilot_group",
         "group_name": "missile_dive_pilot10",

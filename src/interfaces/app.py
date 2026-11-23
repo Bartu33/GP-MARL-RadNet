@@ -22,17 +22,19 @@ from src.core.radar import RadarParams, antenna_gain, measurement_sigmas, snr_li
 from src.core.rcs import EllipsoidRCS, LookupTableRCS, m2_to_dbsm
 from src.core.scenario import list_scenarios, load_scenario, validate_scenario
 from src.core.targets import CLASS_NAMES, CLASS_SHORT, advance, spawn_target
-from src.interfaces import dataset_browser, plots, viewer3d
+from src.interfaces import analysis_views, dataset_browser, plots, viewer3d
 from src.models.baselines.policies import LEARNED, POLICIES
 from src.services import simulation_service as sim
 from src.services import radar_information_service as r_info_srv
 from src.services import radar_selection_service as r_sel_srv
+from src.services import episode_analysis_service as ep_an
 
 st.set_page_config(page_title="GP-MARL-RadNet", layout="wide", page_icon="📡")
 st.markdown("""<style>
 .block-container{padding-top:1.2rem}
 [data-testid="stMetricValue"]{font-family:ui-monospace,monospace}
 </style>""", unsafe_allow_html=True)
+analysis_views.inject_metric_css()
 
 st.title("GP-MARL-RadNet")
 st.caption("Cooperative multi-agent radar network · research and educational simulation "
@@ -266,23 +268,26 @@ with tab_scen:
         comm_summary = r_info_srv.summarize_communication(records_data, radar_id=rid_filter, t_range=sel_t_range)
         track_summary = r_info_srv.summarize_tracker_estimates(records_data, source="fused", t_range=sel_t_range)
 
-        ic = st.columns(6)
-        ic[0].metric("Selected Reports", meas_summary["total_reports"])
-        deliv_stat = f"{comm_summary.get('delivered', 0)} ({comm_summary.get('delivery_rate_pct', 0.0):.1f}%)" if comm_summary.get("delivered") is not None else "—"
-        ic[1].metric("Delivery Ratio", deliv_stat)
-        ic[2].metric("Avg SNR", f"{meas_summary['snr_db']['mean']} dB" if meas_summary.get("snr_db") else "—")
-        ic[3].metric("Avg Range", f"{meas_summary['range_m']['mean']:.0f} m" if meas_summary.get("range_m") else "—")
-        ic[4].metric("Measurement Noise σ_r", f"{meas_summary['measurement_uncertainty']['sigma_range_m']['mean']:.1f} m" if meas_summary.get("measurement_uncertainty") else "—",
-                     help="Sensor-level range measurement noise standard deviation (Measurement Covariance R)")
-        ic[5].metric("Filter Uncertainty σ_pos", f"{track_summary['position_uncertainty_m']['mean']:.1f} m" if track_summary.get("position_uncertainty_m") else "—",
-                     help="Centralized EKF state estimation covariance (State Estimation Covariance P)")
+        ic = analysis_views.card_row(6)
+        ic[0].metric("Selected Reports", meas_summary["total_reports"],
+                     help="Radar reports (detections, including false alarms) in the selected radar and time window.")
+        deliv_stat = f"{comm_summary.get('delivered', 0)} ({comm_summary.get('delivery_rate_pct', 0.0):.1f}%)" if comm_summary.get("delivered") is not None else "N/A"
+        ic[1].metric("Delivery Ratio", deliv_stat,
+                     help="Reports that reached the fusion centre after outages, bandwidth caps and packet loss.")
+        ic[2].metric("Avg SNR", f"{meas_summary['snr_db']['mean']} dB" if meas_summary.get("snr_db") else "N/A",
+                     help="Mean signal-to-noise ratio of the reports.")
+        ic[3].metric("Avg Range", f"{meas_summary['range_m']['mean']:,.0f} m" if meas_summary.get("range_m") else "N/A",
+                     help="Mean measured distance of the reports.")
+        ic[4].metric("Range Noise (σr)", f"{meas_summary['measurement_uncertainty']['sigma_range_m']['mean']:.1f} m" if meas_summary.get("measurement_uncertainty") else "N/A",
+                     help="Mean standard deviation of the range measurement (diagonal of the measurement covariance R).")
+        ic[5].metric("Filter Uncertainty (σpos)", f"{track_summary['position_uncertainty_m']['mean']:.1f} m" if track_summary.get("position_uncertainty_m") else "N/A",
+                     help="Mean RMS position standard deviation of the fused EKF tracks (state covariance P).")
 
-        st_bk = track_summary.get("status_breakdown", {})
-        n_conf = st_bk.get("confirmed", 0)
-        n_tent = st_bk.get("tentative", 0)
-        n_coast = st_bk.get("coasted", 0)
-        st.caption(f"Fusion Track State Distribution: **{n_conf} confirmed** track steps ({track_summary.get('confirmed_steps_pct', 0.0):.1f}%), "
-                   f"**{n_tent} tentative** track steps, **{n_coast} coasted** track steps.")
+        analysis_views.render_track_states(ep_an.track_state_breakdown(records_data, t_range=sel_t_range))
+        st.markdown("###### Signal Physics & EKF Information")
+        analysis_views.render_signal_physics(
+            ep_an.measurement_physics(records_data, radar_id=rid_filter, t_range=sel_t_range),
+            ep_an.ekf_information_gain(records_data, t_range=sel_t_range))
 
         # Detection Timeline Plotly Chart
         det_timeline_data = r_info_srv.get_detection_timeline(records_data, radar_id=rid_filter, bin_width_s=1.0)
@@ -296,22 +301,19 @@ with tab_scen:
         act_summary = r_sel_srv.analyze_radar_actions(records_data)
         st.plotly_chart(plots.plot_action_distribution(act_summary["radars"]), width="stretch")
 
+        st.markdown("###### Radar Resource Management")
+        analysis_views.render_resources(ep_an.resource_metrics(records_data))
+
         st.markdown("###### Decision Inspector")
-        st.caption("Inspect why a selected radar chose search or track mode for a specific target slot at any simulation time step.")
-
+        st.caption("Why the selected radar took its action at a step: the shared track table it saw (uncertainty, age, "
+                   "coverage), its energy reserve and the policy rule.  Reproduced by re-simulating the episode.")
+        n_trans = len(records_data.get("transitions", []))
+        n_rad = len(records_data.get("metadata", {}).get("agent_ids", [])) or 1
         di_c1, di_c2 = st.columns([3, 1])
-        insp_step = di_c1.slider("Inspection Time Step (Step)", 0, len(records_data.get("transitions", [])) - 1, min(15, len(records_data.get("transitions", [])) - 1), key="scen_insp_step")
-        insp_rid = di_c2.selectbox("Inspection Radar", [0, 1, 2], format_func=lambda r: f"Radar {r+1} (R{r+1})", key="scen_insp_rid")
-
-        decision_data = r_sel_srv.explain_radar_selection_decision(records_data, insp_step, insp_rid)
-
-        d_box1, d_box2 = st.columns(2)
-        with d_box1:
-            st.markdown(f"**Selected Action:** `{decision_data.get('mode')} (Action {decision_data.get('action')})`")
-            st.markdown(f"🟢 **Policy Rule (Rule-Based Fact):**  \n{decision_data.get('justification')}")
-        with d_box2:
-            st.markdown(f"**Step Details:** Step {decision_data.get('step_index')} (t = {insp_step * 0.5:.1f} s)")
-            st.markdown(f"🟡 **Analytical Context (Post-Hoc Reasoning):**  \n{decision_data.get('explanation')}")
+        insp_step = di_c1.slider("Inspection Time Step (Step)", 1, max(1, n_trans), min(15, max(1, n_trans)), key="scen_insp_step")
+        insp_rid = di_c2.selectbox("Inspection Radar", list(range(n_rad)), format_func=lambda r: f"Radar {r+1} (R{r+1})",
+                                   key="scen_insp_rid")
+        analysis_views.render_decision(ep_an.decision_context(records_data, insp_step, insp_rid))
 
         st.markdown("###### Multi-Sensor Track Transitions")
         trans_res = r_sel_srv.analyze_track_radar_transitions(records_data)
@@ -320,6 +322,13 @@ with tab_scen:
             df_trans = pd.DataFrame(trans_res["transitions"])[["time_s", "track_id", "from_radar", "to_radar", "time_since_last_update_s", "sigma_pos_before_m", "sigma_pos_after_m"]]
             st.dataframe(df_trans.head(15), width="stretch", hide_index=True)
         st.warning("**Note:** These transitions represent centralized opportunistic sensor assignments via shared track slots. The codebase uses opportunistic scheduling rather than a distributed peer-to-peer handover protocol.")
+
+        st.markdown("---")
+        st.markdown("##### E. Ground-Truth Evaluation Metrics (Category C — evaluation only)")
+        st.caption("This panel uses simulation ground truth (true kinematics, report annotations, terrain LOS). None of "
+                   "it is available to the radars, the tracker or the policy; Sections C and D stay ground-truth free.")
+        with st.expander("Show ground-truth evaluation", expanded=False):
+            analysis_views.render_ground_truth(ep_an.ground_truth_metrics(records_data))
 
 
 # ============================================================== 3-D simulation

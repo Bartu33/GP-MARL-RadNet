@@ -59,6 +59,8 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px s
   <button class="hb on" data-tog="dets">Detections</button>
   <button class="hb on" data-tog="truth">Truth</button>
   <button class="hb on" data-tog="los" title="radar-target line of sight: green visible, red hidden by terrain">LOS</button>
+  <button class="hb" data-tog="unc" id="uncBtn" title="Track position uncertainty (wireframe spheres, radius 3 sigma)">Uncertainty</button>
+  <button class="hb on" data-tog="zones" id="zonesBtn" title="Abstract reference markers: zones (prisms), facilities (blocks), waypoints (poles)">Zones</button>
   <button class="hb on" data-tog="env" title="Toggle decorative 3D environment objects (trees, rocks, shrubs)">Environment</button>
 </div>
 <div class="hud" id="legend">
@@ -355,8 +357,11 @@ const groups = {
   truth: new THREE.Group(),
   los: new THREE.Group(),
   env: new THREE.Group(),
+  zones: new THREE.Group(),
+  unc: new THREE.Group(),          // track uncertainty spheres; off at start (button "Uncertainty")
 };
 Object.values(groups).forEach(g => scene.add(g));
+groups.unc.visible = false;
 
 function buildEnvironmentObjects(objects) {
   if (!groups.env) return;
@@ -624,6 +629,51 @@ function setBeam(mesh, R, az, el, color, len) {
   p.needsUpdate = true; mesh.geometry.computeBoundingSphere(); mesh.material.color.setHex(color); mesh.visible = true;
 }
 
+/* reference markers from the scenario ("zones"): purely visual, never part of the simulation.
+   zone = translucent prism, facility = solid block, waypoint = pole with a cone */
+const ZONE_COL = {zone: 0xffb347, facility: 0xa9b7c6, waypoint: 0xff7ae6};
+const ZONE_CSS = {zone: '#ffcf7a', facility: '#cfd9dd', waypoint: '#ff9ef0'};
+let zoneLabels = [];
+function buildZones() {
+  zoneLabels.forEach(l => { l.el.remove(); labels.splice(labels.indexOf(l), 1); });
+  zoneLabels = [];
+  while (groups.zones.children.length) {
+    const c = groups.zones.children[0]; groups.zones.remove(c);
+    c.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+  }
+  const zs = D.zones || [];
+  document.getElementById('zonesBtn').style.display = zs.length ? '' : 'none';
+  zs.forEach(z => {
+    const [X, Z] = W(z.pos[0], z.pos[1]), r = z.radius / 1000, h = Math.max(z.height / 1000 * EXAG, 0.05);
+    const skirt = 0.2, col = ZONE_COL[z.kind] ?? 0xffffff;
+    // the base follows the highest ground under the footprint, the skirt hides slopes
+    let G = hAt(X, Z);
+    for (const [dx, dz] of [[r, 0], [-r, 0], [0, r], [0, -r]]) G = Math.max(G, hAt(X + dx, Z + dz));
+    const g = new THREE.Group(); g.position.set(X, G, Z);
+    if (z.kind === 'facility') {
+      const geo = new THREE.BoxGeometry(2 * r, h + skirt, 2 * r);
+      const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({color: col}));
+      m.position.y = (h - skirt) / 2;
+      const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({color: 0xffffff}));
+      e.position.copy(m.position); g.add(m, e);
+    } else if (z.kind === 'waypoint') {
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, h + skirt, 8), new THREE.MeshBasicMaterial({color: col}));
+      pole.position.y = (h - skirt) / 2;
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(Math.max(r * 0.3, 0.05), 0.16, 12), new THREE.MeshBasicMaterial({color: col}));
+      cone.position.y = h + 0.08; g.add(pole, cone);
+    } else {
+      const geo = new THREE.CylinderGeometry(r, r, h + skirt, 6, 1, false);   // hexagonal prism
+      const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color: col, transparent: true, opacity: 0.28, depthWrite: false}));
+      m.position.y = (h - skirt) / 2;
+      const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({color: col}));
+      e.position.copy(m.position); g.add(m, e);
+    }
+    groups.zones.add(g);
+    const lb = mkLabel(ZONE_CSS[z.kind] ?? '#ffffff'); lb.el.textContent = z.name; lb.on = true;
+    lb.pos.set(X, G + h + 0.12, Z); labels.push(lb); zoneLabels.push(lb);
+  });
+}
+
 /* targets (truth) and tracks are pooled by id */
 const tgtObjs = new Map(), trkObjs = new Map();
 function tgtObj(t) {
@@ -639,7 +689,7 @@ function trkObj(id) {
   const boxM = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(0.12, 0.12, 0.12)), new THREE.LineBasicMaterial({color: 0xE6EDEF}));
   const sig = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 2), new THREE.MeshBasicMaterial({color: 0xE6EDEF, wireframe: true, transparent: true, opacity: 0.28, depthWrite: false}));
   const trail = lineObj(0xE6EDEF, 0.9);
-  scene.add(boxM, sig); groups.trails.add(trail);
+  scene.add(boxM); groups.unc.add(sig); groups.trails.add(trail);
   const o = {boxM, sig, trail, lb: mkLabel('#E6EDEF'), hist: []}; labels.push(o.lb); trkObjs.set(id, o); return o;
 }
 const detGeo = new THREE.BufferGeometry(); detGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3 * 256), 3));
@@ -868,7 +918,7 @@ function reload() {
   const site = SITES[+siteSel.value], style = styleSel.value;
   loadTerrain(site, style).catch(() => {}).finally(() => {
     if (!T) { document.getElementById('loadTxt').textContent = 'Terrain could not be built.'; return; }
-    buildRadars(); if (firstView) { setView('oblique'); firstView = false; }
+    buildRadars(); buildZones(); if (firstView) { setView('oblique'); firstView = false; }
     document.getElementById('loading').style.display = 'none';
   });
 }

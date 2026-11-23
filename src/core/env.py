@@ -165,7 +165,8 @@ class RadarNetEnv(ParallelEnv):
                 "metadata": {
                     # Clock + instance + reset counter: identity without RNG draws.
                     "episode_id": f"{time.time_ns():x}-{id(self):x}-{self._episode_number}",
-                    "record_schema_version": 2,
+                    # v3 = v2 + per-step radar resources and reward terms
+                    "record_schema_version": 3,
                     "config_snapshot": self.config_snapshot(),
                     "agent_ids": list(self.possible_agents),
                     "local_tracks_enabled": self.local_tracks,
@@ -188,7 +189,7 @@ class RadarNetEnv(ParallelEnv):
                                     else "legacy_behaviour_v1"),
                 },
                 **{key: [] for key in ("states", "truth", "reports", "annotations", "tracks", "transitions",
-                                       "communication", "deliveries")},
+                                       "communication", "deliveries", "radar_resources", "reward_terms")},
             }
             self._record_episode_state()
         return dict(self._obs), {a: {} for a in self.agents}
@@ -271,7 +272,7 @@ class RadarNetEnv(ParallelEnv):
         for i, (lt, ev) in enumerate(zip(self.local_trackers, self.local_eval)):
             ev.tracks(self.targets, [self.radar_params[i]], [self.radar_states[i]], self.match_targets(lt),
                       {tr.id for tr in lt.tracks}, self.terrain)
-        reward, metrics = self._team_reward(energy, match, events)
+        reward, metrics, reward_terms = self._team_reward(energy, match, events)
         for k, v in metrics.items():
             self.log[k].append(v)
         self.log["t"].append(self.t)
@@ -296,6 +297,7 @@ class RadarNetEnv(ParallelEnv):
                 "terminations": np.array([terms[a] for a in names], dtype=bool).copy(),
                 "truncations": np.array([truncs[a] for a in names], dtype=bool).copy(),
             })
+            self._record_episode_resources(reward_terms, reward)
             self.episode_records["metadata"].update(completed=done, recorded_steps=self.step_count)
         if done:
             self.agents = []
@@ -324,6 +326,21 @@ class RadarNetEnv(ParallelEnv):
             # Sidecar lookup only: never add record IDs or labels to sensor inputs.
             traces[id(report)] = trace
         return traces
+
+    def _record_episode_resources(self, terms, reward):
+        """Radar resource state after this step's look, and the unweighted team-reward terms."""
+        stamp = {"step_index": self.step_count, "t_s": self.t}
+        for i, (p, st) in enumerate(zip(self.radar_params, self.radar_states)):
+            self.episode_records["radar_resources"].append({
+                **stamp, "radar_id": i, "mode": int(st.mode), "online": bool(st.online),
+                "energy_j": float(st.energy_j), "heat_k": float(st.heat_k),
+                "energy_used_j": float(st.last_energy_used_j), "dwell_s": float(st.last_dwell_s),
+                "time_remaining_frac": float(st.time_remaining_frac),
+                "channels_free": int(st.channels_free), "n_beams": len(st.last_beams),
+                "track_load_s": float(self.track_load[i]),
+            })
+        self.episode_records["reward_terms"].append({**stamp, **{k: float(v) for k, v in terms.items()},
+                                                     "reward": float(reward)})
 
     def _record_episode_state(self):
         stamp = {"step_index": self.step_count, "t_s": self.t}
@@ -454,6 +471,14 @@ class RadarNetEnv(ParallelEnv):
              - w.get("w_loss", 0.0) * events["track_losses"]
              # communication cost: reports sent to the fusion centre per radar
              - w.get("w_comm", 0.0) * len(self._last_reports) / max(self.n_radars, 1))
+        # unweighted terms; reward = sum(sign * weight * term), see REWARD_TERMS
+        terms = {
+            "err_term": float(err_term), "miss": float(miss), "unfairness": float(1.0 - fair),
+            "class_gain": float(np.mean(cls_gain)) if cls_gain else 0.0,
+            "energy_cost": float(energy / max(self.n_radars, 1) * 10), "false_tracks": float(false_tracks),
+            "interrupted": float(events["interrupted"] / max(n, 1)), "track_losses": float(events["track_losses"]),
+            "comm_reports": float(len(self._last_reports) / max(self.n_radars, 1)),
+        }
         metrics = {
             "rmse": float(np.sqrt(np.mean(np.square(errs)))) if errs else np.nan,
             "tracked": len(match) / max(n, 1),
@@ -463,7 +488,7 @@ class RadarNetEnv(ParallelEnv):
             "class_acc": float(np.mean(cls_hits)) if cls_hits else np.nan,
             "fairness": fair,
         }
-        return float(r), metrics
+        return float(r), metrics, terms
 
     # ------------------------------------------------------------------ recording for the UI
     def _record_frame(self, reports):
@@ -498,6 +523,14 @@ class RadarNetEnv(ParallelEnv):
             # confirmed local (single-radar) tracks per radar, for per-radar displays
             "ltracks": [[{"id": tr.id, "p": r1(tr.x[:3])} for tr in lt.confirmed] for lt in self.local_trackers],
         })
+
+
+# reward term -> (weight key, sign): reward = sum(sign * w[key] * term); class_gain is a bonus
+REWARD_TERMS = {
+    "err_term": ("w_track", -1.0), "miss": ("w_miss", -1.0), "unfairness": ("w_fair", -1.0),
+    "class_gain": ("w_class", 1.0), "energy_cost": ("w_cost", -1.0), "false_tracks": ("w_false", -1.0),
+    "interrupted": ("w_interrupt", -1.0), "track_losses": ("w_loss", -1.0), "comm_reports": ("w_comm", -1.0),
+}
 
 
 def _finish_reports(traces, reports, status):

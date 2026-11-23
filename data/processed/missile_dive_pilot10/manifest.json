@@ -1,0 +1,737 @@
+{
+  "classifier": null,
+  "episodes": [
+    {
+      "counts": {
+        "annotations": 14,
+        "communication": 14,
+        "confirmed_track_rows": 18,
+        "deliveries": 14,
+        "fused_track_rows": 35,
+        "reports": 14,
+        "states": 44,
+        "tracks": 70,
+        "transitions": 43,
+        "truth": 44
+      },
+      "cpu_time_s": 0.0625,
+      "dataset_episode_id": "ep-000000-cc731c21506b",
+      "episode_index": 0,
+      "episode_preview": {
+        "class_labels": [
+          2
+        ],
+        "dataset_name": "missile_dive_pilot10",
+        "display_name": "EP-0000 · steep_dive · 1R · missile/terminal_dive",
+        "episode_id": "ep-000000-cc731c21506b",
+        "episode_seed": 981352733223189955,
+        "motion_profiles": [
+          "cruise+push_over+dive"
+        ],
+        "obstacle_profile": "open",
+        "physical_target_type_composition": "single",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.955
+          ]
+        },
+        "radar_count": 1,
+        "radar_placement_profile": "sampled",
+        "route_family": "sampled",
+        "scenario_family": "missile_dive_pilot10",
+        "split": "train",
+        "target_count": 1,
+        "target_profile_composition": "single",
+        "target_profiles": [
+          "terminal_dive"
+        ],
+        "target_types": [
+          "missile/terminal_dive"
+        ],
+        "terrain_family": "rolling_hills",
+        "terrain_seed": 1719976267,
+        "texture_family": null
+      },
+      "episode_seed": 981352733223189955,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "2c28722b454ea4eb9eb9901c71b7fd4a5051c96d4796aa766c2bda2911ff13d3",
+        "records.npz": "7dbc03fecdf7115741051fab5f5b091522b2670933b3b4005ac53c8084e8dc25"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261124,
+      "output_bytes": 33552,
+      "output_paths": {
+        "metadata.json": "train/ep-000000-cc731c21506b/metadata.json",
+        "records.npz": "train/ep-000000-cc731c21506b/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "2852476a363f0e0bcb04a755dc9be07fd6e59301a34070180bea7a4ecc4cc3bb",
+      "runtime_episode_id": "18eaafdf61d781d0-22bb6f82510-1",
+      "scenario_family": "missile_dive_pilot10",
+      "split": "train",
+      "terrain_group_id": "terrain-138bdddcb879765cd62a",
+      "wall_time_s": 0.07745820000127424
+    },
+    {
+      "counts": {
+        "annotations": 32,
+        "communication": 32,
+        "confirmed_track_rows": 24,
+        "deliveries": 32,
+        "fused_track_rows": 91,
+        "reports": 32,
+        "states": 40,
+        "tracks": 184,
+        "transitions": 39,
+        "truth": 40
+      },
+      "cpu_time_s": 0.125,
+      "dataset_episode_id": "ep-000001-613927b7332a",
+      "episode_index": 1,
+      "episode_preview": {
+        "class_labels": [
+          2
+        ],
+        "dataset_name": "missile_dive_pilot10",
+        "display_name": "EP-0001 · shallow_dive · 3R · missile/terminal_dive",
+        "episode_id": "ep-000001-613927b7332a",
+        "episode_seed": 8847162655112714363,
+        "motion_profiles": [
+          "cruise+push_over+dive"
+        ],
+        "obstacle_profile": "open",
+        "physical_target_type_composition": "single",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            1.0
+          ]
+        },
+        "radar_count": 3,
+        "radar_placement_profile": "sampled",
+        "route_family": "sampled",
+        "scenario_family": "missile_dive_pilot10",
+        "split": "train",
+        "target_count": 1,
+        "target_profile_composition": "single",
+        "target_profiles": [
+          "terminal_dive"
+        ],
+        "target_types": [
+          "missile/terminal_dive"
+        ],
+        "terrain_family": "rolling_hills",
+        "terrain_seed": 515779913,
+        "texture_family": null
+      },
+      "episode_seed": 8847162655112714363,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "1925c636f33b50ddac857c0cf2949c373206ecfac8223e922dedb6b0ac24d539",
+        "records.npz": "452c2689f97d280dac6c2ededb1979216fdee0f1f15e44c41a411aa5d12d5b56"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261124,
+      "output_bytes": 53768,
+      "output_paths": {
+        "metadata.json": "train/ep-000001-613927b7332a/metadata.json",
+        "records.npz": "train/ep-000001-613927b7332a/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "43d634b7aee0a4260bad931aa178d4372a62766cefcf4bede858178907b87f45",
+      "runtime_episode_id": "18eaafdf66a29f38-22bb6f29e50-1",
+      "scenario_family": "missile_dive_pilot10",
+      "split": "train",
+      "terrain_group_id": "terrain-a5ccda598e7f089c4d57",
+      "wall_time_s": 0.12901699999929406
+    },
+    {
+      "counts": {
+        "annotations": 31,
+        "communication": 31,
+        "confirmed_track_rows": 30,
+        "deliveries": 31,
+        "fused_track_rows": 92,
+        "reports": 31,
+        "states": 48,
+        "tracks": 182,
+        "transitions": 47,
+        "truth": 48
+      },
+      "cpu_time_s": 0.109375,
+      "dataset_episode_id": "ep-000002-13615c5a0596",
+      "episode_index": 2,
+      "episode_preview": {
+        "class_labels": [
+          2
+        ],
+        "dataset_name": "missile_dive_pilot10",
+        "display_name": "EP-0002 · jink_dive · 2R · missile/terminal_dive",
+        "episode_id": "ep-000002-13615c5a0596",
+        "episode_seed": 2839217834615208678,
+        "motion_profiles": [
+          "cruise+push_over+jinks"
+        ],
+        "obstacle_profile": "open",
+        "physical_target_type_composition": "single",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.938
+          ]
+        },
+        "radar_count": 2,
+        "radar_placement_profile": "sampled",
+        "route_family": "sampled",
+        "scenario_family": "missile_dive_pilot10",
+        "split": "validation",
+        "target_count": 1,
+        "target_profile_composition": "single",
+        "target_profiles": [
+          "terminal_dive"
+        ],
+        "target_types": [
+          "missile/terminal_dive"
+        ],
+        "terrain_family": "rolling_hills",
+        "terrain_seed": 1152926702,
+        "texture_family": null
+      },
+      "episode_seed": 2839217834615208678,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "6f6fdde5bab6748d85736b26db05ad7d65427fa82b6bb56e45ebfd46b0742906",
+        "records.npz": "fa861827d6c5595076f3efd5056551de8b46cdf527ef9dcc372e686bf82a3c86"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261124,
+      "output_bytes": 56044,
+      "output_paths": {
+        "metadata.json": "validation/ep-000002-13615c5a0596/metadata.json",
+        "records.npz": "validation/ep-000002-13615c5a0596/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "add4582821557ea51b37e5b088a650cd2d75349f08de33d7699dc8eed223b0e0",
+      "runtime_episode_id": "18eaafdf6e74c470-22bb65fa810-1",
+      "scenario_family": "missile_dive_pilot10",
+      "split": "validation",
+      "terrain_group_id": "terrain-5f7bd297e29944aaee23",
+      "wall_time_s": 0.12069599999995262
+    },
+    {
+      "counts": {
+        "annotations": 28,
+        "communication": 28,
+        "confirmed_track_rows": 92,
+        "deliveries": 28,
+        "fused_track_rows": 107,
+        "reports": 28,
+        "states": 57,
+        "tracks": 215,
+        "transitions": 56,
+        "truth": 57
+      },
+      "cpu_time_s": 0.09375,
+      "dataset_episode_id": "ep-000003-709ca7e123be",
+      "episode_index": 3,
+      "episode_preview": {
+        "class_labels": [
+          2
+        ],
+        "dataset_name": "missile_dive_pilot10",
+        "display_name": "EP-0003 · dive_pullout · 2R · missile/terminal_dive",
+        "episode_id": "ep-000003-709ca7e123be",
+        "episode_seed": 2021612141065252849,
+        "motion_profiles": [
+          "cruise+push_over+dive+pull_out+low_dash"
+        ],
+        "obstacle_profile": "open",
+        "physical_target_type_composition": "single",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.825
+          ]
+        },
+        "radar_count": 2,
+        "radar_placement_profile": "sampled",
+        "route_family": "sampled",
+        "scenario_family": "missile_dive_pilot10",
+        "split": "train",
+        "target_count": 1,
+        "target_profile_composition": "single",
+        "target_profiles": [
+          "terminal_dive"
+        ],
+        "target_types": [
+          "missile/terminal_dive"
+        ],
+        "terrain_family": "rolling_hills",
+        "terrain_seed": 927140522,
+        "texture_family": null
+      },
+      "episode_seed": 2021612141065252849,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "f9e6c059557bdd11d30723c00b714108714582df73199b6c02f8d10c0e3673b4",
+        "records.npz": "a01b6e42dff8bba1e0256f2652432f6ea5385189144141e61d4bfdc3b9607507"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261124,
+      "output_bytes": 64049,
+      "output_paths": {
+        "metadata.json": "train/ep-000003-709ca7e123be/metadata.json",
+        "records.npz": "train/ep-000003-709ca7e123be/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "f40948648b1d74561c42f537e994725e9f3f949b644d7358df0fc107702f7457",
+      "runtime_episode_id": "18eaafdf75bcdbdc-22bb6e43e10-1",
+      "scenario_family": "missile_dive_pilot10",
+      "split": "train",
+      "terrain_group_id": "terrain-fd3147a063a4e0c0c000",
+      "wall_time_s": 0.11663829999997688
+    },
+    {
+      "counts": {
+        "annotations": 37,
+        "communication": 37,
+        "confirmed_track_rows": 25,
+        "deliveries": 37,
+        "fused_track_rows": 111,
+        "reports": 37,
+        "states": 60,
+        "tracks": 221,
+        "transitions": 59,
+        "truth": 60
+      },
+      "cpu_time_s": 0.109375,
+      "dataset_episode_id": "ep-000004-244d4aaba132",
+      "episode_index": 4,
+      "episode_preview": {
+        "class_labels": [
+          2
+        ],
+        "dataset_name": "missile_dive_pilot10",
+        "display_name": "EP-0004 · weave_dive · 3R · missile/terminal_dive",
+        "episode_id": "ep-000004-244d4aaba132",
+        "episode_seed": 1968543107530850384,
+        "motion_profiles": [
+          "weave+push_over+dive+jink"
+        ],
+        "obstacle_profile": "open",
+        "physical_target_type_composition": "single",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.933
+          ]
+        },
+        "radar_count": 3,
+        "radar_placement_profile": "sampled",
+        "route_family": "sampled",
+        "scenario_family": "missile_dive_pilot10",
+        "split": "test",
+        "target_count": 1,
+        "target_profile_composition": "single",
+        "target_profiles": [
+          "terminal_dive"
+        ],
+        "target_types": [
+          "missile/terminal_dive"
+        ],
+        "terrain_family": "rolling_hills",
+        "terrain_seed": 1486814370,
+        "texture_family": null
+      },
+      "episode_seed": 1968543107530850384,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "5e206f073a5e4d80f5540d51ce9ab6ab598de8e4a1987ce96ba5bec5a3ff843a",
+        "records.npz": "62b562e3b6d0215d81214961ca3e5f4aea9360abfe7950345de1557a491bb01e"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261124,
+      "output_bytes": 61021,
+      "output_paths": {
+        "metadata.json": "test/ep-000004-244d4aaba132/metadata.json",
+        "records.npz": "test/ep-000004-244d4aaba132/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "6178ef91f27479d13ebda04026c10f444f96c269dac73a5a5ccda683bfaea779",
+      "runtime_episode_id": "18eaafdf7cd49798-22bb62503d0-1",
+      "scenario_family": "missile_dive_pilot10",
+      "split": "test",
+      "terrain_group_id": "terrain-9168e1b16a5c7fad5aa9",
+      "wall_time_s": 0.1547130000017205
+    },
+    {
+      "counts": {
+        "annotations": 18,
+        "communication": 18,
+        "confirmed_track_rows": 40,
+        "deliveries": 18,
+        "fused_track_rows": 52,
+        "reports": 18,
+        "states": 47,
+        "tracks": 104,
+        "transitions": 46,
+        "truth": 47
+      },
+      "cpu_time_s": 0.078125,
+      "dataset_episode_id": "ep-000005-9c9cd8eaea1f",
+      "episode_index": 5,
+      "episode_preview": {
+        "class_labels": [
+          2
+        ],
+        "dataset_name": "missile_dive_pilot10",
+        "display_name": "EP-0005 · popup_dive · 1R · missile/terminal_dive",
+        "episode_id": "ep-000005-9c9cd8eaea1f",
+        "episode_seed": 7811404089209716848,
+        "motion_profiles": [
+          "terrain_follow+pop_up+dive"
+        ],
+        "obstacle_profile": "open",
+        "physical_target_type_composition": "single",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.915
+          ]
+        },
+        "radar_count": 1,
+        "radar_placement_profile": "sampled",
+        "route_family": "sampled",
+        "scenario_family": "missile_dive_pilot10",
+        "split": "train",
+        "target_count": 1,
+        "target_profile_composition": "single",
+        "target_profiles": [
+          "terminal_dive"
+        ],
+        "target_types": [
+          "missile/terminal_dive"
+        ],
+        "terrain_family": "rolling_hills",
+        "terrain_seed": 1483967609,
+        "texture_family": null
+      },
+      "episode_seed": 7811404089209716848,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "f2b6cbaf12284db56ecac9fcd883ee9ec39ee7a0021bcb8a058dc97468dfc72e",
+        "records.npz": "ec406f2ae514352c09c80eeb01e1ae739189c26133cdf0b053420887371d1773"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261124,
+      "output_bytes": 61867,
+      "output_paths": {
+        "metadata.json": "train/ep-000005-9c9cd8eaea1f/metadata.json",
+        "records.npz": "train/ep-000005-9c9cd8eaea1f/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "b53a9b72f3519b6166211274868f76f0b1fdcf48dcbc2d06c0cabae34ef62037",
+      "runtime_episode_id": "18eaafdf8642b92c-22bb6df5cd0-1",
+      "scenario_family": "missile_dive_pilot10",
+      "split": "train",
+      "terrain_group_id": "terrain-8dd94ddbe9a4b641148a",
+      "wall_time_s": 0.0864741999994294
+    },
+    {
+      "counts": {
+        "annotations": 23,
+        "communication": 23,
+        "confirmed_track_rows": 22,
+        "deliveries": 23,
+        "fused_track_rows": 64,
+        "reports": 23,
+        "states": 38,
+        "tracks": 127,
+        "transitions": 37,
+        "truth": 38
+      },
+      "cpu_time_s": 0.078125,
+      "dataset_episode_id": "ep-000006-e11ca94b6d66",
+      "episode_index": 6,
+      "episode_preview": {
+        "class_labels": [
+          2
+        ],
+        "dataset_name": "missile_dive_pilot10",
+        "display_name": "EP-0006 · barrel_roll_dive · 2R · missile/terminal_dive",
+        "episode_id": "ep-000006-e11ca94b6d66",
+        "episode_seed": 6312162142688795087,
+        "motion_profiles": [
+          "cruise+barrel_roll_dive"
+        ],
+        "obstacle_profile": "open",
+        "physical_target_type_composition": "single",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.974
+          ]
+        },
+        "radar_count": 2,
+        "radar_placement_profile": "sampled",
+        "route_family": "sampled",
+        "scenario_family": "missile_dive_pilot10",
+        "split": "train",
+        "target_count": 1,
+        "target_profile_composition": "single",
+        "target_profiles": [
+          "terminal_dive"
+        ],
+        "target_types": [
+          "missile/terminal_dive"
+        ],
+        "terrain_family": "rolling_hills",
+        "terrain_seed": 731186680,
+        "texture_family": null
+      },
+      "episode_seed": 6312162142688795087,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "abfd0881a7749d6e499da88b7095afc895b06ab6971dc156d6959dc02a36d6be",
+        "records.npz": "50e80cbfe7e9b4c95840082c283f629f05ca0919aa3d0798bca970c9b51c2063"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261124,
+      "output_bytes": 62979,
+      "output_paths": {
+        "metadata.json": "train/ep-000006-e11ca94b6d66/metadata.json",
+        "records.npz": "train/ep-000006-e11ca94b6d66/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "7a11d109b3322cf56f69f39ac2a1380f29f7f204b62cde60948b51377901ae10",
+      "runtime_episode_id": "18eaafdf8b8b5cf4-22bb4891210-1",
+      "scenario_family": "missile_dive_pilot10",
+      "split": "train",
+      "terrain_group_id": "terrain-a31b72813d07cd96c95f",
+      "wall_time_s": 0.09895179999875836
+    },
+    {
+      "counts": {
+        "annotations": 18,
+        "communication": 18,
+        "confirmed_track_rows": 92,
+        "deliveries": 18,
+        "fused_track_rows": 75,
+        "reports": 18,
+        "states": 49,
+        "tracks": 150,
+        "transitions": 48,
+        "truth": 49
+      },
+      "cpu_time_s": 0.0625,
+      "dataset_episode_id": "ep-000007-09a6f8abb15b",
+      "episode_index": 7,
+      "episode_preview": {
+        "class_labels": [
+          2
+        ],
+        "dataset_name": "missile_dive_pilot10",
+        "display_name": "EP-0007 · dogleg_serpentine · 1R · missile/terminal_dive",
+        "episode_id": "ep-000007-09a6f8abb15b",
+        "episode_seed": 7972923293989885002,
+        "motion_profiles": [
+          "terrain_follow+dogleg_turn+serpentine+pop_up+dive"
+        ],
+        "obstacle_profile": "open",
+        "physical_target_type_composition": "single",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.592
+          ]
+        },
+        "radar_count": 1,
+        "radar_placement_profile": "sampled",
+        "route_family": "sampled",
+        "scenario_family": "missile_dive_pilot10",
+        "split": "train",
+        "target_count": 1,
+        "target_profile_composition": "single",
+        "target_profiles": [
+          "terminal_dive"
+        ],
+        "target_types": [
+          "missile/terminal_dive"
+        ],
+        "terrain_family": "rolling_hills",
+        "terrain_seed": 786453471,
+        "texture_family": null
+      },
+      "episode_seed": 7972923293989885002,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "b6320992d84036afd8315ce262a31e4e7b566def7e8c0ce9048ef35d7d7637bc",
+        "records.npz": "ce4e4e0d1325a4c22c26ca980768d1ab01763adf3bb79a9dc7c2150c9c720eda"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261124,
+      "output_bytes": 68007,
+      "output_paths": {
+        "metadata.json": "train/ep-000007-09a6f8abb15b/metadata.json",
+        "records.npz": "train/ep-000007-09a6f8abb15b/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "80f5fb68945bd852545feac0ed1b0ec6a502c36dbd2814aeee71aba67e18a06d",
+      "runtime_episode_id": "18eaafdf918ea854-22bb6f284d0-1",
+      "scenario_family": "missile_dive_pilot10",
+      "split": "train",
+      "terrain_group_id": "terrain-acbf52e82b6890a2934b",
+      "wall_time_s": 0.08626449999974284
+    },
+    {
+      "counts": {
+        "annotations": 42,
+        "communication": 42,
+        "confirmed_track_rows": 93,
+        "deliveries": 42,
+        "fused_track_rows": 130,
+        "reports": 42,
+        "states": 47,
+        "tracks": 276,
+        "transitions": 46,
+        "truth": 47
+      },
+      "cpu_time_s": 0.171875,
+      "dataset_episode_id": "ep-000008-bc4b9306e07f",
+      "episode_index": 8,
+      "episode_preview": {
+        "class_labels": [
+          2
+        ],
+        "dataset_name": "missile_dive_pilot10",
+        "display_name": "EP-0008 · break_turn_dive · 3R · missile/terminal_dive",
+        "episode_id": "ep-000008-bc4b9306e07f",
+        "episode_seed": 401321463970757208,
+        "motion_profiles": [
+          "cruise+break_turn+boost_reacquire+dive+dive_break+terminal_dive"
+        ],
+        "obstacle_profile": "open",
+        "physical_target_type_composition": "single",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.979
+          ]
+        },
+        "radar_count": 3,
+        "radar_placement_profile": "sampled",
+        "route_family": "sampled",
+        "scenario_family": "missile_dive_pilot10",
+        "split": "validation",
+        "target_count": 1,
+        "target_profile_composition": "single",
+        "target_profiles": [
+          "terminal_dive"
+        ],
+        "target_types": [
+          "missile/terminal_dive"
+        ],
+        "terrain_family": "rolling_hills",
+        "terrain_seed": 1648914755,
+        "texture_family": null
+      },
+      "episode_seed": 401321463970757208,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "f81ad4a8d6198b743ba140b65bc307e198d687be21189cf59b97feec27dc8b0c",
+        "records.npz": "4fd60c1641ae15fcd4607cf572ee29b3e3c94e9cbe54707a2a674bd7ea5761b1"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261124,
+      "output_bytes": 95943,
+      "output_paths": {
+        "metadata.json": "validation/ep-000008-bc4b9306e07f/metadata.json",
+        "records.npz": "validation/ep-000008-bc4b9306e07f/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "ea215b18d0e3d7db164157cc15a77ec3671f23ee34aa1d7633560132edb48248",
+      "runtime_episode_id": "18eaafdf96e4c61c-22bb6c973d0-1",
+      "scenario_family": "missile_dive_pilot10",
+      "split": "validation",
+      "terrain_group_id": "terrain-d3049dcaf53219a7988f",
+      "wall_time_s": 0.16733579999890935
+    },
+    {
+      "counts": {
+        "annotations": 18,
+        "communication": 18,
+        "confirmed_track_rows": 54,
+        "deliveries": 18,
+        "fused_track_rows": 53,
+        "reports": 18,
+        "states": 31,
+        "tracks": 106,
+        "transitions": 30,
+        "truth": 31
+      },
+      "cpu_time_s": 0.0625,
+      "dataset_episode_id": "ep-000009-8199dc6bdc22",
+      "episode_index": 9,
+      "episode_preview": {
+        "class_labels": [
+          2
+        ],
+        "dataset_name": "missile_dive_pilot10",
+        "display_name": "EP-0009 · random_jink_dive · 1R · missile/terminal_dive",
+        "episode_id": "ep-000009-8199dc6bdc22",
+        "episode_seed": 2068404718060261862,
+        "motion_profiles": [
+          "cruise+random_jinks"
+        ],
+        "obstacle_profile": "open",
+        "physical_target_type_composition": "single",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.871
+          ]
+        },
+        "radar_count": 1,
+        "radar_placement_profile": "sampled",
+        "route_family": "sampled",
+        "scenario_family": "missile_dive_pilot10",
+        "split": "train",
+        "target_count": 1,
+        "target_profile_composition": "single",
+        "target_profiles": [
+          "terminal_dive"
+        ],
+        "target_types": [
+          "missile/terminal_dive"
+        ],
+        "terrain_family": "rolling_hills",
+        "terrain_seed": 1599255847,
+        "texture_family": null
+      },
+      "episode_seed": 2068404718060261862,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "9eedf387ec4d5504c6a7ab1469904fb03491942337f2f311558ceb6effb0a635",
+        "records.npz": "6bff6306791260c8e3d302f4c27e688eb0cb7a29c3b87d61100d452febd14740"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261124,
+      "output_bytes": 50472,
+      "output_paths": {
+        "metadata.json": "train/ep-000009-8199dc6bdc22/metadata.json",
+        "records.npz": "train/ep-000009-8199dc6bdc22/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "e2bb2cc70d5ae8063849fb2655f1590fd899c36b392f431dadb4dd339ff5e13e",
+      "runtime_episode_id": "18eaafdfa0d06e74-22bb6f67990-1",
+      "scenario_family": "missile_dive_pilot10",
+      "split": "train",
+      "terrain_group_id": "terrain-dc0bac23f2153098e7ea",
+      "wall_time_s": 0.07431940000060422
+    }
+  ],
+  "generation_status": "completed",
+  "last_run": {
+    "cpu_time_s": 0.15625,
+    "skipped_verified": 10,
+    "wall_time_s": 0.15964370000074268
+  },
+  "manifest_schema_version": 1,
+  "numpy_version": "1.26.4",
+  "plan_hash": "79ad62dc14adb06830404da0404950c92b8215f11cdb449754dbdad855b0e798",
+  "policy_name": "central_greedy_confirm",
+  "recipe_hash": "9bef11baaa5272d529f97adfdaad3edc1aaf295c0e37a0538076847cfef20ebe",
+  "worker_count": 1
+}

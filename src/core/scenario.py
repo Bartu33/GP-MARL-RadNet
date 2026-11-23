@@ -219,13 +219,42 @@ def _target_class(target, path):
             _number(rcs[aspect], f"{path}.rcs_dbsm.{aspect}", minimum=-60, maximum=60)
 
 
+ZONE_KINDS = ("zone", "facility", "waypoint")
+ZONE_FIELDS = ("name", "kind", "position", "radius_m", "height_m")
+
+
+def _check_zones(zones):
+    """Abstract reference markers (protected zones, facilities, waypoints), drawn by the 3-D viewer.
+
+    Purely visual / descriptive: they never enter the simulation, the radar model or the reward.
+    ``position`` is east / north in metres; the viewer places the marker on the terrain.
+    """
+    if not isinstance(zones, list):
+        raise ValueError("zones: expected a list")
+    names = set()
+    for i, zone in enumerate(zones):
+        path = f"zones[{i}]"
+        _mapping(zone, path, ZONE_FIELDS)
+        _text(zone.get("name"), f"{path}.name")
+        if zone["name"] in names:
+            raise ValueError(f"{path}.name: duplicate zone name {zone['name']!r}")
+        names.add(zone["name"])
+        if zone.get("kind") not in ZONE_KINDS:
+            raise ValueError(f"{path}.kind: expected one of {list(ZONE_KINDS)}")
+        _sequence(zone.get("position"), f"{path}.position", 2)
+        for j, value in enumerate(zone["position"]):
+            _number(value, f"{path}.position[{j}]")
+        for key in ("radius_m", "height_m"):
+            _number(zone.get(key), f"{path}.{key}", positive=True)
+
+
 def validate_scenario(scenario: dict) -> dict:
     """Resolve defaults and validate without mutation, I/O, or random draws.
 
     Return a detached configuration. Lists still replace entire default lists.
     Unknown fields (including unsupported radar mode/profile input) are errors.
     """
-    _mapping(scenario, "scenario", (*DEFAULTS, "tracker"))
+    _mapping(scenario, "scenario", (*DEFAULTS, "tracker", "zones"))
     sc = _merge(DEFAULTS, scenario)
     for key in ("name", "description"):
         _text(sc[key], key)
@@ -351,6 +380,8 @@ def validate_scenario(scenario: dict) -> dict:
     if len({"target_class" in target for target in sc["targets"]}) > 1:
         raise ValueError("targets: target_class targets cannot be mixed with legacy label targets "
                          "(the two label spaces differ)")
+    if "zones" in sc:
+        _check_zones(sc["zones"])
     if "tracker" in sc:
         # optional TrackManager settings; absent -> tracker defaults (and unchanged snapshots)
         _mapping(sc["tracker"], "tracker", TRACKER_FIELDS)

@@ -1,0 +1,412 @@
+{
+  "classifier": null,
+  "episodes": [
+    {
+      "counts": {
+        "annotations": 28,
+        "communication": 28,
+        "confirmed_track_rows": 92,
+        "deliveries": 28,
+        "fused_track_rows": 95,
+        "reports": 28,
+        "states": 43,
+        "tracks": 190,
+        "transitions": 42,
+        "truth": 129
+      },
+      "cpu_time_s": 0.140625,
+      "dataset_episode_id": "ep-000000-4b1eb8e1ba86",
+      "episode_index": 0,
+      "episode_preview": {
+        "class_labels": [
+          2,
+          2,
+          0
+        ],
+        "dataset_name": "missile_salvo_pilot5",
+        "display_name": "EP-0000 · converging · 2R · missile/terminal_dive, missile/terminal_dive, uav/multirotor",
+        "episode_id": "ep-000000-4b1eb8e1ba86",
+        "episode_seed": 6636554541920703572,
+        "motion_profiles": [
+          "cruise+random_jinks",
+          "terrain_follow+dogleg_turn+serpentine+pop_up+dive",
+          "CA"
+        ],
+        "obstacle_profile": "open",
+        "physical_target_type_composition": "two_plus_one",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.558,
+            0.442,
+            1.0
+          ]
+        },
+        "radar_count": 2,
+        "radar_placement_profile": "sampled",
+        "route_family": "converging",
+        "scenario_family": "missile_salvo_pilot5",
+        "split": "train",
+        "target_count": 3,
+        "target_profile_composition": "two_plus_one",
+        "target_profiles": [
+          "terminal_dive",
+          "terminal_dive",
+          "multirotor"
+        ],
+        "target_types": [
+          "missile/terminal_dive",
+          "missile/terminal_dive",
+          "uav/multirotor"
+        ],
+        "terrain_family": "rolling_hills",
+        "terrain_seed": 1789691071,
+        "texture_family": null
+      },
+      "episode_seed": 6636554541920703572,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "8b2435d2c27ddccc7c5f89372a9c8e0c1b8aa07fc2c632e65d0214ec72bfe74f",
+        "records.npz": "a9052e8ad124493e024193ae6d33b643ea89b0b1cb3ecab0355a85632c78085d"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261127,
+      "output_bytes": 102976,
+      "output_paths": {
+        "metadata.json": "train/ep-000000-4b1eb8e1ba86/metadata.json",
+        "records.npz": "train/ep-000000-4b1eb8e1ba86/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "b757125e32057a9346db77369eefa865759fd0cb8bb19bf4a8fe0d2977fde24b",
+      "runtime_episode_id": "18eac57c99b266bc-1e42a4b1e90-1",
+      "scenario_family": "missile_salvo_pilot5",
+      "split": "train",
+      "terrain_group_id": "terrain-119635268acc8f905eae",
+      "wall_time_s": 0.16939120000461116
+    },
+    {
+      "counts": {
+        "annotations": 55,
+        "communication": 55,
+        "confirmed_track_rows": 100,
+        "deliveries": 55,
+        "fused_track_rows": 160,
+        "reports": 55,
+        "states": 48,
+        "tracks": 332,
+        "transitions": 47,
+        "truth": 144
+      },
+      "cpu_time_s": 0.25,
+      "dataset_episode_id": "ep-000001-e8975a2f2d44",
+      "episode_index": 1,
+      "episode_preview": {
+        "class_labels": [
+          2,
+          2,
+          2
+        ],
+        "dataset_name": "missile_salvo_pilot5",
+        "display_name": "EP-0001 · diverging · 3R · missile/subsonic_cruise, missile/terminal_dive, missile/terminal_dive",
+        "episode_id": "ep-000001-e8975a2f2d44",
+        "episode_seed": 4999425968777364861,
+        "motion_profiles": [
+          "terrain_follow+weave+pop_up+terminal_descent",
+          "terrain_follow+pop_up+dive",
+          "cruise+push_over+dive"
+        ],
+        "obstacle_profile": "dense",
+        "physical_target_type_composition": "all_same",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            1.0,
+            0.812,
+            1.0
+          ]
+        },
+        "radar_count": 3,
+        "radar_placement_profile": "sampled",
+        "route_family": "diverging",
+        "scenario_family": "missile_salvo_pilot5",
+        "split": "train",
+        "target_count": 3,
+        "target_profile_composition": "all_same",
+        "target_profiles": [
+          "subsonic_cruise",
+          "terminal_dive",
+          "terminal_dive"
+        ],
+        "target_types": [
+          "missile/subsonic_cruise",
+          "missile/terminal_dive",
+          "missile/terminal_dive"
+        ],
+        "terrain_family": "valley_linear_canyon",
+        "terrain_seed": 1341643182,
+        "texture_family": "rocky_mountain"
+      },
+      "episode_seed": 4999425968777364861,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "cf2c48032c59d49384bf3db4feefb31c1dc0d7bb942c534c18a3ac06591367c9",
+        "records.npz": "e487f80e5e84661288bd74b7494d72a27bb5570abd11b37eb8be26fb2128d505"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261127,
+      "output_bytes": 133570,
+      "output_paths": {
+        "metadata.json": "train/ep-000001-e8975a2f2d44/metadata.json",
+        "records.npz": "train/ep-000001-e8975a2f2d44/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "be6dcfa079157cc2921d42f9f24c12ae308f13a6a1be3ebc3dee19d70109999f",
+      "runtime_episode_id": "18eac57ca400a944-1e42a1ca610-1",
+      "scenario_family": "missile_salvo_pilot5",
+      "split": "train",
+      "terrain_group_id": "terrain-b22b838865721650bf4f",
+      "wall_time_s": 0.2853728999980376
+    },
+    {
+      "counts": {
+        "annotations": 6,
+        "communication": 6,
+        "confirmed_track_rows": 0,
+        "deliveries": 6,
+        "fused_track_rows": 18,
+        "reports": 6,
+        "states": 31,
+        "tracks": 36,
+        "transitions": 30,
+        "truth": 31
+      },
+      "cpu_time_s": 0.0625,
+      "dataset_episode_id": "ep-000002-f69d4fdeb72c",
+      "episode_index": 2,
+      "episode_preview": {
+        "class_labels": [
+          2
+        ],
+        "dataset_name": "missile_salvo_pilot5",
+        "display_name": "EP-0002 · single · 1R · missile/terminal_dive",
+        "episode_id": "ep-000002-f69d4fdeb72c",
+        "episode_seed": 2177332922576322562,
+        "motion_profiles": [
+          "cruise+barrel_roll_dive"
+        ],
+        "obstacle_profile": "asymmetric",
+        "physical_target_type_composition": "single",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.871
+          ]
+        },
+        "radar_count": 1,
+        "radar_placement_profile": "sampled",
+        "route_family": "single",
+        "scenario_family": "missile_salvo_pilot5",
+        "split": "validation",
+        "target_count": 1,
+        "target_profile_composition": "single",
+        "target_profiles": [
+          "terminal_dive"
+        ],
+        "target_types": [
+          "missile/terminal_dive"
+        ],
+        "terrain_family": "ridge_multi_obstacle",
+        "terrain_seed": 110717220,
+        "texture_family": "dry_canyon"
+      },
+      "episode_seed": 2177332922576322562,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "30de88946f53ccdf831961a19bff15d8d993a0da1b4a946ec1646f4a4f1b29bc",
+        "records.npz": "bcd9e7be695dbd090a8e9e1d3e486ebb1a19c73e02e6c297a1b65a4a735006ae"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261127,
+      "output_bytes": 40172,
+      "output_paths": {
+        "metadata.json": "validation/ep-000002-f69d4fdeb72c/metadata.json",
+        "records.npz": "validation/ep-000002-f69d4fdeb72c/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "6e9a4a107a83a241d5505611096ec035e28b58b5b2da5280c0d221d627817381",
+      "runtime_episode_id": "18eac57cb4c09d48-1e42b580310-1",
+      "scenario_family": "missile_salvo_pilot5",
+      "split": "validation",
+      "terrain_group_id": "terrain-04efb1639bdca809ce69",
+      "wall_time_s": 0.059075699995446485
+    },
+    {
+      "counts": {
+        "annotations": 22,
+        "communication": 22,
+        "confirmed_track_rows": 92,
+        "deliveries": 22,
+        "fused_track_rows": 77,
+        "reports": 22,
+        "states": 50,
+        "tracks": 154,
+        "transitions": 49,
+        "truth": 150
+      },
+      "cpu_time_s": 0.15625,
+      "dataset_episode_id": "ep-000003-1be2ec0bac32",
+      "episode_index": 3,
+      "episode_preview": {
+        "class_labels": [
+          2,
+          2,
+          1
+        ],
+        "dataset_name": "missile_salvo_pilot5",
+        "display_name": "EP-0003 · converging · 1R · missile/terminal_dive, missile/terminal_dive, aircraft/fighter",
+        "episode_id": "ep-000003-1be2ec0bac32",
+        "episode_seed": 2313105647517598259,
+        "motion_profiles": [
+          "cruise+push_over+jinks",
+          "cruise+push_over+dive",
+          "CT+CT"
+        ],
+        "obstacle_profile": "sparse",
+        "physical_target_type_composition": "two_plus_one",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.7,
+            0.84,
+            1.0
+          ]
+        },
+        "radar_count": 1,
+        "radar_placement_profile": "sampled",
+        "route_family": "converging",
+        "scenario_family": "missile_salvo_pilot5",
+        "split": "train",
+        "target_count": 3,
+        "target_profile_composition": "two_plus_one",
+        "target_profiles": [
+          "terminal_dive",
+          "terminal_dive",
+          "fighter"
+        ],
+        "target_types": [
+          "missile/terminal_dive",
+          "missile/terminal_dive",
+          "aircraft/fighter"
+        ],
+        "terrain_family": "basin_highlands",
+        "terrain_seed": 675337386,
+        "texture_family": "grassland_valley"
+      },
+      "episode_seed": 2313105647517598259,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "b1ececacd21a71c8df013268b9d139f2e7a8bec130fe3bcc5928e9c9f90037c5",
+        "records.npz": "c3d4132060b047c5500a2fbcff957291c4a16d81640709c732d963b8bacc0920"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261127,
+      "output_bytes": 54377,
+      "output_paths": {
+        "metadata.json": "train/ep-000003-1be2ec0bac32/metadata.json",
+        "records.npz": "train/ep-000003-1be2ec0bac32/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "ec2dc9cd862cd8ffa85aeed5204fb2e73405d2003ca4cf69630ed8271cac6d23",
+      "runtime_episode_id": "18eac57cb85af340-1e42a240210-1",
+      "scenario_family": "missile_salvo_pilot5",
+      "split": "train",
+      "terrain_group_id": "terrain-b82b57002bc53fdf26d9",
+      "wall_time_s": 0.1580268999969121
+    },
+    {
+      "counts": {
+        "annotations": 46,
+        "communication": 46,
+        "confirmed_track_rows": 106,
+        "deliveries": 46,
+        "fused_track_rows": 136,
+        "reports": 46,
+        "states": 47,
+        "tracks": 269,
+        "transitions": 46,
+        "truth": 94
+      },
+      "cpu_time_s": 0.25,
+      "dataset_episode_id": "ep-000004-0afe92e2a3bb",
+      "episode_index": 4,
+      "episode_preview": {
+        "class_labels": [
+          2,
+          1
+        ],
+        "dataset_name": "missile_salvo_pilot5",
+        "display_name": "EP-0004 · single · 3R · missile/terminal_dive, aircraft/transport",
+        "episode_id": "ep-000004-0afe92e2a3bb",
+        "episode_seed": 2843344555407308760,
+        "motion_profiles": [
+          "cruise+break_turn+boost_reacquire+dive+dive_break+terminal_dive",
+          "CV+CV+CV"
+        ],
+        "obstacle_profile": "asymmetric",
+        "physical_target_type_composition": "all_different",
+        "quality_summary": {
+          "planned_visible_fraction": [
+            0.979,
+            1.0
+          ]
+        },
+        "radar_count": 3,
+        "radar_placement_profile": "sampled",
+        "route_family": "single",
+        "scenario_family": "missile_salvo_pilot5",
+        "split": "test",
+        "target_count": 2,
+        "target_profile_composition": "all_different",
+        "target_profiles": [
+          "terminal_dive",
+          "transport"
+        ],
+        "target_types": [
+          "missile/terminal_dive",
+          "aircraft/transport"
+        ],
+        "terrain_family": "mountain_chokepoint",
+        "terrain_seed": 136539715,
+        "texture_family": "green_forest_valley"
+      },
+      "episode_seed": 2843344555407308760,
+      "error_reason": null,
+      "file_sha256": {
+        "metadata.json": "bfc5f90164336d461e19f9949b7018c4121a873b3e5212c0f92e6aeb8dc71648",
+        "records.npz": "b74d34be79ebce8924071c705d4bd413b4bc687e2efc2402e9383c41919cdd92"
+      },
+      "generation_status": "completed",
+      "master_seed": 20261127,
+      "output_bytes": 88846,
+      "output_paths": {
+        "metadata.json": "test/ep-000004-0afe92e2a3bb/metadata.json",
+        "records.npz": "test/ep-000004-0afe92e2a3bb/records.npz"
+      },
+      "recipe_version": 2,
+      "resolved_configuration_hash": "110111adeba7028ea8638ac8596770d8b8b6c4b3b8d4307e48eb9a4568426b89",
+      "runtime_episode_id": "18eac57cc210c2d4-1e429754e10-1",
+      "scenario_family": "missile_salvo_pilot5",
+      "split": "test",
+      "terrain_group_id": "terrain-c726f3705f50a5ccb69b",
+      "wall_time_s": 0.2383209999970859
+    }
+  ],
+  "generation_status": "completed",
+  "last_run": {
+    "cpu_time_s": 0.859375,
+    "skipped_verified": 0,
+    "wall_time_s": 0.9195527999982005
+  },
+  "manifest_schema_version": 1,
+  "numpy_version": "1.26.4",
+  "plan_hash": "dd7e8042db155166f76355f21162d6bfe23961f30c332d41f8053eeffc63add1",
+  "policy_name": "central_greedy_confirm",
+  "recipe_hash": "885f09cf4015df333bc59313198e7478650926f77f0fb10fb38e3a17da3e7ecb",
+  "worker_count": 1
+}

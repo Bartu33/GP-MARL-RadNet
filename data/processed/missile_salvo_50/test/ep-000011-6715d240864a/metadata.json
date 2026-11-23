@@ -1,0 +1,589 @@
+{
+  "agent_ids": [
+    "radar_0",
+    "radar_1"
+  ],
+  "communication_order": [
+    "outage",
+    "bandwidth",
+    "packet_loss",
+    "sharing",
+    "delivery"
+  ],
+  "completed": true,
+  "config_snapshot": {
+    "effective_duration_s": 24.0,
+    "effective_radars": [
+      {
+        "bandwidth_hz": 1000000.0,
+        "beamwidth_az_deg": 3.0,
+        "beamwidth_el_deg": 6.0,
+        "bias_rho": 0.995,
+        "bias_std": [
+          2.0,
+          0.0001,
+          0.0001,
+          0.05
+        ],
+        "c_max": 4,
+        "clutter_notch_mps": 1.0,
+        "e_max_j": 1000.0,
+        "e_processing_j": 1.0,
+        "e_recovery_w": 60.0,
+        "efficiency": 0.5,
+        "el_max_deg": 70.0,
+        "el_min_deg": -2.0,
+        "false_alarms_per_beam": 0.03,
+        "fc_hz": 10000000000.0,
+        "floor_ang_rad": 0.0002,
+        "floor_r_m": 5.0,
+        "floor_rdot_mps": 0.2,
+        "fov_az_deg": 45.0,
+        "gain_dbi": 36.0,
+        "h_ambient_k": 300.0,
+        "h_max_k": 360.0,
+        "heading_deg": -81.16,
+        "k_ang": 1.0,
+        "k_r": 1.0,
+        "k_rdot": 1.0,
+        "losses_db": 5.0,
+        "name": "R1",
+        "noise_figure_db": 4.0,
+        "pd_model": "marcum",
+        "pfa": 1e-06,
+        "position": [
+          -4704.7,
+          2542.7,
+          1081.7067500875387
+        ],
+        "prf_stagger_hz": [
+          14000.0,
+          16000.0,
+          18000.0
+        ],
+        "profiles": {
+          "INTERLEAVED": {
+            "beams_per_look": 1,
+            "n_pulses": 192,
+            "pri_s": 6.25e-05
+          },
+          "SEARCH": {
+            "beams_per_look": 8,
+            "n_pulses": 32,
+            "pri_s": 6.25e-05
+          },
+          "TRACK": {
+            "beams_per_look": 1,
+            "n_pulses": 384,
+            "pri_s": 6.25e-05
+          }
+        },
+        "pt_w": 1000.0,
+        "quantize": false,
+        "r_max_m": 20000.0,
+        "r_min_m": 300.0,
+        "search_bars_deg": [
+          16.5,
+          22.5,
+          28.5,
+          34.5,
+          40.5,
+          46.5,
+          52.5,
+          58.5
+        ],
+        "search_sector_deg": 70.0,
+        "snr_good_db": 25.0,
+        "snr_threshold_db": 10.0,
+        "t0_k": 290.0,
+        "thermal_a": 0.04,
+        "thermal_b": 0.03
+      },
+      {
+        "bandwidth_hz": 1000000.0,
+        "beamwidth_az_deg": 3.0,
+        "beamwidth_el_deg": 6.0,
+        "bias_rho": 0.995,
+        "bias_std": [
+          2.0,
+          0.0001,
+          0.0001,
+          0.05
+        ],
+        "c_max": 4,
+        "clutter_notch_mps": 1.0,
+        "e_max_j": 1000.0,
+        "e_processing_j": 1.0,
+        "e_recovery_w": 60.0,
+        "efficiency": 0.5,
+        "el_max_deg": 70.0,
+        "el_min_deg": -2.0,
+        "false_alarms_per_beam": 0.03,
+        "fc_hz": 10000000000.0,
+        "floor_ang_rad": 0.0002,
+        "floor_r_m": 5.0,
+        "floor_rdot_mps": 0.2,
+        "fov_az_deg": 45.0,
+        "gain_dbi": 36.0,
+        "h_ambient_k": 300.0,
+        "h_max_k": 360.0,
+        "heading_deg": 70.88,
+        "k_ang": 1.0,
+        "k_r": 1.0,
+        "k_rdot": 1.0,
+        "losses_db": 5.0,
+        "name": "R2",
+        "noise_figure_db": 4.0,
+        "pd_model": "marcum",
+        "pfa": 1e-06,
+        "position": [
+          -7204.7,
+          1542.7,
+          1093.329494291788
+        ],
+        "prf_stagger_hz": [
+          14000.0,
+          16000.0,
+          18000.0
+        ],
+        "profiles": {
+          "INTERLEAVED": {
+            "beams_per_look": 1,
+            "n_pulses": 192,
+            "pri_s": 6.25e-05
+          },
+          "SEARCH": {
+            "beams_per_look": 8,
+            "n_pulses": 32,
+            "pri_s": 6.25e-05
+          },
+          "TRACK": {
+            "beams_per_look": 1,
+            "n_pulses": 384,
+            "pri_s": 6.25e-05
+          }
+        },
+        "pt_w": 1000.0,
+        "quantize": false,
+        "r_max_m": 20000.0,
+        "r_min_m": 300.0,
+        "search_bars_deg": [
+          17.0,
+          23.0,
+          29.0,
+          35.0,
+          41.0,
+          47.0,
+          53.0,
+          59.0
+        ],
+        "search_sector_deg": 70.0,
+        "snr_good_db": 25.0,
+        "snr_threshold_db": 10.0,
+        "t0_k": 290.0,
+        "thermal_a": 0.04,
+        "thermal_b": 0.03
+      }
+    ],
+    "episode_seed": 3588057310659512268,
+    "radar_position_reference": "terrain_adjusted",
+    "rng_layout_version": 1,
+    "scenario": {
+      "area_radius_m": 12000.0,
+      "description": "2-missile converging salvo (jink_dive, steep_dive), 0 traffic, 2 radar(s) on high ground",
+      "difficulty_level": null,
+      "dt": 0.5,
+      "duration_s": 24.0,
+      "interleaved_actions": false,
+      "max_track_slots": 4,
+      "name": "missile_salvo_50_ep0011",
+      "radar_defaults": {
+        "el_max_deg": 70.0,
+        "fov_az_deg": 45.0,
+        "r_max_m": 20000.0,
+        "search_sector_deg": 70.0
+      },
+      "radars": [
+        {
+          "heading_deg": -81.16,
+          "name": "R1",
+          "position": [
+            -4704.7,
+            2542.7,
+            9.5
+          ],
+          "search_bars_deg": [
+            16.5,
+            22.5,
+            28.5,
+            34.5,
+            40.5,
+            46.5,
+            52.5,
+            58.5
+          ]
+        },
+        {
+          "heading_deg": 70.88,
+          "name": "R2",
+          "position": [
+            -7204.7,
+            1542.7,
+            19.4
+          ],
+          "search_bars_deg": [
+            17.0,
+            23.0,
+            29.0,
+            35.0,
+            41.0,
+            47.0,
+            53.0,
+            59.0
+          ]
+        }
+      ],
+      "reward": {
+        "err_scale_m": 150.0,
+        "w_class": 0.5,
+        "w_comm": 0.0,
+        "w_cost": 0.2,
+        "w_fair": 0.0,
+        "w_false": 0.2,
+        "w_interrupt": 0.5,
+        "w_loss": 1.0,
+        "w_miss": 1.0,
+        "w_track": 1.0
+      },
+      "seed": 943809805,
+      "share_actions": false,
+      "site": {
+        "lat": 40.3,
+        "lon": -111.7,
+        "name": "Salvo Test Range"
+      },
+      "stress": {
+        "comm_drop_prob": 0.0,
+        "fail_radar": null,
+        "fail_time_s": 30.0,
+        "max_reports_per_radar": null,
+        "noise_scale": 1.0,
+        "outages": []
+      },
+      "targets": [
+        {
+          "label": 2,
+          "motion": {
+            "segments": [
+              {
+                "duration_s": 5.0,
+                "model": "CV"
+              },
+              {
+                "acceleration_mps2": [
+                  2.04508,
+                  -3.60803,
+                  -146.59889
+                ],
+                "duration_s": 1.0,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -11.77812,
+                  20.7795,
+                  -148.01688
+                ],
+                "duration_s": 1.0,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -25.77381,
+                  45.47133,
+                  -144.01528
+                ],
+                "duration_s": 1.0,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -39.42079,
+                  69.54797,
+                  -134.52133
+                ],
+                "duration_s": 1.0,
+                "model": "CA"
+              },
+              {
+                "duration_s": 1.0,
+                "model": "CT",
+                "turn_rate_rad_s": -0.1263
+              },
+              {
+                "duration_s": 1.5,
+                "model": "CT",
+                "turn_rate_rad_s": 0.20459
+              },
+              {
+                "duration_s": 1.5,
+                "model": "CT",
+                "turn_rate_rad_s": -0.19418
+              },
+              {
+                "duration_s": 1.5,
+                "model": "CT",
+                "turn_rate_rad_s": 0.21527
+              },
+              {
+                "duration_s": 1.5,
+                "model": "CT",
+                "turn_rate_rad_s": -0.19889
+              },
+              {
+                "duration_s": 1.5,
+                "model": "CT",
+                "turn_rate_rad_s": 0.14078
+              },
+              {
+                "duration_s": 1.5,
+                "model": "CT",
+                "turn_rate_rad_s": -0.16779
+              },
+              {
+                "duration_s": 2.0,
+                "model": "CT",
+                "turn_rate_rad_s": 0.1652
+              },
+              {
+                "duration_s": 2.0,
+                "model": "CT",
+                "turn_rate_rad_s": -0.13819
+              },
+              {
+                "duration_s": 1.0,
+                "model": "CT",
+                "turn_rate_rad_s": 0.19867
+              }
+            ]
+          },
+          "position": [
+            -8591.41,
+            14962.4,
+            10068.34
+          ],
+          "rcs_dbsm": {
+            "nose": -11.324,
+            "side": 5.788,
+            "tail": -4.973,
+            "top": 4.457
+          },
+          "target_class": "missile",
+          "variant": "terminal_dive",
+          "velocity": [
+            382.9284,
+            -675.5798,
+            0.0
+          ]
+        },
+        {
+          "label": 2,
+          "motion": {
+            "segments": [
+              {
+                "duration_s": 2.5,
+                "model": "CV"
+              },
+              {
+                "duration_s": 4.5,
+                "model": "CV"
+              },
+              {
+                "acceleration_mps2": [
+                  -10.41077,
+                  -10.63499,
+                  -163.69654
+                ],
+                "duration_s": 1.0,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -31.45304,
+                  -32.13045,
+                  -158.18141
+                ],
+                "duration_s": 1.0,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -51.42598,
+                  -52.53355,
+                  -147.18558
+                ],
+                "duration_s": 1.0,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -69.63722,
+                  -71.137,
+                  -131.08464
+                ],
+                "duration_s": 1.0,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -85.45471,
+                  -87.29515,
+                  -110.43121
+                ],
+                "duration_s": 1.0,
+                "model": "CA"
+              },
+              {
+                "acceleration_mps2": [
+                  -98.32871,
+                  -100.44641,
+                  -85.93606
+                ],
+                "duration_s": 1.0,
+                "model": "CA"
+              },
+              {
+                "duration_s": 11.0,
+                "model": "CV"
+              }
+            ]
+          },
+          "position": [
+            -10697.4,
+            -9283.87,
+            11726.76
+          ],
+          "rcs_dbsm": {
+            "nose": -6.445,
+            "side": 2.926,
+            "tail": -3.147,
+            "top": 6.338
+          },
+          "target_class": "missile",
+          "variant": "terminal_dive",
+          "velocity": [
+            618.0187,
+            631.329,
+            0.0
+          ]
+        }
+      ],
+      "terrain": {
+        "family": "ridge_multi_obstacle",
+        "obstacle_profile": "asymmetric",
+        "parameters": {
+          "asymmetry_ratio": 1.65,
+          "ridge_width_m": 1437.2,
+          "valley_angle_deg": 107.5
+        },
+        "relief_height_m": 1074.1,
+        "resolution": 256,
+        "seed": 943809805,
+        "source": "procedural",
+        "texture_family": "snowy_highlands",
+        "valley_width_m": 3993.0
+      },
+      "tracker": {
+        "init_v_std_mps": 400.0,
+        "q": 10000.0,
+        "tentative_timeout_s": 1.0
+      },
+      "zones": [
+        {
+          "height_m": 182.0,
+          "kind": "zone",
+          "name": "Zone A",
+          "position": [
+            -454.7,
+            1292.7
+          ],
+          "radius_m": 454.6
+        },
+        {
+          "height_m": 58.6,
+          "kind": "facility",
+          "name": "Facility 1",
+          "position": [
+            2192.9,
+            3073.0
+          ],
+          "radius_m": 158.8
+        }
+      ]
+    },
+    "scenario_seed": 943809805,
+    "simulation_steps": 48,
+    "snapshot_version": 1,
+    "terrain_provenance": {
+      "actual_source": "procedural",
+      "data_hash": null,
+      "missing": [
+        "data_hash"
+      ],
+      "requested_source": "procedural"
+    },
+    "terrain_seed": 943809805
+  },
+  "coordinates": "ENU metres; orientation R_WT maps body to world",
+  "dataset_provenance": {
+    "dataset_episode_id": "ep-000011-6715d240864a",
+    "episode_index": 11,
+    "episode_seed": 3588057310659512268,
+    "master_seed": 20261128,
+    "plan_hash": "02eb987a7a95ab5e6bb54ebdb8b3cc130e00d11c6659f8b7b8da34a13a22d3b7",
+    "policy_name": "central_greedy_confirm",
+    "recipe_hash": "5a47a0092c51ba686e09c73534a1ca51a926e9a8c800e1ed3763281c75d2430c",
+    "recipe_version": 2,
+    "resolved_configuration_hash": "19466c29da63c5615041c6554721410b4e6ee2b0d64c7dbc87b7909662d29b95",
+    "scenario_family": "missile_salvo_50",
+    "split": "test",
+    "terrain_group_id": "terrain-897070fd1a19fe604f75"
+  },
+  "episode_id": "18eac5851676cc44-24d1d45f590-1",
+  "label_space": "target_classes_v1",
+  "local_tracks_enabled": true,
+  "measurement_order": [
+    "range_m",
+    "azimuth_rad",
+    "elevation_rad",
+    "radial_velocity_mps"
+  ],
+  "record_schema_version": 2,
+  "recorded_steps": 48,
+  "report_scope": "radar_generated_before_outage_and_communication",
+  "sentinels": {
+    "fused_radar_id": -1,
+    "missing_truth_id": -1
+  },
+  "state_order": [
+    "px_m",
+    "py_m",
+    "pz_m",
+    "vx_mps",
+    "vy_mps",
+    "vz_mps"
+  ],
+  "target_classes": [
+    "missile",
+    "missile"
+  ],
+  "target_types": [
+    "missile/terminal_dive",
+    "missile/terminal_dive"
+  ],
+  "target_variants": [
+    "terminal_dive",
+    "terminal_dive"
+  ],
+  "time_convention": "transition step_index identifies its ending state; reports are at end_t_s"
+}

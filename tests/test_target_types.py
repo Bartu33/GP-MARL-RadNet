@@ -252,7 +252,7 @@ def test_legacy_dataset_compatibility():
         episodes = [p for p in legacy_ep_dir.iterdir() if p.is_dir()]
         if episodes:
             records = load_episode_records(episodes[0])
-            assert records["metadata"]["record_schema_version"] == 2
+            assert records["metadata"]["record_schema_version"] == 3
             assert "states" in records
             assert "truth" in records
 

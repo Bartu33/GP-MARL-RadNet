@@ -100,7 +100,7 @@ def _inspect(directory, episode, binding, expected=None):
     records = load_episode_records(directory)
     metadata = records["metadata"]
     snapshot = metadata["config_snapshot"]
-    if (metadata["record_schema_version"] != 2 or metadata["completed"] is not True
+    if (metadata["record_schema_version"] not in (2, 3) or metadata["completed"] is not True
             or metadata.get("dataset_provenance") != binding
             or snapshot["scenario"] != episode["resolved_scenario"]
             or snapshot["episode_seed"] != episode["episode_seed"]):

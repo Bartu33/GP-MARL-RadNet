@@ -207,7 +207,7 @@ def test_valley_episode_recording_is_passive_and_v2_roundtrip(tmp_path):
     assert a.rng_policy.bit_generator.state == b.rng_policy.bit_generator.state
     records = b.episode_records
     assert records["metadata"]["completed"]
-    assert records["metadata"]["record_schema_version"] == 2
+    assert records["metadata"]["record_schema_version"] == 3
     assert records["metadata"]["config_snapshot"]["scenario"]["terrain"]["hills"] == sc["terrain"]["hills"]
     assert len(records["states"]) == 401
     export_episode_records(records, tmp_path)

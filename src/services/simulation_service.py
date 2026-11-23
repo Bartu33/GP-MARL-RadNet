@@ -64,11 +64,35 @@ EPISODE_TRACE_FIELDS = {
 }
 
 
+# schema v3: per-step radar resource state (after the look) and unweighted team-reward terms
+EPISODE_RESOURCE_FIELDS = {
+    "radar_resources": {
+        "step_index": ("int64", ()), "t_s": ("float64", ()), "radar_id": ("int64", ()),
+        "mode": ("int64", ()), "online": ("bool", ()), "energy_j": ("float64", ()), "heat_k": ("float64", ()),
+        "energy_used_j": ("float64", ()), "dwell_s": ("float64", ()), "time_remaining_frac": ("float64", ()),
+        "channels_free": ("int64", ()), "n_beams": ("int64", ()), "track_load_s": ("float64", ()),
+    },
+    "reward_terms": {
+        "step_index": ("int64", ()), "t_s": ("float64", ()),
+        "err_term": ("float64", ()), "miss": ("float64", ()), "unfairness": ("float64", ()),
+        "class_gain": ("float64", ()), "energy_cost": ("float64", ()), "false_tracks": ("float64", ()),
+        "interrupted": ("float64", ()), "track_losses": ("float64", ()), "comm_reports": ("float64", ()),
+        "reward": ("float64", ()),
+    },
+}
+SCHEMA_VERSIONS = (1, 2, 3)
+
+
 def _episode_fields(version):
-    """v1 has no communication evidence; never infer delivery from raw reports."""
-    if type(version) is not int or version not in (1, 2):
-        raise ValueError(f"unsupported episode record schema version: {version!r}; supported: 1, 2")
-    return EPISODE_FIELDS if version == 1 else {**EPISODE_FIELDS, **EPISODE_TRACE_FIELDS}
+    """v1 has no communication evidence; never infer delivery from raw reports.
+    v3 adds radar resources and reward terms; v1/v2 records lack them (replay can recover them)."""
+    if type(version) is not int or version not in SCHEMA_VERSIONS:
+        raise ValueError(f"unsupported episode record schema version: {version!r}; supported: 1, 2, 3")
+    if version == 1:
+        return EPISODE_FIELDS
+    if version == 2:
+        return {**EPISODE_FIELDS, **EPISODE_TRACE_FIELDS}
+    return {**EPISODE_FIELDS, **EPISODE_TRACE_FIELDS, **EPISODE_RESOURCE_FIELDS}
 
 
 def _validate_report_trace(records):
@@ -108,7 +132,7 @@ def export_episode_records(records: dict, directory: str | Path) -> tuple[Path, 
         raise ValueError("episode recording is disabled or reset has not been called")
     metadata = deepcopy(records["metadata"])
     fields_by_table = _episode_fields(metadata["record_schema_version"])
-    if metadata["record_schema_version"] == 2:
+    if metadata["record_schema_version"] >= 2:
         _validate_report_trace(records)
     elif any(table in records for table in EPISODE_TRACE_FIELDS):
         raise ValueError("schema v1 cannot contain communication/delivery tables; use v2")
@@ -156,7 +180,7 @@ def load_episode_records(directory: str | Path) -> dict:
                  for field, column in columns.items()}
                 for i in range(count)
             ]
-    if metadata["record_schema_version"] == 2:
+    if metadata["record_schema_version"] >= 2:
         _validate_report_trace(records)
     return records
 
@@ -348,8 +372,15 @@ def viewer_payload(env: RadarNetEnv) -> dict:
         "classes": ["A · fast", "B · agile", "C · erratic", "D · drift"],
         "target_labels": target_labels,
         "target_legend": target_legend,
+        "zones": _zones_payload(sc),
         "frames": frames,
     }
+
+
+def _zones_payload(sc: dict) -> list[dict]:
+    """Reference markers (zones / facilities / waypoints) of a scenario for the 3-D viewer."""
+    return [{"name": z["name"], "kind": z["kind"], "pos": [float(z["position"][0]), float(z["position"][1])],
+             "radius": float(z["radius_m"]), "height": float(z["height_m"])} for z in sc.get("zones", [])]
 
 
 def records_to_viewer_payload(records: dict) -> dict:
@@ -503,6 +534,7 @@ def records_to_viewer_payload(records: dict) -> dict:
         "classes": ["A · fast", "B · agile", "C · erratic", "D · drift"],
         "target_labels": target_labels,
         "target_legend": target_legend,
+        "zones": _zones_payload(sc),
         "frames": frames,
         "replay_metadata": {
             "source": "canonical_records_v2",

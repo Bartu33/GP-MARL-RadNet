@@ -253,8 +253,13 @@ def summarize_tracker_estimates(
             "p90": round(float(np.percentile(a, 90)), 3),
         }
 
-    confirmed_count = sum(1 for tr in filtered_tracks if tr["confirmed"])
-    confirmed_pct = round(confirmed_count / total_track_steps * 100.0, 2) if total_track_steps > 0 else 0.0
+    # One denominator for every share: all track steps in the window.  Status values are
+    # confirmed / confirmed_coasting / tentative / tentative_coasting; "coasting" = no update
+    # at that step (the track only predicted), whatever its confirmation state.
+    from src.services.episode_analysis_service import track_state_breakdown
+    breakdown = track_state_breakdown({"tracks": filtered_tracks}, source=source)
+    confirmed_pct = breakdown["confirmed_pct"] or 0.0
+    coasting_only = [d for d in coasting_durations if d > 1e-9]
 
     return {
         "source": source,
@@ -262,6 +267,8 @@ def summarize_tracker_estimates(
         "total_track_steps": total_track_steps,
         "unique_track_ids": len(unique_ids),
         "confirmed_steps_pct": confirmed_pct,
+        "state_breakdown": breakdown,
+        "coasting_steps_duration_s": _stats(coasting_only) if coasting_only else None,
         "status_breakdown": status_counts,
         "position_uncertainty_m": _stats(pos_stds),
         "velocity_uncertainty_mps": _stats(vel_stds),
