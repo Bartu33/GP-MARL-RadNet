@@ -13,6 +13,7 @@ import yaml
 
 from .detection import PD_MODELS
 from .radar import RadarParams
+from .target_classes import RCS_ASPECTS, TARGET_CLASSES
 from .targets import MOTION_BY_LABEL, TARGET_TYPE_PROFILES, validate_motion
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -50,6 +51,10 @@ DEFAULTS = {
                "w_comm": 0.0,       # communication: reports sent to the fusion centre per radar and step
                "err_scale_m": 150.0},
 }
+
+
+TRACKER_FIELDS = ("q", "confirm_hits", "tentative_timeout_s", "confirmed_timeout_s",
+                  "max_pos_std_m", "init_v_std_mps")
 
 
 def _merge(base: dict, over: dict) -> dict:
@@ -149,13 +154,15 @@ def _radar_spec(spec, path, relationships=True):
         elif key == "quantize":
             if not isinstance(value, bool):
                 raise ValueError(f"{field_path}: expected a boolean")
-        elif key in ("position", "bias_std", "search_bars_deg"):
+        elif key in ("position", "bias_std", "search_bars_deg", "prf_stagger_hz"):
             length = {"position": 3, "bias_std": 4}.get(key)
             _sequence(value, field_path, length)
             if len(value) == 0:
                 raise ValueError(f"{field_path}: must not be empty")
             for i, v in enumerate(value):
                 _number(v, f"{field_path}[{i}]", minimum=0 if key == "bias_std" else None)
+                if key == "prf_stagger_hz":
+                    _number(v, f"{field_path}[{i}]", positive=True)
                 if key == "search_bars_deg":
                     _number(v, f"{field_path}[{i}]", minimum=-90, maximum=90)
         elif key != "profiles":
@@ -165,7 +172,7 @@ def _radar_spec(spec, path, relationships=True):
         _number(values[key], f"{path}.{key}", positive=True)
     for key in ("pt_w", "r_min_m", "k_r", "k_ang", "k_rdot", "floor_r_m", "floor_ang_rad",
                 "floor_rdot_mps", "false_alarms_per_beam", "e_recovery_w", "e_processing_j",
-                "thermal_a", "thermal_b", "h_ambient_k"):
+                "thermal_a", "thermal_b", "h_ambient_k", "clutter_notch_mps"):
         _number(values[key], f"{path}.{key}", minimum=0)
     for key, limit in (("efficiency", 1), ("fov_az_deg", 180), ("search_sector_deg", 360),
                        ("beamwidth_az_deg", 360), ("beamwidth_el_deg", 180)):
@@ -188,13 +195,37 @@ def _radar_spec(spec, path, relationships=True):
         raise ValueError(f"{path}.pd_model: unsupported detection model")
 
 
+def _target_class(target, path):
+    """UAV / aircraft / missile target: explicit motion, label fixed by the class."""
+    name = target["target_class"]
+    if not isinstance(name, str) or name not in TARGET_CLASSES:
+        raise ValueError(f"{path}.target_class: expected one of {list(TARGET_CLASSES)}")
+    variants = TARGET_CLASSES[name]["variants"]
+    if target.get("variant") not in variants:
+        raise ValueError(f"{path}.variant: expected one of {list(variants)} for {name}")
+    if "target_type" in target:
+        raise ValueError(f"{path}.target_type: cannot be combined with target_class")
+    if "motion" not in target:
+        raise ValueError(f"{path}.motion: required with target_class")
+    if "label" in target:
+        _number(target["label"], f"{path}.label", integer=True)
+        if target["label"] != TARGET_CLASSES[name]["label"]:
+            raise ValueError(f"{path}.label: {name} has label {TARGET_CLASSES[name]['label']}")
+    if "rcs_dbsm" in target:
+        rcs = target["rcs_dbsm"]
+        if not isinstance(rcs, dict) or set(rcs) != set(RCS_ASPECTS):
+            raise ValueError(f"{path}.rcs_dbsm: expected a mapping with keys {list(RCS_ASPECTS)}")
+        for aspect in RCS_ASPECTS:
+            _number(rcs[aspect], f"{path}.rcs_dbsm.{aspect}", minimum=-60, maximum=60)
+
+
 def validate_scenario(scenario: dict) -> dict:
     """Resolve defaults and validate without mutation, I/O, or random draws.
 
     Return a detached configuration. Lists still replace entire default lists.
     Unknown fields (including unsupported radar mode/profile input) are errors.
     """
-    _mapping(scenario, "scenario", DEFAULTS)
+    _mapping(scenario, "scenario", (*DEFAULTS, "tracker"))
     sc = _merge(DEFAULTS, scenario)
     for key in ("name", "description"):
         _text(sc[key], key)
@@ -281,12 +312,19 @@ def validate_scenario(scenario: dict) -> dict:
         _radar_spec(_merge(sc["radar_defaults"], spec), path)
     for i, target in enumerate(sc["targets"]):
         path = f"targets[{i}]"
-        _mapping(target, path, ("label", "position", "velocity", "motion", "target_type"))
-        if "label" not in target:
-            raise ValueError(f"{path}.label: required field")
-        _number(target["label"], f"{path}.label", integer=True)
-        if target["label"] not in MOTION_BY_LABEL:
-            raise ValueError(f"{path}.label: unsupported target class")
+        _mapping(target, path, ("label", "position", "velocity", "motion", "target_type",
+                                "target_class", "variant", "rcs_dbsm"))
+        if "target_class" in target:
+            _target_class(target, path)
+        else:
+            for key in ("variant", "rcs_dbsm"):
+                if key in target:
+                    raise ValueError(f"{path}.{key}: requires target_class")
+            if "label" not in target:
+                raise ValueError(f"{path}.label: required field")
+            _number(target["label"], f"{path}.label", integer=True)
+            if target["label"] not in MOTION_BY_LABEL:
+                raise ValueError(f"{path}.label: unsupported target class")
         if "target_type" in target:
             _text(target["target_type"], f"{path}.target_type")
             if target["target_type"] not in TARGET_TYPE_PROFILES:
@@ -310,6 +348,14 @@ def validate_scenario(scenario: dict) -> dict:
                     raise ValueError(f"{path}.motion.segments: total duration must cover effective episode duration")
         elif "velocity" in target:
             raise ValueError(f"{path}.velocity: requires an explicit motion definition")
+    if len({"target_class" in target for target in sc["targets"]}) > 1:
+        raise ValueError("targets: target_class targets cannot be mixed with legacy label targets "
+                         "(the two label spaces differ)")
+    if "tracker" in sc:
+        # optional TrackManager settings; absent -> tracker defaults (and unchanged snapshots)
+        _mapping(sc["tracker"], "tracker", TRACKER_FIELDS)
+        for key, value in sc["tracker"].items():
+            _number(value, f"tracker.{key}", positive=True, integer=key == "confirm_hits")
     stress = sc["stress"]
     _mapping(stress, "stress", DEFAULTS["stress"])
     _number(stress["noise_scale"], "stress.noise_scale", positive=True)
@@ -348,7 +394,7 @@ def build_radars(sc: dict) -> list[RadarParams]:
     scale = sc["stress"].get("noise_scale", 1.0)
     for spec in sc["radars"]:
         kw = _merge(sc.get("radar_defaults", {}), spec)
-        for key in ("position", "search_bars_deg"):
+        for key in ("position", "search_bars_deg", "prf_stagger_hz"):
             if key in kw:
                 kw[key] = tuple(kw[key])
         p = RadarParams(**kw)

@@ -259,7 +259,7 @@ def test_snapshot_is_deterministic_serializable_and_scaled_once(tmp_path):
     assert sc == before
     assert snap["scenario"]["radars"][0]["floor_r_m"] == 7
     assert snap["effective_radars"][0]["floor_r_m"] == 14
-    assert snap["effective_radars"][0]["profiles"]["SEARCH"]["n_pulses"] == 8
+    assert snap["effective_radars"][0]["profiles"]["SEARCH"]["n_pulses"] == 32
     assert snap["episode_seed"] == 11
     assert snap["scenario_seed"] == snap["terrain_seed"] == 3
     assert snap["rng_layout_version"] == 1

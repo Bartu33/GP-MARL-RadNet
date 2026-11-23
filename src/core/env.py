@@ -36,7 +36,7 @@ from src.core.modes import Mode
 from src.core.radar import RadarAction, RadarState, radar_step, resource_vector, snr_linear, antenna_gain
 from src.core.radar import los_status
 from src.core.scenario import build_radars, scenario_snapshot, validate_scenario
-from src.core.targets import CLASS_NAMES, advance, keep_above_ground, spawn_target
+from src.core.targets import CLASS_NAMES, advance, keep_above_ground, spawn_class_target, spawn_target
 from src.core.terrain import build_terrain
 from src.models.classifier.classifier import accumulate
 from src.models.tracking.tracker import TrackManager
@@ -127,16 +127,24 @@ class RadarNetEnv(ParallelEnv):
         self.radar_states = [RadarState.initial(p) for p in self.radar_params]
         self.targets, self.motions = [], []
         for i, spec in enumerate(self.sc["targets"]):
-            s, m = spawn_target(i, int(spec["label"]), self.rng_targets[i], self.sc["area_radius_m"],
-                                position=spec.get("position"), velocity=spec.get("velocity"),
-                                motion=spec.get("motion"), target_type=spec.get("target_type"))
+            if "target_class" in spec:
+                s, m = spawn_class_target(i, spec["target_class"], spec["variant"], self.rng_targets[i],
+                                          self.sc["area_radius_m"], position=spec["position"],
+                                          velocity=spec["velocity"], motion=spec["motion"],
+                                          rcs_dbsm=spec.get("rcs_dbsm"))
+            else:
+                s, m = spawn_target(i, int(spec["label"]), self.rng_targets[i], self.sc["area_radius_m"],
+                                    position=spec.get("position"), velocity=spec.get("velocity"),
+                                    motion=spec.get("motion"), target_type=spec.get("target_type"))
             keep_above_ground(s, self.terrain)
             if "motion" in spec:
                 s.update_attitude()   # clearance may change an explicit initial vertical velocity
             self.targets.append(s)
             self.motions.append(m)
-        self.tracker = TrackManager()
-        self.local_trackers = [TrackManager() for _ in range(self.n_radars)] if self.local_tracks else []
+        tracker_cfg = self.sc.get("tracker", {})
+        self.tracker = TrackManager(**tracker_cfg)
+        self.local_trackers = ([TrackManager(**tracker_cfg) for _ in range(self.n_radars)]
+                               if self.local_tracks else [])
         self.local_eval = [TrackEvaluator(len(self.targets), self.dt) for _ in self.local_trackers]
         self.slots: list = [None] * self.K
         self.frames: list[dict] = []
@@ -170,7 +178,14 @@ class RadarNetEnv(ParallelEnv):
                     "state_order": ["px_m", "py_m", "pz_m", "vx_mps", "vy_mps", "vz_mps"],
                     "measurement_order": ["range_m", "azimuth_rad", "elevation_rad", "radial_velocity_mps"],
                     "sentinels": {"fused_radar_id": -1, "missing_truth_id": -1},
-                    "target_types": [s.target_type for s in self.targets],
+                    "target_types": [f"{s.target_class}/{s.variant}" if s.target_class else s.target_type
+                                     for s in self.targets],
+                    "target_classes": [s.target_class for s in self.targets],
+                    "target_variants": [s.variant for s in self.targets],
+                    # class_label in truth rows: 0 uav, 1 aircraft, 2 missile (target_classes_v1)
+                    # or the legacy 4-class behaviour labels (legacy_behaviour_v1)
+                    "label_space": ("target_classes_v1" if any(s.target_class for s in self.targets)
+                                    else "legacy_behaviour_v1"),
                 },
                 **{key: [] for key in ("states", "truth", "reports", "annotations", "tracks", "transitions",
                                        "communication", "deliveries")},

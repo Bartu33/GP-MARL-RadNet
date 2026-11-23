@@ -215,3 +215,14 @@ def test_forced_idle_does_not_advance_search_raster():
     before = s.raster.pointer
     radar_step([], RadarAction(Mode.SEARCH), s, p, 0.5, np.random.default_rng(0))
     assert s.mode == Mode.IDLE and s.raster.pointer == before
+
+
+def test_doppler_blind_speeds_follow_prf_stagger():
+    from src.core.radar import doppler_blind
+    p = RadarParams()
+    # hovering target: inside the clutter notch at every PRF
+    assert all(doppler_blind(0.3, prf, p) for prf in p.prf_stagger_hz)
+    # radial speed whose Doppler equals the first PRF: blind only at that PRF
+    v_blind = p.prf_stagger_hz[0] * p.wavelength / 2
+    assert doppler_blind(-v_blind, p.prf_stagger_hz[0], p)
+    assert not any(doppler_blind(-v_blind, prf, p) for prf in p.prf_stagger_hz[1:])

@@ -43,7 +43,8 @@ def test_earth_curvature_hides_very_low_far_target():
 def test_radar_step_respects_occlusion():
     t = ridge()
     p = RadarParams(position=(-5000, 0, 15), heading_deg=0.0, false_alarms_per_beam=0.0)
-    tgt = TargetState(id=0, label=0, p=np.array([4000.0, 0, 300.0]), v=np.zeros(3),
+    # moving target: a stationary one would sit in the clutter notch (blind speed)
+    tgt = TargetState(id=0, label=0, p=np.array([4000.0, 0, 300.0]), v=np.array([-50.0, 0, 0]),
                       rcs=ConstantRCS(10.0), swerling=0)
     tgt.update_attitude()
     assert los_status(tgt, p, t) == 2 and los_status(tgt, p, None) == 1

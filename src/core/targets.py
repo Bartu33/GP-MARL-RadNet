@@ -31,6 +31,7 @@ import numpy as np
 
 from .geometry import body_rotation
 from .rcs import ConstantRCS, EllipsoidRCS, LookupTableRCS, RCSModel
+from .target_classes import RCS_ASPECTS, TARGET_CLASSES, rcs_model, variant_spec
 
 CLASS_NAMES = ["A_fast_cruise", "B_agile_hover", "C_erratic_slow", "D_drift"]
 CLASS_SHORT = ["A · fast", "B · agile", "C · erratic", "D · drift"]
@@ -48,6 +49,8 @@ class TargetState:
     a_lat: float = 0.0
     R_WT: np.ndarray = field(default_factory=lambda: np.eye(3))
     target_type: str | None = None
+    target_class: str | None = None     # uav | aircraft | missile (src/core/target_classes.py)
+    variant: str | None = None
 
     def update_attitude(self):
         self.R_WT = body_rotation(self.v, self.a_lat)
@@ -563,6 +566,29 @@ def default_target_type_rcs(target_type: str, rng: np.random.Generator) -> tuple
     raise ValueError(f"unhandled target type {target_type}")
 
 
+def spawn_class_target(tid: int, target_class: str, variant: str, rng: np.random.Generator,
+                       area_radius: float, center=(0.0, 0.0), *, position, velocity, motion,
+                       rcs_dbsm: dict | None = None) -> tuple[TargetState, MotionModel]:
+    """Spawn a UAV / aircraft / missile target (labels 0 / 1 / 2) with explicit motion.
+
+    RCS comes from the variant's per-aspect table (``rcs_dbsm`` when given,
+    otherwise drawn from the variant bands with ``rng``); Swerling case from
+    the variant.
+    """
+    spec = variant_spec(target_class, variant)
+    if rcs_dbsm is None:
+        rcs_dbsm = {a: float(rng.uniform(*spec.rcs_dbsm[a])) for a in RCS_ASPECTS}
+    p = _motion_vector(position, "position")
+    v = _motion_vector(velocity, "velocity")
+    model = build_motion(motion, rng, area_radius, center)
+    s = TargetState(id=tid, label=TARGET_CLASSES[target_class]["label"], p=p.copy(), v=v.copy(),
+                    rcs=rcs_model({"rcs_dbsm": rcs_dbsm}), swerling=spec.swerling,
+                    target_class=target_class, variant=variant)
+    model.step(s, 0.0)
+    s.update_attitude()
+    return s, model
+
+
 def spawn_target(tid: int, label: int, rng: np.random.Generator, area_radius: float,
                  center=(0.0, 0.0), position=None, *, velocity=None, motion=None,
                  target_type: str | None = None) -> tuple[TargetState, MotionModel]:
@@ -570,6 +596,7 @@ def spawn_target(tid: int, label: int, rng: np.random.Generator, area_radius: fl
 
     Class still chooses the default RCS if target_type is not given. Explicit motion
     is deterministic; the legacy branch retains its original RNG order.
+    Targets of the UAV / aircraft / missile classes use :func:`spawn_class_target`.
     """
     if target_type is not None and target_type not in TARGET_TYPE_PROFILES:
         raise ValueError(f"unknown target type {target_type!r}; supported: {list(TARGET_TYPE_PROFILES)}")

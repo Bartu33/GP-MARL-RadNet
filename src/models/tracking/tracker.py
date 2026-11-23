@@ -42,8 +42,10 @@ class Track:
 class TrackManager:
     def __init__(self, q: float = 40.0, confirm_hits: int = 3, tentative_timeout_s: float = 8.0,
                  confirmed_timeout_s: float = 15.0, max_pos_std_m: float = 2500.0,
-                 init_min_quality: float = 0.0, history_len: int = 400):
+                 init_min_quality: float = 0.0, history_len: int = 400, init_v_std_mps: float = 120.0):
         self.q = q
+        # prior std of the unobserved tangential velocity of a new track (one-point initiation)
+        self.init_v_std_mps = init_v_std_mps
         self.confirm_hits = confirm_hits
         self.tentative_timeout_s = tentative_timeout_s
         self.confirmed_timeout_s = confirmed_timeout_s
@@ -91,7 +93,7 @@ class TrackManager:
             for di, d in enumerate(dets):
                 if di in used_d or d["signal_quality"] < self.init_min_quality:
                     continue
-                ekf = EKF.from_detection(d, pos, hd, q=self.q)
+                ekf = EKF.from_detection(d, pos, hd, q=self.q, v_std=self.init_v_std_mps)
                 self.tracks.append(Track(self._next_id, ekf, t, t, updated_by={ri: t}))
                 self._next_id += 1
 

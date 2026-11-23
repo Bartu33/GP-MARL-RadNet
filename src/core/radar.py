@@ -63,6 +63,13 @@ class RadarParams:
     bias_std: tuple = (2.0, 1e-4, 1e-4, 0.05)
     # false alarms, Eq. (58): expected number per beam position = P_FA * N_cells
     false_alarms_per_beam: float = 0.03
+    # PRF stagger: each look uses the next PRF of this set.  Ambiguities are
+    # resolved across the set (Chinese remainder), so reports carry unfolded
+    # r and r_dot; what remains is the blind-speed effect below.
+    prf_stagger_hz: tuple = (14e3, 16e3, 18e3)
+    # MTI / clutter notch half-width in radial velocity: a target whose folded
+    # Doppler falls inside the notch of the current PRF is not detected.
+    clutter_notch_mps: float = 1.0
     # resource model, Eqs. (51)-(57)
     e_max_j: float = 1000.0
     efficiency: float = 0.5                    # eta
@@ -97,6 +104,7 @@ class RadarState:
     online: bool = True
     bias: np.ndarray = field(default_factory=lambda: np.zeros(4))
     raster: SearchRaster | None = None
+    prf_index: int = 0
     last_beams: list = field(default_factory=list)   # [(az, el), ...] of the last look
     last_dwell_s: float = 0.0
     last_energy_used_j: float = 0.0
@@ -162,6 +170,13 @@ def measurement_sigmas(snr_lin: float, p: RadarParams, profile: ModeProfile) -> 
 def signal_quality(snr_db: float, p: RadarParams) -> float:
     """Normalised quality score, Eq. (49)."""
     return float(np.clip((snr_db - p.snr_threshold_db) / (p.snr_good_db - p.snr_threshold_db), 0, 1))
+
+
+def doppler_blind(r_dot: float, prf_hz: float, p: RadarParams) -> bool:
+    """True if the Doppler folded by ``prf_hz`` lies in the clutter notch (blind speed)."""
+    f_d = geo.doppler_shift(r_dot, p.wavelength)
+    folded = (f_d + prf_hz / 2) % prf_hz - prf_hz / 2
+    return bool(abs(folded) < 2 * p.clutter_notch_mps / p.wavelength)
 
 
 def visible(meas, p: RadarParams) -> bool:
@@ -239,12 +254,16 @@ def radar_step(targets, action: RadarAction, state: RadarState, p: RadarParams,
 
     # --- target-originated reports ----------------------------------------
     if beams:
+        prf = p.prf_stagger_hz[state.prf_index % len(p.prf_stagger_hz)]
+        state.prf_index = (state.prf_index + 1) % len(p.prf_stagger_hz)
         for tgt in targets:
             truth = geo.measure(tgt.p, tgt.v, p.pos, p.heading)          # steps 1-2
             if not visible(truth, p):                                     # step 3
                 continue
             if terrain is not None and not terrain.line_of_sight(p.pos, tgt.p):
                 continue                                                  # terrain occlusion
+            if doppler_blind(truth[3], prf, p):
+                continue                                                  # blind speed / clutter notch
             u_b = incidence_in_body(p.pos, tgt.p, tgt.R_WT)               # step 4
             sigma = sample_swerling(tgt.rcs.mean_rcs(u_b), tgt.swerling, rng)  # step 5
             # the look (beam position and pulse count) giving the highest SNR

@@ -280,6 +280,12 @@ def format_target_label(target_id: int, label: int, target_type: str | None = No
       - Fallback to CLASS_SHORT[label]: truth {CLASS_SHORT[label]}
     """
     tag = " [Ground Truth]" if ground_truth_tag else ""
+    if target_type and "/" in str(target_type):
+        # UAV / aircraft / missile classes: "class/variant"
+        from src.core.target_classes import TARGET_CLASSES
+        cls, variant = str(target_type).split("/", 1)
+        name = TARGET_CLASSES[cls]["name"] if cls in TARGET_CLASSES else cls
+        return f"T{target_id} — {name} ({variant.replace('_', ' ')}){tag}"
     if target_type:
         tt = str(target_type).lower().strip()
         if "aircraft" in tt:

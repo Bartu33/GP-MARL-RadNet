@@ -52,8 +52,10 @@ def _file_hash(path):
 
 
 def _validate_plan(plan):
-    if plan.get("plan_schema_version") != 1 or plan.get("recipe_version") != 1:
-        raise ValueError("only planner schema/recipe version 1 is supported")
+    # recipe 1: fixed sensor layout size; recipe 2 (class_dataset_service): 1-3 radars per episode
+    version = plan.get("recipe_version")
+    if plan.get("plan_schema_version") != 1 or version not in (1, 2):
+        raise ValueError("only planner schema version 1 with recipe version 1 or 2 is supported")
     if not isinstance(plan.get("episodes"), list) or not plan["episodes"]:
         raise ValueError("plan.episodes: expected a nonempty list")
     ids, terrains, owners, routes = set(), set(), {}, {}
@@ -70,7 +72,7 @@ def _validate_plan(plan):
         if (_digest(snapshot) != episode["resolved_configuration_hash"]
                 or snapshot != episode["config_snapshot"]):
             raise ValueError(f"{key}: resolved configuration hash/snapshot mismatch")
-        if episode["recipe_version"] != 1 or episode["master_seed"] != plan["master_seed"]:
+        if episode["recipe_version"] != version or episode["master_seed"] != plan["master_seed"]:
             raise ValueError(f"{key}: recipe version/master seed mismatch")
         spec = sc["terrain"]
         group = terrain_group_id(spec)
@@ -83,11 +85,11 @@ def _validate_plan(plan):
             if groups.setdefault(identity, split) != split:
                 raise ValueError(f"{key}: group crosses splits")
         terrains.add(_digest([sc["site"], spec, sc["seed"]]))
-        dimensions.add((sc["dt"], len(sc["radars"]), sc["max_track_slots"]))
+        dimensions.add((sc["dt"], len(sc["radars"]) if version == 1 else None, sc["max_track_slots"]))
     if len(terrains) > MAX_TERRAINS:
         raise ValueError(f"terrain pool exceeds bounded limit {MAX_TERRAINS}")
     if len(dimensions) != 1:
-        raise ValueError("dt, radar count and observation/action dimensions must be fixed")
+        raise ValueError("dt, max_track_slots (and for recipe 1 the radar count) must be fixed")
 
 
 def _inspect(directory, episode, binding, expected=None):

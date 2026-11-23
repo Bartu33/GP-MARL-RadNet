@@ -1,7 +1,7 @@
 """Dataset Replay Episode Browser, Filtering & Preview Service for GP-MARL-RadNet.
 
 Provides lightweight metadata indexing, multi-criteria filtering, instant episode preview,
-and Canonical Episode Records v2 loading for both new diverse pilot datasets and legacy datasets.
+and Canonical Episode Records v2 loading for the target-class datasets and legacy planner datasets.
 """
 from __future__ import annotations
 
@@ -12,173 +12,15 @@ from typing import Any, Dict, List, Optional, Tuple
 import streamlit as st
 
 DATASET_OPTIONS = {
-    "All Final Groups (diverse_1000_v1 - 1000 episodes)": {
-        "kind": "pilot_all",
-        "relative_dir": "data/processed/diverse_1000_v1",
-        "index_file": "diverse_1000_metadata_index.json",
-    },
-    "All Episodes (diverse_1000_v1 - 1000 episodes)": {
-        "kind": "pilot_all",
-        "relative_dir": "data/processed/diverse_1000_v1",
-        "index_file": "diverse_1000_metadata_index.json",
-    },
-    "dataset_single_aircraft_v1 (Final 1000)": {
+    "missile_dive_pilot10 (Missile dives and evasive manoeuvres - 10 episodes)": {
         "kind": "pilot_group",
-        "group_name": "dataset_single_aircraft_v1",
-        "relative_dir": "data/processed/diverse_1000_v1/dataset_single_aircraft_v1",
+        "group_name": "missile_dive_pilot10",
+        "relative_dir": "data/processed/missile_dive_pilot10",
     },
-    "dataset_single_uav_agile_v1 (Final 1000)": {
+    "class_targets_pilot5 (UAV / Aircraft / Missile - 5 episodes)": {
         "kind": "pilot_group",
-        "group_name": "dataset_single_uav_agile_v1",
-        "relative_dir": "data/processed/diverse_1000_v1/dataset_single_uav_agile_v1",
-    },
-    "dataset_single_uav_drift_v1 (Final 1000)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_single_uav_drift_v1",
-        "relative_dir": "data/processed/diverse_1000_v1/dataset_single_uav_drift_v1",
-    },
-    "dataset_single_missile_v1 (Final 1000)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_single_missile_v1",
-        "relative_dir": "data/processed/diverse_1000_v1/dataset_single_missile_v1",
-    },
-    "dataset_triple_all_same_v1 (Final 1000)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_triple_all_same_v1",
-        "relative_dir": "data/processed/diverse_1000_v1/dataset_triple_all_same_v1",
-    },
-    "dataset_triple_all_different_v1 (Final 1000)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_triple_all_different_v1",
-        "relative_dir": "data/processed/diverse_1000_v1/dataset_triple_all_different_v1",
-    },
-    "dataset_triple_two_plus_one_v1 (Final 1000)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_triple_two_plus_one_v1",
-        "relative_dir": "data/processed/diverse_1000_v1/dataset_triple_two_plus_one_v1",
-    },
-    "Prototype V2 Designs (scenario_design_prototype_v1 - 12 episodes)": {
-        "kind": "pilot_all",
-        "relative_dir": "data/processed/scenario_design_prototype_v1",
-        "index_file": "scenario_design_metadata_index.json",
-    },
-    "All Canary Groups (canary_diverse_v1 - 70 episodes)": {
-        "kind": "pilot_all",
-        "relative_dir": "data/processed/canary_diverse_v1",
-        "index_file": "canary_metadata_index.json",
-    },
-    "dataset_single_aircraft_v1 (Canary v1)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_single_aircraft_v1",
-        "relative_dir": "data/processed/canary_diverse_v1/dataset_single_aircraft_v1",
-    },
-    "dataset_single_uav_agile_v1 (Canary v1)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_single_uav_agile_v1",
-        "relative_dir": "data/processed/canary_diverse_v1/dataset_single_uav_agile_v1",
-    },
-    "dataset_single_uav_drift_v1 (Canary v1)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_single_uav_drift_v1",
-        "relative_dir": "data/processed/canary_diverse_v1/dataset_single_uav_drift_v1",
-    },
-    "dataset_single_missile_v1 (Canary v1)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_single_missile_v1",
-        "relative_dir": "data/processed/canary_diverse_v1/dataset_single_missile_v1",
-    },
-    "dataset_triple_all_same_v1 (Canary v1)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_triple_all_same_v1",
-        "relative_dir": "data/processed/canary_diverse_v1/dataset_triple_all_same_v1",
-    },
-    "dataset_triple_all_different_v1 (Canary v1)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_triple_all_different_v1",
-        "relative_dir": "data/processed/canary_diverse_v1/dataset_triple_all_different_v1",
-    },
-    "dataset_triple_two_plus_one_v1 (Canary v1)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_triple_two_plus_one_v1",
-        "relative_dir": "data/processed/canary_diverse_v1/dataset_triple_two_plus_one_v1",
-    },
-    "All Pilot Groups (pilot_diverse_v2 - 42 episodes)": {
-        "kind": "pilot_all",
-        "relative_dir": "data/processed/pilot_diverse_v2",
-    },
-    "dataset_single_aircraft_v1 (Pilot v2)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_single_aircraft_v1",
-        "relative_dir": "data/processed/pilot_diverse_v2/dataset_single_aircraft_v1",
-    },
-    "dataset_single_uav_agile_v1 (Pilot v2)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_single_uav_agile_v1",
-        "relative_dir": "data/processed/pilot_diverse_v2/dataset_single_uav_agile_v1",
-    },
-    "dataset_single_uav_drift_v1 (Pilot v2)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_single_uav_drift_v1",
-        "relative_dir": "data/processed/pilot_diverse_v2/dataset_single_uav_drift_v1",
-    },
-    "dataset_single_missile_v1 (Pilot v2)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_single_missile_v1",
-        "relative_dir": "data/processed/pilot_diverse_v2/dataset_single_missile_v1",
-    },
-    "dataset_triple_all_same_v1 (Pilot v2)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_triple_all_same_v1",
-        "relative_dir": "data/processed/pilot_diverse_v2/dataset_triple_all_same_v1",
-    },
-    "dataset_triple_all_different_v1 (Pilot v2)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_triple_all_different_v1",
-        "relative_dir": "data/processed/pilot_diverse_v2/dataset_triple_all_different_v1",
-    },
-    "dataset_triple_two_plus_one_v1 (Pilot v2)": {
-        "kind": "pilot_group",
-        "group_name": "dataset_triple_two_plus_one_v1",
-        "relative_dir": "data/processed/pilot_diverse_v2/dataset_triple_two_plus_one_v1",
-    },
-    "All Pilot Groups (pilot_diverse_v1 - 42 episodes)": {
-        "kind": "pilot_all",
-        "relative_dir": "data/processed/pilot_diverse_v1",
-    },
-    "dataset_single_aircraft_v1": {
-        "kind": "pilot_group",
-        "group_name": "dataset_single_aircraft_v1",
-        "relative_dir": "data/processed/pilot_diverse_v1/dataset_single_aircraft_v1",
-    },
-    "dataset_single_uav_agile_v1": {
-        "kind": "pilot_group",
-        "group_name": "dataset_single_uav_agile_v1",
-        "relative_dir": "data/processed/pilot_diverse_v1/dataset_single_uav_agile_v1",
-    },
-    "dataset_single_uav_drift_v1": {
-        "kind": "pilot_group",
-        "group_name": "dataset_single_uav_drift_v1",
-        "relative_dir": "data/processed/pilot_diverse_v1/dataset_single_uav_drift_v1",
-    },
-    "dataset_single_missile_v1": {
-        "kind": "pilot_group",
-        "group_name": "dataset_single_missile_v1",
-        "relative_dir": "data/processed/pilot_diverse_v1/dataset_single_missile_v1",
-    },
-    "dataset_triple_all_same_v1": {
-        "kind": "pilot_group",
-        "group_name": "dataset_triple_all_same_v1",
-        "relative_dir": "data/processed/pilot_diverse_v1/dataset_triple_all_same_v1",
-    },
-    "dataset_triple_all_different_v1": {
-        "kind": "pilot_group",
-        "group_name": "dataset_triple_all_different_v1",
-        "relative_dir": "data/processed/pilot_diverse_v1/dataset_triple_all_different_v1",
-    },
-    "dataset_triple_two_plus_one_v1": {
-        "kind": "pilot_group",
-        "group_name": "dataset_triple_two_plus_one_v1",
-        "relative_dir": "data/processed/pilot_diverse_v1/dataset_triple_two_plus_one_v1",
+        "group_name": "class_targets_pilot5",
+        "relative_dir": "data/processed/class_targets_pilot5",
     },
     "multi_target_v1 (legacy)": {
         "kind": "legacy",
@@ -444,7 +286,7 @@ def render_dataset_replay_ui(root_dir: Path, sim_service):
         cat_names,
         index=0,
         key="rep_dataset_sel",
-        help="Select diverse valley terrain datasets or legacy baseline datasets."
+        help="Datasets present under data/processed/."
     )
 
     FILTER_KEYS = [

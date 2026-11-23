@@ -36,8 +36,8 @@ def audit():
     print(f"  Actor Input Dim         : {obs_dim_nom + N_nom} (obs + one-hot agent ID)")
     print(f"  Critic Input Dim        : {state_dim_nom} (centralised critic sees global state)")
 
-    # 2. Inspect Diverse 1000 Scenario (diverse_1000_v1)
-    ep_dir = next((ROOT / "data" / "processed" / "diverse_1000_v1").rglob("ep-*"))
+    # 2. Inspect a generated dataset episode (first one found under data/processed)
+    ep_dir = next(p for p in (ROOT / "data" / "processed").rglob("ep-*") if (p / "records.npz").exists())
     rec = load_episode_records(ep_dir)
     sc_div = rec["metadata"]["config_snapshot"]["scenario"]
     env_div = RadarNetEnv(sc_div)
@@ -49,7 +49,7 @@ def audit():
     act_dim_div = env_div.action_space(agents_div[0]).n
     state_dim_div = len(env_div.state())
     
-    print("\n--- Diverse 1000 Production Environment (diverse_1000_v1) ---")
+    print(f"\n--- Generated dataset episode ({ep_dir.parent.parent.name}) ---")
     print(f"  Radars (Agents N)       : {N_div} ({agents_div})")
     print(f"  Track Slots (K)         : {K_div}")
     print(f"  Observation Dim (obs_dim): {obs_dim_div} (= K*{SLOT_FEATURES} + {OWN_FEATURES} = 3*12 + 12)")
@@ -71,7 +71,7 @@ def audit():
         ("Actor Input Dimension", obs_dim_nom + N_nom, obs_dim_div + N_div, "obs_dim + N (51 vs 88)"),
         ("Critic Input Dimension", state_dim_nom, state_dim_div, "state_dim (144 vs 336)"),
     ]
-    print(f"{'Feature':28s} | {'Legacy Nominal':16s} | {'Diverse 1000':16s} | {'Reason / Impact'}")
+    print(f"{'Feature':28s} | {'Legacy Nominal':16s} | {'Dataset episode':16s} | {'Reason / Impact'}")
     print("-" * 95)
     for f, n, d, r in rows:
         print(f"{f:28s} | {str(n):16s} | {str(d):16s} | {r}")
