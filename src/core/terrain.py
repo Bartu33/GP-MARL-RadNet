@@ -20,6 +20,9 @@ Simulator heights are relative to the *base* of the area: the median ground
 height around the scenario centre.  Target altitudes in the simulator are
 measured from that base, radar masts stand on the local ground.
 
+Explicit procedural ``hills`` instead use their declared synthetic zero
+plane directly, without median subtraction; base_msl=0 is not measured MSL.
+
 The tile layout (zoom 12, 4 x 4 tiles centred on the site) is the same one
 the 3-D viewer uses, and the grid is passed to the viewer, so what is drawn
 is exactly what the LOS test uses.
@@ -86,7 +89,7 @@ class Terrain:
     def line_of_sight(self, p_from, p_to, clearance_m: float = 5.0, step_m: float | None = None) -> bool:
         """True if the straight segment p_from -> p_to clears the terrain.
 
-        The ground along the path is lowered by the Earth-curvature bulge
+        The ground along the path is raised by the Earth-curvature bulge
         d1*d2 / (2 k R) so that long paths behave like a 4/3-Earth model.
         """
         p0 = np.asarray(p_from, float)
@@ -110,9 +113,26 @@ class Terrain:
         return cls(np.zeros((2, 2)), -1e6, 1e6, 1e6, "flat")
 
     @classmethod
-    def procedural(cls, lat: float, lon: float, seed: int = 0, resolution: int = 512) -> "Terrain":
-        """Synthetic ridges and hills on the same grid as the tile mosaic."""
+    def procedural(cls, lat: float, lon: float, seed: int = 0, resolution: int = 512,
+                   hills: list[dict] | None = None) -> "Terrain":
+        """Synthetic relief on the tile grid; explicit hills use a zero datum.
+
+        With hills supplied, only their Gaussian sum is used: no random draws,
+        background relief, or median subtraction. base_msl=0 is a synthetic
+        reference, not a claim about the site's actual sea-level elevation.
+        """
         x_west, y_north, size = _grid_extent(lat, lon)
+        if hills is not None:
+            cell = size / resolution
+            axis = (np.arange(resolution) + 0.5) * cell
+            X, Y = np.meshgrid(x_west + axis, y_north - axis)
+            h = np.zeros((resolution, resolution), dtype=float)
+            for hill in hills:
+                cx, cy = hill["center_m"]
+                sigma = hill["sigma_m"]
+                h += hill["height_m"] * np.exp(-0.5 * (((X - cx) / sigma) ** 2
+                                                       + ((Y - cy) / sigma) ** 2))
+            return cls(h, x_west, y_north, cell, "procedural")
         rng = np.random.default_rng(seed)
         u = (np.arange(resolution) + 0.5) / resolution
         U, V = np.meshgrid(u, u)                       # V = 0 at the northern edge
@@ -170,10 +190,25 @@ class Terrain:
             k = H.shape[0] // max_px
             H = H[: max_px * k, : max_px * k].reshape(max_px, k, max_px, k).mean((1, 3))
         data = np.round(H).astype("<i2").tobytes()
-        return {"source": self.source, "w": H.shape[1], "h": H.shape[0],
-                "x_west": self.x_west, "y_north": self.y_north,
-                "size": self.cell * self.H.shape[0], "base_msl": self.base_msl,
-                "data": base64.b64encode(data).decode("ascii")}
+        res = {"source": self.source, "w": H.shape[1], "h": H.shape[0],
+               "x_west": self.x_west, "y_north": self.y_north,
+               "size": self.cell * self.H.shape[0], "base_msl": self.base_msl,
+               "data": base64.b64encode(data).decode("ascii")}
+        if hasattr(self, "texture_family"):
+            res["texture_family"] = self.texture_family
+        if hasattr(self, "visual_objects"):
+            res["visual_objects"] = self.visual_objects
+        if hasattr(self, "family"):
+            res["terrain_family"] = self.family
+        elif hasattr(self, "terrain_family"):
+            res["terrain_family"] = self.terrain_family
+        if hasattr(self, "obstacle_profile"):
+            res["obstacle_profile"] = self.obstacle_profile
+        if hasattr(self, "generator_version"):
+            res["generator_version"] = self.generator_version
+        if hasattr(self, "physical_vs_visual"):
+            res["physical_vs_visual"] = self.physical_vs_visual
+        return res
 
 
 def _grid_extent(lat: float, lon: float):
@@ -193,7 +228,11 @@ def build_terrain(site: dict, spec: dict | str | None, seed: int = 0) -> Terrain
     if source == "flat":
         return Terrain.flat()
     if source == "procedural":
-        return Terrain.procedural(site["lat"], site["lon"], seed, res)
+        if isinstance(spec, dict) and "family" in spec:
+            from .procedural_terrain import build_procedural_valley_terrain
+            return build_procedural_valley_terrain(site["lat"], site["lon"], spec, seed=seed, resolution=res)
+        hills = spec.get("hills") if isinstance(spec, dict) else None
+        return Terrain.procedural(site["lat"], site["lon"], seed, res, hills=hills)
     try:
         return Terrain.from_tiles(site["lat"], site["lon"], res)
     except Exception:

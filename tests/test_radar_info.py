@@ -31,14 +31,18 @@ def test_parameter_table_and_derived_values():
     rows = {k: v for _, k, v in ri.radar_parameters(p)}
     assert rows["wavelength λ = c / f_c"] == "3.00 cm"
     assert rows["range resolution c / 2B"] == "150 m"
-    assert rows["unambiguous range c / 2·PRF"] == "37.5 km"            # PRF 4 kHz
-    assert rows["unambiguous radial velocity ±λ·PRF / 4"] == "±30 m/s"
+    assert rows["unambiguous range c / 2·PRF"] == "9.4 km"             # nominal MPRF 16 kHz
+    assert rows["unambiguous radial velocity ±λ·PRF / 4"] == "±120 m/s"
+    assert rows["unambiguous range over the stagger c / 2·gcd(PRF)"] == "74.9 km"   # 14/16/18 kHz -> gcd 2 kHz
 
 
 def test_ambiguity_warning_only_when_targets_are_too_fast():
-    p = RadarParams()
+    p = RadarParams()                                                # PRF stagger resolves both
     assert ri.ambiguity_notes(p, 20.0) == []
-    assert any("radial velocity" in n for n in ri.ambiguity_notes(p, 230.0))
+    assert ri.ambiguity_notes(p, 900.0) == []
+    single = RadarParams(prf_stagger_hz=(16e3,))                      # one PRF: both limits bite
+    assert any("radial velocity" in n for n in ri.ambiguity_notes(single, 230.0))
+    assert any("unambiguous range" in n for n in ri.ambiguity_notes(single, 20.0))
 
 
 def test_viewer_payload_carries_parameters_and_links():

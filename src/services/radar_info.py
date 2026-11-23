@@ -7,6 +7,9 @@ functions the simulator uses (``RadarParams``, ``snr_linear``,
 """
 from __future__ import annotations
 
+from functools import reduce
+from math import gcd, lcm
+
 import numpy as np
 
 from src.core import geometry as geo
@@ -18,6 +21,18 @@ from src.core.targets import CLASS_NAMES
 
 C = geo.C_LIGHT
 db = lambda x: 10 * np.log10(x)
+
+
+def stagger_unambiguous(p: RadarParams) -> tuple[float, float]:
+    """Unambiguous range and radial velocity after resolving across the PRF stagger.
+
+    Range folds with c / 2 PRF at each PRF; the folded values agree again only
+    every c / 2 gcd(PRF).  Doppler folds with PRF; the first speed blind at
+    every PRF at once is lambda lcm(PRF) / 2, so +-lambda lcm(PRF) / 4 is
+    measured unambiguously.  With a single PRF these are the usual limits.
+    """
+    prfs = [int(round(f)) for f in p.prf_stagger_hz]
+    return C / (2 * reduce(gcd, prfs)), p.wavelength * reduce(lcm, prfs) / 4
 
 
 def radar_parameters(p: RadarParams) -> list[tuple[str, str, str]]:
@@ -53,6 +68,13 @@ def radar_parameters(p: RadarParams) -> list[tuple[str, str, str]]:
         ("Derived", "radial-velocity resolution λ / 2T_CPI (track)", f"{lam / (2 * tr.dwell_s):.2f} m/s"),
         ("Derived", "unambiguous range c / 2·PRF", f"{C / (2 * prf) / 1000:.1f} km"),
         ("Derived", "unambiguous radial velocity ±λ·PRF / 4", f"±{lam * prf / 4:.0f} m/s"),
+        ("Waveform", "PRF stagger (one PRF per look)",
+         ", ".join(f"{f / 1e3:g}" for f in p.prf_stagger_hz) + " kHz"),
+        ("Derived", "unambiguous range over the stagger c / 2·gcd(PRF)",
+         f"{stagger_unambiguous(p)[0] / 1000:.1f} km"),
+        ("Derived", "unambiguous radial velocity over the stagger ±λ·lcm(PRF) / 4",
+         f"±{stagger_unambiguous(p)[1]:.0f} m/s"),
+        ("Derived", "clutter notch (blind if folded |ṙ| inside)", f"±{p.clutter_notch_mps:g} m/s"),
         ("Accuracy", "floors σ_r, σ_angle, σ_ṙ", f"{p.floor_r_m:g} m, {p.floor_ang_rad * 1e3:g} mrad, "
                                                  f"{p.floor_rdot_mps:g} m/s"),
         ("Resources", "energy budget E_max", f"{p.e_max_j:.0f} J (recovers {p.e_recovery_w:.0f} W)"),
@@ -63,16 +85,20 @@ def radar_parameters(p: RadarParams) -> list[tuple[str, str, str]]:
 
 
 def ambiguity_notes(p: RadarParams, max_speed_mps: float) -> list[str]:
-    """Plain warnings where the scenario exceeds what this waveform can measure unambiguously."""
-    prf = 1.0 / p.profiles[Mode.TRACK].pri_s
+    """Plain warnings where the scenario exceeds what this waveform can measure unambiguously.
+
+    Ambiguities are resolved across the PRF stagger (``RadarParams.prf_stagger_hz``),
+    so the limits are those of :func:`stagger_unambiguous`; what remains of a
+    single PRF's folding is the blind-speed effect of the clutter notch.
+    """
+    r_u, v_u = stagger_unambiguous(p)
     notes = []
-    v_u = p.wavelength * prf / 4
     if max_speed_mps > v_u:
-        notes.append(f"{p.name}: targets up to {max_speed_mps:.0f} m/s, but this PRF measures radial velocity "
+        notes.append(f"{p.name}: targets up to {max_speed_mps:.0f} m/s, but the PRF set measures radial velocity "
                      f"unambiguously only within ±{v_u:.0f} m/s. A real radar would see folded (aliased) Doppler; "
                      "the simulator reports the true radial velocity (Doppler ambiguity is not modelled).")
-    if C / (2 * prf) < p.r_max_m:
-        notes.append(f"{p.name}: unambiguous range {C / (2 * prf) / 1000:.1f} km is shorter than the "
+    if r_u < p.r_max_m:
+        notes.append(f"{p.name}: unambiguous range {r_u / 1000:.1f} km is shorter than the "
                      f"instrumented range {p.r_max_m / 1000:.1f} km.")
     return notes
 

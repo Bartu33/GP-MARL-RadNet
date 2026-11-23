@@ -223,3 +223,14 @@ def test_radar_physics_report_all_checks_pass():
     table = run_checks(n_mc=1500, seed=0)
     assert len(table) >= 20
     assert (table.result == "PASS").all(), table[table.result != "PASS"][["check", "expected", "measured"]]
+
+
+def test_doppler_blind_speeds_follow_prf_stagger():
+    from src.core.radar import doppler_blind
+    p = RadarParams()
+    # hovering target: inside the clutter notch at every PRF
+    assert all(doppler_blind(0.3, prf, p) for prf in p.prf_stagger_hz)
+    # radial speed whose Doppler equals the first PRF: blind only at that PRF
+    v_blind = p.prf_stagger_hz[0] * p.wavelength / 2
+    assert doppler_blind(-v_blind, p.prf_stagger_hz[0], p)
+    assert not any(doppler_blind(-v_blind, prf, p) for prf in p.prf_stagger_hz[1:])

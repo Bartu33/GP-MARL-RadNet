@@ -1,0 +1,173 @@
+recipe_version: 1
+master_seed: 20261115
+episodes: 100
+base_scenario: nominal
+scenario_family: multi_target_3r_4t_controlled_vis
+max_attempts: 10
+split_ratios: {train: 0.70, validation: 0.15, test: 0.15}
+
+overrides:
+  duration_s: 30
+  radars:
+    - name: R1
+      position: [-5000, -4000, 15]
+      heading_deg: 45
+    - name: R2
+      position: [5000, -4000, 15]
+      heading_deg: 135
+    - name: R3
+      position: [0, 5000, 15]
+      heading_deg: -90
+  targets:
+    - label: 0
+      target_type: aircraft_like
+      position: [0, 0, 1100]
+      velocity: [150.0, 0.0, 0.0]
+      motion: {model: CV}
+    - label: 1
+      target_type: uav_like
+      position: [-1000, -1000, 250]
+      velocity: [15.0, 0.0, 0.0]
+      motion: {model: CV}
+    - label: 3
+      target_type: uav_like
+      position: [1000, 1000, 200]
+      velocity: [10.0, 0.0, 0.0]
+      motion: {model: CV}
+    - label: 2
+      target_type: missile_like
+      position: [0, -2500, 450]
+      velocity: [300.0, 0.0, 0.0]
+      motion: {model: CV}
+
+terrain_pools:
+  train:
+    - seed: 11
+      terrain:
+        source: procedural
+        resolution: 128
+        hills:
+          - {center_m: [-2500, -1500], height_m: 300, sigma_m: 600}
+  validation:
+    - seed: 22
+      terrain:
+        source: procedural
+        resolution: 128
+        hills:
+          - {center_m: [2500, 1500], height_m: 400, sigma_m: 700}
+  test:
+    - seed: 33
+      terrain:
+        source: procedural
+        resolution: 128
+        hills:
+          - {center_m: [-2500, 1500], height_m: 500, sigma_m: 800}
+
+randomization:
+  # Target 0: Aircraft-like (Fast cruise ~ 150 m/s, altitude controlled to 800 - 1400 m to intersect (3°, 10°) search raster bars)
+  "targets[0].position":
+    uniform: {low: [-1500, -1500, 800], high: [1500, 1500, 1400]}
+  "targets[0].velocity":
+    choice:
+      - [150.0, 0.0, 0.0]
+      - [-150.0, 0.0, 0.0]
+      - [0.0, 150.0, 0.0]
+      - [0.0, -150.0, 0.0]
+      - [106.0, 106.0, 0.0]
+      - [-106.0, 106.0, 0.0]
+      - [106.0, -106.0, 0.0]
+      - [-106.0, -106.0, 0.0]
+      - [140.0, 50.0, 0.0]
+      - [-140.0, -50.0, 0.0]
+      - [50.0, 140.0, 0.0]
+      - [-50.0, -140.0, 0.0]
+  "targets[0].motion":
+    choice:
+      - model: "CV"
+      - model: "CT"
+        turn_rate_rad_s: 0.02
+      - model: "CT"
+        turn_rate_rad_s: -0.02
+      - segments:
+          - model: "CV"
+            duration_s: 10.0
+          - model: "CT"
+            turn_rate_rad_s: 0.03
+            duration_s: 10.0
+          - model: "CV"
+            duration_s: 10.0
+
+  # Target 1: UAV-like agile hover (speed 0 - 17 m/s, altitude 80 - 350 m)
+  "targets[1].position":
+    uniform: {low: [-1200, -1200, 80], high: [1200, 1200, 350]}
+  "targets[1].velocity":
+    uniform: {low: [-12.0, -12.0, -1.0], high: [12.0, 12.0, 1.0]}
+  "targets[1].motion":
+    choice:
+      - model: "CV"
+      - model: "CT"
+        turn_rate_rad_s: 0.10
+      - model: "CT"
+        turn_rate_rad_s: -0.10
+      - segments:
+          - model: "CA"
+            acceleration_mps2: [1.2, 0.0, 0.0]
+            duration_s: 6.0
+          - model: "CV"
+            duration_s: 24.0
+
+  # Target 2: UAV-like drift (speed 0 - 10 m/s, altitude 70 - 300 m)
+  "targets[2].position":
+    uniform: {low: [-1200, -1200, 70], high: [1200, 1200, 300]}
+  "targets[2].velocity":
+    uniform: {low: [-8.0, -8.0, -0.5], high: [8.0, 8.0, 0.5]}
+  "targets[2].motion":
+    choice:
+      - model: "CV"
+      - model: "CT"
+        turn_rate_rad_s: 0.05
+      - model: "CT"
+        turn_rate_rad_s: -0.05
+      - segments:
+          - model: "CV"
+            duration_s: 15.0
+          - model: "CT"
+            turn_rate_rad_s: 0.04
+            duration_s: 15.0
+
+  # Target 3: Missile-like cruise (~ 300 m/s, altitude 100 - 600 m)
+  "targets[3].position":
+    uniform: {low: [-1200, -1200, 100], high: [1200, 1200, 600]}
+  "targets[3].velocity":
+    choice:
+      - [300.0, 0.0, 0.0]
+      - [-300.0, 0.0, 0.0]
+      - [0.0, 300.0, 0.0]
+      - [0.0, -300.0, 0.0]
+      - [212.0, 212.0, 0.0]
+      - [-212.0, 212.0, 0.0]
+      - [212.0, -212.0, 0.0]
+      - [-212.0, -212.0, 0.0]
+      - [270.0, 100.0, 0.0]
+      - [-270.0, -100.0, 0.0]
+      - [100.0, 270.0, 0.0]
+      - [-100.0, -270.0, 0.0]
+  "targets[3].motion":
+    choice:
+      - model: "CV"
+      - model: "CT"
+        turn_rate_rad_s: 0.05
+      - model: "CT"
+        turn_rate_rad_s: -0.05
+      - segments:
+          - model: "CV"
+            duration_s: 10.0
+          - model: "CT"
+            turn_rate_rad_s: 0.06
+            duration_s: 10.0
+          - model: "CV"
+            duration_s: 10.0
+
+  # Stress
+  "stress.noise_scale": {uniform: {low: 0.8, high: 1.5}}
+  "stress.comm_drop_prob": {uniform: {low: 0.0, high: 0.2}}

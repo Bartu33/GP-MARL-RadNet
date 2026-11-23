@@ -1,0 +1,18 @@
+# Missile pilot: 10 episodes over open rolling hills, one profile each.
+# Episodes 0-4: high-altitude terminal dives (same seeds as the earlier 5-episode pilot).
+# Episodes 5-9: radar-evasion manoeuvres flown by the autopilot of missile_dive_service:
+#   popup_dive        terrain-following below the radar horizon, pop-up, dive
+#   barrel_roll_dive  cruise, dive with a 3-D corkscrew (barrel roll)
+#   dogleg_serpentine low-level dogleg approach, serpentine weave, pop-up, dive
+#   break_turn_dive   high-g break turn, boost, dive with a second break
+#   random_jink_dive  cruise, dive with random 3-D jinks
+# Unset fields take DEFAULT_RECIPE of src/services/missile_dive_service.py.
+kind: missile_dive
+recipe_version: 2
+dataset_name: missile_dive_pilot10
+master_seed: 20261124
+episodes: 10
+profiles: [steep_dive, shallow_dive, jink_dive, dive_pullout, weave_dive,
+           popup_dive, barrel_roll_dive, dogleg_serpentine, break_turn_dive, random_jink_dive]
+radar_count: [1, 3]
+split_ratios: {train: 0.70, validation: 0.15, test: 0.15}

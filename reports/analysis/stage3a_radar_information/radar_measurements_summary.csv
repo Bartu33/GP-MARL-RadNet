@@ -1,0 +1,4 @@
+Radar,Total Reports,Delivered,Packet Lost,Delivery Rate (%),Mean SNR (dB),Median SNR (dB),Mean Range (m),Mean RadVel (m/s),Mean Sigma R (m)
+R1,1473,1351,122,91.72,19.04,14.56,6585.8,-0.15,21.74
+R2,1941,1746,195,89.95,23.75,21.14,6344.2,2.66,15.73
+R3,2347,2131,216,90.8,26.6,25.87,5207.68,1.46,12.36

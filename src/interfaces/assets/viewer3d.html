@@ -112,6 +112,7 @@ body.noppi #ppi{display:none}
   <button class="hb on" data-tog="truth">Truth</button>
   <button class="hb on" data-tog="los" title="radar-target line of sight: green visible, red hidden by terrain">LOS</button>
   <button class="hb on" id="ppiB" title="show / hide the PPI scopes">PPI</button>
+  <button class="hb on" data-tog="env" title="Toggle decorative 3D environment objects (trees, rocks, shrubs)">Environment</button>
 </div>
 <div class="hud" id="legend">
   <span style="color:#8DA2AC">click a target or track to follow it · right-click a radar, target or track for details ·</span>
@@ -407,8 +408,8 @@ const MODE = ['IDLE', 'SEARCH', 'TRACK', 'OFFLINE', 'INTERLEAVED'];
 const MODE_COL = [0x8DA2AC, 0x4FD1C5, 0x7FB3FF, 0xff5c5c, 0xC39BFF];
 const MODE_CSS = ['#8DA2AC', '#4FD1C5', '#7FB3FF', '#ff5c5c', '#C39BFF'];
 const EXAG = 1.5;                       // vertical exaggeration of terrain and altitudes
-document.getElementById('clsLegend').innerHTML = D.classes.map((c, i) =>
-  `<span style="margin-right:10px"><i style="background:${CLS_CSS[i]};border-radius:50%"></i>${c}</span>`).join('');
+document.getElementById('clsLegend').innerHTML = (D.target_legend || D.classes).map((c, i) =>
+  `<span style="margin-right:10px"><i style="background:${CLS_CSS[i % CLS_CSS.length]};border-radius:50%"></i>${c}</span>`).join('');
 
 /* ------------------------------------------------------------------ terrain tiles
    Terrain = DEM tiles (AWS Terrain Tiles, "terrarium" encoding) draped with
@@ -419,7 +420,8 @@ const ZD = 12, ZI = 13, N = 4;          // DEM zoom, imagery zoom, N x N DEM til
 const DEM = (z, x, y) => `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
 const ESRI = (svc) => (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/${svc}/MapServer/tile/${z}/${y}/${x}`;
 const STYLES = {
-  satellite: {name: 'Satellite', url: ESRI('World_Imagery'), attr: 'Imagery © Esri, Maxar, Earthstar Geographics'},
+  procedural: {name: 'Procedural Natural', url: null, attr: 'Procedural Natural Terrain'},
+  satellite: {name: 'Satellite (Esri World Imagery)', url: ESRI('World_Imagery'), attr: 'Imagery © Esri, Maxar, Earthstar Geographics'},
   topo: {name: 'Topographic', url: ESRI('World_Topo_Map'), attr: 'Map © Esri and contributors'},
   streets: {name: 'Streets', url: ESRI('World_Street_Map'), attr: 'Map © Esri and contributors'},
   offline: {name: 'Offline (procedural)', url: null, attr: 'Procedural ground (offline)'},
@@ -450,11 +452,196 @@ function procHeights(w, h) {
       + 20 * Math.sin(u * 31 + v * 7) + 14 * Math.sin(v * 27 - u * 13); }
   return d;
 }
-function procImagery() {
-  const c = document.createElement('canvas'); c.width = c.height = 1024; const g = c.getContext('2d');
-  g.fillStyle = '#6b7350'; g.fillRect(0, 0, 1024, 1024); let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
-  const cols = ['#58663e', '#7d8455', '#8f8a62', '#4c5a36', '#a39a73', '#667147'];
-  for (let i = 0; i < 1800; i++) { g.fillStyle = cols[(rnd() * cols.length) | 0]; g.fillRect(rnd() * 1024, rnd() * 1024, 8 + rnd() * 50, 8 + rnd() * 50); }
+const TEXTURE_PALETTES = {
+  rocky_mountain: {
+    low: [120, 118, 112], mid: [136, 138, 140], high: [175, 178, 182], cliff: [52, 54, 60], accent: [155, 158, 152], floor: 0x54565c
+  },
+  green_forest_valley: {
+    low: [48, 98, 38], mid: [26, 62, 22], high: [85, 120, 60], cliff: [62, 70, 56], accent: [92, 150, 54], floor: 0x1e3816
+  },
+  dry_canyon: {
+    low: [218, 182, 138], mid: [184, 82, 42], high: [142, 52, 26], cliff: [108, 32, 18], accent: [238, 212, 170], floor: 0x521f14
+  },
+  snowy_highlands: {
+    low: [102, 112, 124], mid: [215, 226, 238], high: [248, 252, 255], cliff: [42, 46, 52], accent: [255, 255, 255], floor: 0x323a44
+  },
+  grassland_valley: {
+    low: [112, 158, 52], mid: [205, 178, 82], high: [165, 145, 92], cliff: [122, 95, 62], accent: [235, 210, 115], floor: 0x4a4022
+  },
+  mixed_rock_vegetation: {
+    low: [56, 96, 46], mid: [94, 108, 78], high: [136, 140, 134], cliff: [54, 56, 58], accent: [122, 138, 92], floor: 0x2c3426
+  },
+};
+
+function procImagery(terrainObj) {
+  const c = document.createElement('canvas');
+  const cw = 1024, ch = 1024;
+  c.width = cw; c.height = ch;
+  const g = c.getContext('2d');
+  const imgData = g.createImageData(cw, ch);
+  const buf = imgData.data;
+
+  const tf = (SIMT && SIMT.texture_family) || 'rocky_mountain';
+  const pal = TEXTURE_PALETTES[tf] || TEXTURE_PALETTES.rocky_mountain;
+
+  if (!terrainObj || !terrainObj.dem || !terrainObj.dem.data) {
+    g.fillStyle = '#6b7350'; g.fillRect(0, 0, cw, ch);
+    return c;
+  }
+
+  const {data, w, h} = terrainObj.dem;
+  let hMin = Infinity, hMax = -Infinity;
+  for (let i = 0; i < data.length; i++) {
+    if (data[i] < hMin) hMin = data[i];
+    if (data[i] > hMax) hMax = data[i];
+  }
+  const hRange = Math.max(1, hMax - hMin);
+
+  for (let y = 0; y < ch; y++) {
+    const v = y / ch;
+    const py = Math.min(h - 1, Math.max(0, (v * h) | 0));
+    const pyU = Math.max(0, py - 1), pyD = Math.min(h - 1, py + 1);
+
+    for (let x = 0; x < cw; x++) {
+      const u = x / cw;
+      const px = Math.min(w - 1, Math.max(0, (u * w) | 0));
+      const pxL = Math.max(0, px - 1), pxR = Math.min(w - 1, px + 1);
+
+      const val = data[py * w + px];
+      const elev = Math.max(0, Math.min(1, (val - hMin) / hRange));
+
+      const dx = (data[py * w + pxR] - data[py * w + pxL]) * 0.5;
+      const dy = (data[pyD * w + px] - data[pyU * w + px]) * 0.5;
+      const cellM = (terrainObj && terrainObj.size) ? (terrainObj.size / w) : 117.0;
+      const physSlope = Math.hypot(dx, dy) / cellM;
+      const slope = Math.min(1.0, physSlope / 0.55);
+
+      let r, g_col, b;
+
+      if (tf === 'snowy_highlands') {
+        // High altitude pure snow, mid altitude firn, low altitude frozen tundra/slate.
+        // Critical: Snow cannot stay on steep cliffs! Steep rock sheds snow to expose black/dark basalt.
+        if (elev < 0.20) {
+          const t = elev / 0.20;
+          r = pal.low[0] * (1 - t) + pal.mid[0] * t;
+          g_col = pal.low[1] * (1 - t) + pal.mid[1] * t;
+          b = pal.low[2] * (1 - t) + pal.mid[2] * t;
+        } else if (elev < 0.50) {
+          const t = (elev - 0.20) / 0.30;
+          r = pal.mid[0] * (1 - t) + pal.high[0] * t;
+          g_col = pal.mid[1] * (1 - t) + pal.high[1] * t;
+          b = pal.mid[2] * (1 - t) + pal.high[2] * t;
+        } else {
+          const t = (elev - 0.50) / 0.50;
+          r = pal.high[0] * (1 - t) + pal.accent[0] * t;
+          g_col = pal.high[1] * (1 - t) + pal.accent[1] * t;
+          b = pal.high[2] * (1 - t) + pal.accent[2] * t;
+        }
+        // Steep slopes shed snow to reveal exposed dark cliff face
+        if (slope > 0.18) {
+          const sf = Math.min(1.0, (slope - 0.18) / 0.35);
+          r = r * (1 - sf) + pal.cliff[0] * sf;
+          g_col = g_col * (1 - sf) + pal.cliff[1] * sf;
+          b = b * (1 - sf) + pal.cliff[2] * sf;
+        }
+      } else if (tf === 'dry_canyon') {
+        // Grand Canyon geological horizontal rock stratification
+        const strata = Math.sin(val * 0.14) * 22 + Math.sin(val * 0.38) * 12;
+        if (elev < 0.25) {
+          const t = elev / 0.25;
+          r = pal.low[0] * (1 - t) + pal.mid[0] * t;
+          g_col = pal.low[1] * (1 - t) + pal.mid[1] * t;
+          b = pal.low[2] * (1 - t) + pal.mid[2] * t;
+        } else if (elev < 0.65) {
+          const t = (elev - 0.25) / 0.40;
+          r = (pal.mid[0] + strata) * (1 - t) + (pal.high[0] + strata * 0.8) * t;
+          g_col = (pal.mid[1] + strata * 0.3) * (1 - t) + (pal.high[1] + strata * 0.2) * t;
+          b = pal.mid[2] * (1 - t) + pal.high[2] * t;
+        } else {
+          const t = (elev - 0.65) / 0.35;
+          r = (pal.high[0] + strata * 0.8) * (1 - t) + pal.accent[0] * t;
+          g_col = (pal.high[1] + strata * 0.2) * (1 - t) + pal.accent[1] * t;
+          b = pal.high[2] * (1 - t) + pal.accent[2] * t;
+        }
+        if (slope > 0.22) {
+          const sf = Math.min(1.0, (slope - 0.22) / 0.50);
+          r = r * (1 - sf) + pal.cliff[0] * sf;
+          g_col = g_col * (1 - sf) + pal.cliff[1] * sf;
+          b = b * (1 - sf) + pal.cliff[2] * sf;
+        }
+      } else if (tf === 'mixed_rock_vegetation') {
+        // Patchy mosaic of karst limestone pavements and dense scrub
+        const karstNoise = Math.sin(x * 0.06 + Math.sin(y * 0.05) * 2.0) * Math.cos(y * 0.06 + Math.cos(x * 0.05) * 2.0);
+        if (elev < 0.35) {
+          const t = elev / 0.35;
+          r = pal.low[0] * (1 - t) + pal.mid[0] * t;
+          g_col = pal.low[1] * (1 - t) + pal.mid[1] * t;
+          b = pal.low[2] * (1 - t) + pal.mid[2] * t;
+        } else if (elev < 0.70) {
+          const t = (elev - 0.35) / 0.35;
+          r = pal.mid[0] * (1 - t) + pal.high[0] * t;
+          g_col = pal.mid[1] * (1 - t) + pal.high[1] * t;
+          b = pal.mid[2] * (1 - t) + pal.high[2] * t;
+        } else {
+          const t = (elev - 0.70) / 0.30;
+          r = pal.high[0] * (1 - t) + pal.accent[0] * t;
+          g_col = pal.high[1] * (1 - t) + pal.accent[1] * t;
+          b = pal.high[2] * (1 - t) + pal.accent[2] * t;
+        }
+        // In karst terrain, rocky outcrops emerge where karstNoise > 0.15
+        if (karstNoise > 0.15 && slope < 0.45) {
+          const kf = Math.min(0.65, (karstNoise - 0.15) * 1.5);
+          r = r * (1 - kf) + 138 * kf;
+          g_col = g_col * (1 - kf) + 142 * kf;
+          b = b * (1 - kf) + 136 * kf;
+        }
+        if (slope > 0.24) {
+          const sf = Math.min(1.0, (slope - 0.24) / 0.60);
+          r = r * (1 - sf) + pal.cliff[0] * sf;
+          g_col = g_col * (1 - sf) + pal.cliff[1] * sf;
+          b = b * (1 - sf) + pal.cliff[2] * sf;
+        }
+      } else {
+        // Default / Rocky Mountain / Green Forest Valley / Grassland Valley
+        if (elev < 0.35) {
+          const t = elev / 0.35;
+          r = pal.low[0] * (1 - t) + pal.mid[0] * t;
+          g_col = pal.low[1] * (1 - t) + pal.mid[1] * t;
+          b = pal.low[2] * (1 - t) + pal.mid[2] * t;
+        } else if (elev < 0.70) {
+          const t = (elev - 0.35) / 0.35;
+          r = pal.mid[0] * (1 - t) + pal.high[0] * t;
+          g_col = pal.mid[1] * (1 - t) + pal.high[1] * t;
+          b = pal.mid[2] * (1 - t) + pal.high[2] * t;
+        } else {
+          const t = (elev - 0.70) / 0.30;
+          r = pal.high[0] * (1 - t) + pal.accent[0] * t;
+          g_col = pal.high[1] * (1 - t) + pal.accent[1] * t;
+          b = pal.high[2] * (1 - t) + pal.accent[2] * t;
+        }
+        if (slope > 0.24) {
+          const sf = Math.min(1.0, (slope - 0.24) / 0.65);
+          r = r * (1 - sf) + pal.cliff[0] * sf;
+          g_col = g_col * (1 - sf) + pal.cliff[1] * sf;
+          b = b * (1 - sf) + pal.cliff[2] * sf;
+        }
+      }
+
+      // Natural organic noise perturbation
+      const grain = ((Math.sin(x * 12.9898 + y * 78.233 + val * 0.05) * 43758.5453) % 1) * 18 - 9;
+      r = Math.min(255, Math.max(0, (r + grain) | 0));
+      g_col = Math.min(255, Math.max(0, (g_col + grain) | 0));
+      b = Math.min(255, Math.max(0, (b + grain) | 0));
+
+      const idx = (y * cw + x) * 4;
+      buf[idx] = r;
+      buf[idx + 1] = g_col;
+      buf[idx + 2] = b;
+      buf[idx + 3] = 255;
+    }
+  }
+  g.putImageData(imgData, 0, 0);
+
   return c;
 }
 
@@ -471,6 +658,121 @@ Object.assign(controls, {enableDamping: true, dampingFactor: 0.08, maxPolarAngle
   minDistance: 0.5, maxDistance: 80, autoRotateSpeed: 0.6, screenSpacePanning: false});
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const sun = new THREE.DirectionalLight(0xfff4e6, 0.7); sun.position.set(-6, 10, 4); scene.add(sun);
+
+const groups = {
+  beams: new THREE.Group(),
+  cover: new THREE.Group(),
+  trails: new THREE.Group(),
+  dets: new THREE.Group(),
+  truth: new THREE.Group(),
+  los: new THREE.Group(),
+  env: new THREE.Group(),
+};
+Object.values(groups).forEach(g => scene.add(g));
+
+function buildEnvironmentObjects(objects) {
+  if (!groups.env) return;
+  while (groups.env.children.length > 0) {
+    const c = groups.env.children[0];
+    groups.env.remove(c);
+    if (c.geometry) c.geometry.dispose();
+    if (c.material) c.material.dispose();
+  }
+
+  if (!objects || !objects.length) return;
+
+  const trees = [], rocks = [], shrubs = [];
+  for (let i = 0; i < objects.length; i++) {
+    const obj = objects[i];
+    if (obj.type === 'tree') trees.push(obj);
+    else if (obj.type === 'rock') rocks.push(obj);
+    else if (obj.type === 'shrub') shrubs.push(obj);
+  }
+
+  const dummy = new THREE.Object3D();
+  const tf = (SIMT && SIMT.texture_family) || 'rocky_mountain';
+
+  // 1. Trees: stylized conifer cone with translated base pivot
+  if (trees.length > 0) {
+    const treeGeo = new THREE.ConeGeometry(0.015, 0.040, 6);
+    treeGeo.translate(0, 0.020, 0);
+    let treeCol = 0x1e4616;
+    if (tf === 'snowy_highlands') treeCol = 0x2a3d32;
+    else if (tf === 'dry_canyon') treeCol = 0x5c633a;
+    else if (tf === 'grassland_valley') treeCol = 0x3e5228;
+    else if (tf === 'rocky_mountain') treeCol = 0x1e3220;
+    else if (tf === 'mixed_rock_vegetation') treeCol = 0x243e22;
+    const treeMat = new THREE.MeshLambertMaterial({color: treeCol});
+    const treeMesh = new THREE.InstancedMesh(treeGeo, treeMat, trees.length);
+    for (let i = 0; i < trees.length; i++) {
+      const o = trees[i];
+      const [X, Z] = W(o.x, o.y);
+      const Y = hAt(X, Z);
+      const sc = o.scale || 1.0;
+      dummy.position.set(X, Y, Z);
+      dummy.rotation.set(0, o.rot || 0, 0);
+      dummy.scale.set(sc, sc * 1.1, sc);
+      dummy.updateMatrix();
+      treeMesh.setMatrixAt(i, dummy.matrix);
+    }
+    treeMesh.instanceMatrix.needsUpdate = true;
+    groups.env.add(treeMesh);
+  }
+
+  // 2. Rocks: low-poly dodecahedron boulder
+  if (rocks.length > 0) {
+    const rockGeo = new THREE.DodecahedronGeometry(0.014, 0);
+    rockGeo.translate(0, 0.010, 0);
+    let rockCol = 0x565860;
+    if (tf === 'dry_canyon') rockCol = 0x9e4428;
+    else if (tf === 'snowy_highlands') rockCol = 0x5a6470;
+    else if (tf === 'grassland_valley') rockCol = 0x746852;
+    else if (tf === 'green_forest_valley') rockCol = 0x485444;
+    else if (tf === 'mixed_rock_vegetation') rockCol = 0x808280;
+    const rockMat = new THREE.MeshLambertMaterial({color: rockCol});
+    const rockMesh = new THREE.InstancedMesh(rockGeo, rockMat, rocks.length);
+    for (let i = 0; i < rocks.length; i++) {
+      const o = rocks[i];
+      const [X, Z] = W(o.x, o.y);
+      const Y = hAt(X, Z);
+      const sc = o.scale || 1.0;
+      dummy.position.set(X, Y, Z);
+      dummy.rotation.set((o.rot || 0) * 0.4, o.rot || 0, (o.rot || 0) * 0.2);
+      dummy.scale.set(sc * 1.25, sc * 0.85, sc);
+      dummy.updateMatrix();
+      rockMesh.setMatrixAt(i, dummy.matrix);
+    }
+    rockMesh.instanceMatrix.needsUpdate = true;
+    groups.env.add(rockMesh);
+  }
+
+  // 3. Shrubs: low mound
+  if (shrubs.length > 0) {
+    const shrubGeo = new THREE.SphereGeometry(0.010, 6, 5);
+    shrubGeo.translate(0, 0.007, 0);
+    let shrubCol = 0x386a24;
+    if (tf === 'dry_canyon') shrubCol = 0x8c8858;
+    else if (tf === 'snowy_highlands') shrubCol = 0x6a757e;
+    else if (tf === 'grassland_valley') shrubCol = 0x7a803e;
+    else if (tf === 'rocky_mountain') shrubCol = 0x444e40;
+    else if (tf === 'mixed_rock_vegetation') shrubCol = 0x4e6038;
+    const shrubMat = new THREE.MeshLambertMaterial({color: shrubCol});
+    const shrubMesh = new THREE.InstancedMesh(shrubGeo, shrubMat, shrubs.length);
+    for (let i = 0; i < shrubs.length; i++) {
+      const o = shrubs[i];
+      const [X, Z] = W(o.x, o.y);
+      const Y = hAt(X, Z);
+      const sc = o.scale || 1.0;
+      dummy.position.set(X, Y, Z);
+      dummy.rotation.set(0, o.rot || 0, 0);
+      dummy.scale.set(sc * 1.3, sc * 0.7, sc * 1.3);
+      dummy.updateMatrix();
+      shrubMesh.setMatrixAt(i, dummy.matrix);
+    }
+    shrubMesh.instanceMatrix.needsUpdate = true;
+    groups.env.add(shrubMesh);
+  }
+}
 
 /* sim ENU metres -> three.js km: X = east, Y = up, Z = -north */
 let T = null;
@@ -496,46 +798,83 @@ function simHeights() {
 }
 let loadTok = 0;
 async function loadTerrain(site, styleKey) {
-  const tok = ++loadTok, style = STYLES[styleKey] || STYLES.satellite;
+  const tok = ++loadTok, style = STYLES[styleKey] || (SIMT ? STYLES.procedural : STYLES.satellite);
   document.getElementById('loading').style.display = 'flex';
   const fx = lon2x(site.lon, ZD), fy = lat2y(site.lat, ZD);
   const x0 = Math.floor(fx - N / 2), y0 = Math.floor(fy - N / 2), k = 2 ** (ZI - ZD);
   let done = 0; const total = N * N * (1 + k * k);
   const tick = () => { done++; document.getElementById('loadTxt').textContent = `Loading terrain & imagery · ${done}/${total} tiles`; };
   const noImg = Promise.resolve({c: null, ok: 0, n: 1});
-  const useSim = SIMT && site === SITES[0];
-  const [dem, img] = await Promise.all([style.url && !useSim ? mosaic(DEM, ZD, x0, y0, N, tick) : noImg,
-                                        style.url ? mosaic(style.url, ZI, x0 * k, y0 * k, N * k, tick) : noImg]);
+  const useSim = Boolean(SIMT && site === SITES[0]);
+
+  // NEVER fetch satellite tiles for procedural natural mode or when useSim is active without explicit satellite choice
+  const isExplicitTileStyle = (styleKey === 'satellite' || styleKey === 'topo' || styleKey === 'streets');
+  const shouldFetchTiles = Boolean(style.url && (!useSim || isExplicitTileStyle));
+
+  const [dem, img] = await Promise.all([
+    style.url && !useSim ? mosaic(DEM, ZD, x0, y0, N, tick) : noImg,
+    shouldFetchTiles ? mosaic(style.url, ZI, x0 * k, y0 * k, N * k, tick) : noImg
+  ]);
   if (tok !== loadTok) return;                 // a newer selection superseded this one
   let w = N * 256, h = N * 256, data = null, demSrc = 'synthetic elevation';
-  if (useSim) { const s = simHeights(); data = s.data; w = s.w; h = s.h;
-    demSrc = {tiles: 'Elevation: AWS Terrain Tiles', procedural: 'procedural elevation (offline)', flat: 'flat terrain'}[SIMT.source]; }
-  else if (dem.ok === dem.n) { try { const px = dem.g.getImageData(0, 0, w, h).data; data = new Float32Array(w * h);
-    for (let i = 0; i < w * h; i++) data[i] = px[i * 4] * 256 + px[i * 4 + 1] + px[i * 4 + 2] / 256 - 32768; } catch (e) { data = null; } }
+  if (useSim) { 
+    const s = simHeights(); data = s.data; w = s.w; h = s.h;
+    demSrc = {tiles: 'Elevation: AWS Terrain Tiles', procedural: 'procedural elevation (offline)', flat: 'flat terrain'}[SIMT.source] || 'procedural elevation'; 
+  }
+  else if (dem.ok === dem.n) { 
+    try { 
+      const px = dem.g.getImageData(0, 0, w, h).data; data = new Float32Array(w * h);
+      for (let i = 0; i < w * h; i++) data[i] = px[i * 4] * 256 + px[i * 4 + 1] + px[i * 4 + 2] / 256 - 32768; 
+    } catch (e) { data = null; } 
+  }
   if (data && !useSim) demSrc = 'Elevation: AWS Terrain Tiles';
   if (!data) data = procHeights(w, h);
-  const imgLive = img.ok >= img.n * 0.6;
+
+  const imgLive = Boolean(shouldFetchTiles && img.ok >= img.n * 0.6);
   let hMin = Infinity; for (let i = 0; i < data.length; i++) if (data[i] < hMin) hMin = data[i];
   const tileKm = 40075.016 * Math.cos(site.lat * Math.PI / 180) / 2 ** ZD, size = N * tileKm;
   // place the mosaic so that the site lat/lon is the scene origin
   const x0km = -(fx - x0) * tileKm, z0km = -(fy - y0) * tileKm;
-  if (T) { scene.remove(T.mesh, T.floor); T.mesh.geometry.dispose(); T.mesh.material.map.dispose(); T.mesh.material.dispose(); }
+  if (T) { 
+    scene.remove(T.mesh, T.floor); 
+    if (T.mesh) {
+      if (T.mesh.geometry) T.mesh.geometry.dispose();
+      if (T.mesh.material) {
+        if (T.mesh.material.map) T.mesh.material.map.dispose();
+        T.mesh.material.dispose();
+      }
+    }
+    if (T.floor) {
+      if (T.floor.geometry) T.floor.geometry.dispose();
+      if (T.floor.material) T.floor.material.dispose();
+    }
+  }
   T = {dem: {data, w, h}, hMin, size, x0km, z0km, base: 0, sim: useSim};
   const geo = new THREE.PlaneGeometry(size, size, 255, 255); geo.rotateX(-Math.PI / 2);
   geo.translate(x0km + size / 2, 0, z0km + size / 2);
   const pa = geo.attributes.position; for (let i = 0; i < pa.count; i++) pa.setY(i, hAt(pa.getX(i), pa.getZ(i)));
   geo.computeVertexNormals();
-  const tex = new THREE.CanvasTexture(imgLive ? img.c : procImagery()); tex.colorSpace = THREE.SRGBColorSpace;
+
+  const tex = new THREE.CanvasTexture(imgLive ? img.c : procImagery(T)); 
+  tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
   T.mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({map: tex}));
-  T.floor = new THREE.Mesh(new THREE.PlaneGeometry(800, 800).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({color: styleKey === 'satellite' ? 0x3d4536 : 0x9aa59a}));
+
+  const tfName = (SIMT && SIMT.texture_family) || 'rocky_mountain';
+  const pal = TEXTURE_PALETTES[tfName] || TEXTURE_PALETTES.rocky_mountain;
+  const floorCol = (imgLive && styleKey === 'satellite') ? 0x3d4536 : (useSim ? pal.floor : 0x9aa59a);
+  T.floor = new THREE.Mesh(new THREE.PlaneGeometry(800, 800).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({color: floorCol}));
   T.floor.position.y = -0.05; scene.add(T.mesh, T.floor);
+  buildEnvironmentObjects(SIMT && SIMT.visual_objects);
   const hs = []; const R = D.area_radius / 1000;
   for (let a = -4; a <= 4; a++) for (let b = -4; b <= 4; b++) hs.push(hAt(a / 4 * R, b / 4 * R));
   hs.sort((p, q) => p - q); T.base = hs[hs.length >> 1];
   if (useSim) T.base = (0 - hMin) / 1000 * EXAG;       // simulator heights are relative to the area datum
-  document.getElementById('attr').textContent = (imgLive ? style.attr : 'Procedural imagery (offline)')
-    + ' · ' + demSrc + ` · vertical ×${EXAG} · ${site.name}`;
+  const terFamName = (SIMT && (SIMT.terrain_family || SIMT.family)) || (SIMT && SIMT.source) || 'procedural';
+  const obsProfName = (SIMT && SIMT.obstacle_profile) || 'clear';
+  const nObjs = (SIMT && SIMT.visual_objects) ? SIMT.visual_objects.length : 0;
+  const descPrefix = imgLive ? style.attr : `Procedural [${terFamName} · ${tfName} · ${obsProfName} (${nObjs} 3D objects)]`;
+  document.getElementById('attr').textContent = descPrefix + ' · ' + demSrc + ` · vertical ×${EXAG} · ${site.name}`;
 }
 
 /* ------------------------------------------------------------------ helpers */
@@ -551,13 +890,11 @@ function setLine(line, pts) {
   for (let i = 0; i < n; i++) a.setXYZ(i, pts[i].x, pts[i].y, pts[i].z);
   a.needsUpdate = true; line.geometry.setDrawRange(0, n); line.geometry.computeBoundingSphere();
 }
-const groups = {beams: new THREE.Group(), cover: new THREE.Group(), trails: new THREE.Group(), dets: new THREE.Group(), truth: new THREE.Group(), los: new THREE.Group()};
 const losLines = new Map();                 // "radar:target" -> line
 function losLine(key) {
   if (!losLines.has(key)) { const l = lineObj(0x5cff8a, 0.6); groups.los.add(l); losLines.set(key, l); }
   return losLines.get(key);
 }
-Object.values(groups).forEach(g => scene.add(g));
 
 /* ------------------------------------------------------------------ static objects */
 let radObjs = [];
@@ -649,7 +986,8 @@ function apply(fi) {
     const hist = []; for (let k = Math.max(0, i0 - 60); k <= i0; k++) { const q = F[k].targets.find(z => z.id === t.id); if (q) hist.push(scenePos(q.p)); }
     hist.push(P); setLine(o.trail, hist);
     o.lb.pos.copy(P).add(new THREE.Vector3(0, 0.14, 0)); o.lb.on = groups.truth.visible;
-    o.lb.el.textContent = `truth · ${D.classes[t.label]}`;
+    const tDisplayName = t.display_name || (D.target_labels && D.target_labels[t.id]) || `truth · ${D.classes[t.label]}`;
+    o.lb.el.textContent = tDisplayName;
   });
   // radar -> target line of sight (computed by the simulator, incl. terrain occlusion)
   A.radars.forEach((rs, i) => {
@@ -749,7 +1087,8 @@ function updateFollow(A) {
       let trk = null, best = 1e9;
       A.tracks.forEach(tr => { if (!tr.conf) return; const e = Math.hypot(tr.p[0] - t.p[0], tr.p[1] - t.p[1], tr.p[2] - t.p[2]);
         if (e < best && e < 3 * tr.sig + 500) { best = e; trk = tr; } });
-      fBody.innerHTML = head(`truth · ${D.classes[t.label]}`, CLS_CSS[t.label]) + kv([
+      const tDisplayName = t.display_name || (D.target_labels && D.target_labels[t.id]) || `truth · ${D.classes[t.label]}`;
+      fBody.innerHTML = head(tDisplayName, CLS_CSS[t.label]) + kv([
         ['altitude', `${Math.round(t.p[2])} m`], ['speed', `${Math.hypot(...t.v).toFixed(1)} m/s`],
         ['line of sight', `${nLos} radar(s)` + (nHid ? ` · ${nHid} hidden by terrain` : '')],
         ['tracked by', trk ? `T${trk.id} · error ${Math.round(best)} m` : 'no confirmed track']]);
@@ -895,10 +1234,20 @@ function loop(now) {
 const siteSel = document.getElementById('siteSel'), styleSel = document.getElementById('styleSel');
 siteSel.innerHTML = SITES.map((s, i) => `<option value="${i}">${s.name}</option>`).join('');
 if (SIMT) siteSel.style.display = 'none';   // the site is chosen in the dashboard: it defines the simulated terrain
+
+const tfDisplayName = (SIMT && SIMT.texture_family) ? SIMT.texture_family.replace(/_/g, ' ') : 'natural';
+if (SIMT) {
+  STYLES.procedural.name = `Procedural (${tfDisplayName})`;
+}
+
 styleSel.innerHTML = Object.entries(STYLES).map(([k, s]) => `<option value="${k}">${s.name}</option>`).join('');
 const savedSite = SIMT ? 0 : SITES.findIndex(s => s.name === store.get('radnet.site'));
 siteSel.value = String(savedSite >= 0 ? savedSite : 0);
-styleSel.value = STYLES[store.get('radnet.style')] ? store.get('radnet.style') : 'satellite';
+
+// For simulated/synthetic datasets, ALWAYS default to procedural natural terrain:
+const defaultStyle = SIMT ? 'procedural' : (store.get('radnet.style') && STYLES[store.get('radnet.style')] ? store.get('radnet.style') : 'satellite');
+styleSel.value = defaultStyle;
+
 let firstView = true;
 function reload() {
   const site = SITES[+siteSel.value], style = styleSel.value;
@@ -909,7 +1258,10 @@ function reload() {
   });
 }
 siteSel.onchange = () => { store.set('radnet.site', SITES[+siteSel.value].name); reload(); };
-styleSel.onchange = () => { store.set('radnet.style', styleSel.value); reload(); };
+styleSel.onchange = () => { 
+  if (!SIMT) store.set('radnet.style', styleSel.value); 
+  reload(); 
+};
 reload();
 requestAnimationFrame(loop);
 setTimeout(() => { if (!T) document.getElementById('loadTxt').textContent = 'Still loading… three.js and map tiles need an internet connection; WebGL must be enabled.'; }, 15000);

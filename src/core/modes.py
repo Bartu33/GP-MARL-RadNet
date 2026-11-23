@@ -53,11 +53,16 @@ class ModeProfile:
         return self.dwell_s * self.beams_per_look
 
 
+# Medium PRF (16 kHz nominal): an X-band low PRF (4 kHz) would leave only
+# +-30 m/s of unambiguous radial velocity, far below aircraft / missile speeds.
+# Dwell times (2 ms search, 24 ms track, 12 ms interleaved) are unchanged, so
+# the energy / thermal / time budget is unchanged; 4x more pulses fit in them.
+# Range and Doppler ambiguities are resolved by the PRF stagger in RadarParams.
 DEFAULT_PROFILES = {
-    Mode.SEARCH: ModeProfile(n_pulses=8, pri_s=250e-6, beams_per_look=8),
-    Mode.TRACK: ModeProfile(n_pulses=96, pri_s=250e-6, beams_per_look=1),
+    Mode.SEARCH: ModeProfile(n_pulses=32, pri_s=62.5e-6, beams_per_look=8),
+    Mode.TRACK: ModeProfile(n_pulses=384, pri_s=62.5e-6, beams_per_look=1),
     # track part of an interleaved look; the search part uses the SEARCH profile
-    Mode.INTERLEAVED: ModeProfile(n_pulses=48, pri_s=250e-6, beams_per_look=1),
+    Mode.INTERLEAVED: ModeProfile(n_pulses=192, pri_s=62.5e-6, beams_per_look=1),
 }
 INTERLEAVE_SEARCH_BEAMS = 4
 

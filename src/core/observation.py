@@ -67,7 +67,7 @@ QUALITY_FEATURES = [
     "coverable (range, field of view, elevation)",
     "predicted SNR for a 0.1 m^2 target / 30 dB",
     "predicted cross-range sigma / 1000 m",
-    "expected information gain 0.5*(logdet P - logdet P+) / 10 nats",
+    "expected information gain 0.5*(logdet P - logdet P+) / 15 nats",
     "energy cost of a track dwell / E_max",
     "last SNR measured by this radar on this track / 30 dB (0 = never)",
     "time since this radar last updated the track / 10 s (1 = never)",
@@ -186,7 +186,9 @@ def service_quality(env, i: int, tr) -> tuple[np.ndarray, bool]:
         1.0,
         10 * np.log10(max(chi, 1e-12)) / 30.0,
         min(1.0, r * sig[1] / 1000.0),
-        min(1.0, gain / 10.0),
+        # 15 nats: with the 16 kHz MPRF track dwell (384 pulses) a full update of a fresh
+        # track gives ~10-12 nats, so a 10-nat scale would saturate the feature
+        min(1.0, gain / 15.0),
         cost,
         *_pair_history(env, i, tr),
     ]), True

@@ -174,15 +174,66 @@ class TaskManagerGreedy(Policy):
         return out
 
 
+class ConfirmGreedy(GreedyCentral):
+    """central_greedy with confirmation dwells, as multifunction radars do.
+
+    A track born from a single detection gets one dedicated dwell in the very
+    next step, while its predicted position is still accurate (a fast target's
+    unknown tangential velocity makes the prediction drift within seconds).
+    A track that misses its confirmation dwell is not revisited until search
+    finds it again.  Remaining radars serve confirmed tracks that are due,
+    then search.  Pair with a short ``tracker.tentative_timeout_s`` so failed
+    candidates (mostly false alarms) leave the track table quickly.
+    """
+    name = "central_greedy_confirm"
+
+    def reset(self, env):
+        super().reset(env)
+        self.confirm_sent = {}          # track id -> hits when its confirmation dwell was sent
+
+    def act(self, env, obs):
+        self.k += 1
+        out = {a: 1 for a in env.agents}
+        free = [i for i in range(len(env.agents)) if not _low_energy(env, i)]
+        for i in range(len(env.agents)):
+            if i not in free:
+                out[env.agents[i]] = 0
+        live = {tr.id for tr in env.tracker.tracks}
+        self.confirm_sent = {k: v for k, v in self.confirm_sent.items() if k in live}
+        fresh, due = [], []
+        for s, tr in enumerate(env.slots):
+            if tr is None:
+                continue
+            if not tr.confirmed:
+                if self.confirm_sent.get(tr.id) != tr.hits:      # new, or re-detected since the last try
+                    fresh.append((s, tr))
+            elif _due(env, tr):
+                due.append((s, tr))
+        fresh.sort(key=lambda st: -st[1].born_t)                  # newest candidate first
+        due.sort(key=lambda st: -st[1].ekf.pos_std)
+        if free and self.k % 3 == 0 and len(free) > 1:
+            free.pop(self.k % len(free))                          # keep one radar searching now and then
+        for s, tr in fresh + due:
+            cands = [i for i in free if _coverable(env, i, tr)]
+            if not cands:
+                continue
+            i = min(cands, key=lambda j: np.linalg.norm(tr.x[:3] - env.radar_params[j].pos))
+            out[env.agents[i]] = 2 + s
+            free.remove(i)
+            if not tr.confirmed:
+                self.confirm_sent[tr.id] = tr.hits
+        return out
+
+
 class RandomPolicy(Policy):
     name = "random"
 
     def act(self, env, obs):
-        return {a: int(env.rng.integers(env.action_space(a).n)) for a in env.agents}
+        return {a: int(env.rng_policy.integers(env.action_space(a).n)) for a in env.agents}
 
 
 POLICIES = {cls.name: cls for cls in (FixedScan, RoundRobin, NearestSensor, GreedyCentral, InterleavedGreedy,
-                                       TaskManagerGreedy, RandomPolicy)}
+                                       TaskManagerGreedy, ConfirmGreedy, RandomPolicy)}
 
 
 # learned policies -> training_service flags.  The fusion-centre task manager

@@ -48,6 +48,7 @@ def test_pettingzoo_parallel_api():
     from pettingzoo.test import parallel_api_test
     sc = load_scenario("nominal")
     sc["duration_s"] = 10
+    sc["terrain"] = {"source": "flat"}       # API test must not download tiles
     parallel_api_test(RadarNetEnv(sc), num_cycles=20)
 
 
@@ -74,6 +75,7 @@ def test_interleaved_actions_extend_action_space():
     env.reset(seed=0)
     assert env.action_space(env.agents[0]).n == 2 + 2 * env.K
     base = load_scenario("nominal")
+    base["terrain"] = {"source": "flat"}
     assert RadarNetEnv(base).action_space("radar_0").n == 2 + base["max_track_slots"]   # unchanged default
 
 

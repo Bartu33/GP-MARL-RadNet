@@ -1,0 +1,13 @@
+Section,Radar / Key,Metric,Value
+Actions,R1,Search Steps (%),39.5
+Actions,R1,Track Steps (%),60.5
+Actions,R1,Idle Steps (%),0.0
+Actions,R2,Search Steps (%),12.73
+Actions,R2,Track Steps (%),81.48
+Actions,R2,Idle Steps (%),5.78
+Actions,R3,Search Steps (%),9.87
+Actions,R3,Track Steps (%),83.5
+Actions,R3,Idle Steps (%),6.63
+Handover,Protocol Status,Explicit Handover Supported,NO (Centralized Opportunistic Only)
+Handover,All Radars,Total Opportunistic Transitions,866
+Handover,All Radars,Mean Transitions / Episode,8.66

@@ -92,10 +92,12 @@ class TrackManager:
     def __init__(self, q: float = 40.0, confirm_hits: int = 3, confirm_window: int = 48,
                  tentative_timeout_s: float = 8.0,
                  confirmed_timeout_s: float = 15.0, max_pos_std_m: float = 2500.0,
-                 init_min_quality: float = 0.0, history_len: int = 400):
+                 init_min_quality: float = 0.0, history_len: int = 400, init_v_std_mps: float = 120.0):
         self.q = q
         if confirm_window < confirm_hits:
             raise ValueError("confirm_window (N) must be at least confirm_hits (M)")
+        # prior std of the unobserved tangential velocity of a new track (one-point initiation)
+        self.init_v_std_mps = init_v_std_mps
         self.confirm_hits = confirm_hits
         self.confirm_window = confirm_window
         self.tentative_timeout_s = tentative_timeout_s
@@ -152,7 +154,7 @@ class TrackManager:
             for di, d in enumerate(dets):
                 if di in used_d or d["signal_quality"] < self.init_min_quality:
                     continue
-                ekf = EKF.from_detection(d, pos, hd, q=self.q)
+                ekf = EKF.from_detection(d, pos, hd, q=self.q, v_std=self.init_v_std_mps)
                 tr = Track(self._next_id, ekf, t, t, updated_by={ri: t}, hit_steps=[self.step])
                 tr.record_snr(ri, t, d.get("snr_db"))
                 self.tracks.append(tr)

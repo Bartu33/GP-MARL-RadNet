@@ -135,7 +135,7 @@ Lerro & Bar-Shalom (1993).
 | kapsanabilir | 0/1 (maske) | menzil, azimut, elevasyon, çevrimiçi |
 | tahmini SNR (0,1 m² referans) | / 30 dB | radar denklemi (Eq. 27) |
 | tahmini çapraz menzil σ | / 1000 m | r · σ_az (Eq. 42) |
-| beklenen bilgi kazancı ½(log det P − log det P⁺) | / 10 nat | P⁺ = (P⁻¹ + Hᵀ R⁻¹ H)⁻¹ |
+| beklenen bilgi kazancı ½(log det P − log det P⁺) | / 15 nat | P⁺ = (P⁻¹ + Hᵀ R⁻¹ H)⁻¹ |
 | bir takip bakışının enerji maliyeti | / E_max | kaynak modeli |
 | bu radarın bu izdeki son SNR'ı | / 30 dB (0 = hiç) | `track.snr[i]` |
 | bu radarın bu izi en son güncellemesinden beri geçen süre | / 10 s (1 = hiç) | `track.updated_by[i]` |

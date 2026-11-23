@@ -1,0 +1,5 @@
+Target,Total Looks,Out of Range,Out of FOV,Terrain Blocked,LOS Clear Unilluminated,Formed & Lost,Delivered Detections
+T0: Aircraft,18300,0,1769,22,15502,87,920
+T1: Agile UAV,18300,0,0,3341,13545,133,1281
+T2: Drift UAV,18300,0,0,3721,13185,132,1262
+T3: Missile,18300,236,4507,2067,11146,38,306
