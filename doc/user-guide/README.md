@@ -11,35 +11,23 @@ pip install -r requirements.txt
 ## 2. Train the classifier (once)
 
 ```bash
-python -m src.services.dataset_service --episodes 60 --train
-```
-
-This simulates ~240 short single-radar episodes, cuts every fused track into
-10-second windows, trains the gradient-boosted classifier and prints macro-F1,
-balanced accuracy and the confusion matrix. Files written:
-
-* `data/synthetic/flight_profile_windows.csv`
-* `models/checkpoints/flight_profile_gbm.joblib`
-* `models/metadata/flight_profile_gbm.json`
-
-The same can be done from the **Classifier** tab of the dashboard.
-
-Classifier study (dataset checks, MLP vs GRU, fused vs single-radar tracks):
-
-```bash
 python -m src.services.classifier_study --episodes 40
 ```
 
-Every episode has three radars, so the fused track and each radar's local
-track follow the same target. The report (`models/metadata/classifier_study.json`,
-also shown on the Classifier tab) gives macro-F1, balanced accuracy and ECE
-for GBM, MLP and GRU, trained and tested on fused or local tracks, plus a
-true-state upper bound. It also replaces the simulator's classifier
-(`models/checkpoints/flight_profile_gbm.joblib`) with a GBM trained on fused
-tracks, the evidence the fusion centre actually has (`--no-sim-model` keeps
-the old one; `--from-data` reuses the saved dataset instead of simulating
-again). Background on RL-based classification:
-`doc/research/rl_classification.md`.
+Targets are UAVs, aircraft and missiles (`src/core/target_classes.py`). The
+study simulates 40 three-radar episodes per class, cuts every track into
+10-second windows and trains GBM, MLP and GRU classifiers on fused tracks,
+single-radar (local) tracks and true states (upper bound only). The report
+(`models/metadata/classifier_study.json`, also on the **Classifier** tab) gives
+macro-F1, balanced accuracy, ECE, ROC-AUC and PR-AUC with an episode-wise
+split, and the hard cases: accuracy per variant, the physically overlapping
+variant pairs (fighter vs subsonic cruise missile, fixed-wing UAV vs transport
+aircraft) and young tracks seen for only 3 s or 6 s. It also replaces the
+simulator's classifier (`models/checkpoints/flight_profile_gbm.joblib`) with
+the GBM trained on fused tracks (`--no-sim-model` keeps the old one,
+`--from-data` reuses the saved dataset). A classifier trained on the earlier
+A–D behaviour classes is not loaded; the simulator then runs without one.
+Background on RL-based classification: `doc/research/rl_classification.md`.
 
 ## 3. Dashboard
 
@@ -49,15 +37,16 @@ streamlit run src/interfaces/app.py
 
 | Tab | What you can do |
 |---|---|
+| **Scenario Management** | **Live simulation**: start from a scenario template, edit radars (position, heading), targets (class, variant, planned or explicit motion) and channel stress, validate and run it. **Dataset replay**: pick a dataset in `data/processed/`, filter its episodes (split, difficulty, radar and target counts, terrain), preview and load one. Both open the 3-D view and the analysis panels: radar information (signal physics, EKF information), radar selection and decision inspector (resource use, which radar served which track and why, radar-to-radar transitions) and, kept apart, ground-truth evaluation. |
 | **3-D Simulation** | Pick a scenario, a coordination policy, a seed and a map location (the location sets the terrain used for line-of-sight); the episode is simulated and replayed over satellite-textured terrain. Buttons in the view: camera presets, orbit, and layer toggles (beams, coverage fans, trails, detections, truth). Bottom bar: play / pause, single step, speed, replay scrubber. The panel on the left shows each radar's mode, energy and thermal margin. Switch to **2-D** for an offline top-down view. A replay can be downloaded as a stand-alone HTML file. |
 | **Radar Model Lab** | Sliders for power, gain, P_FA and mode; plots of SNR vs range, P_D models, SNR-dependent accuracy, ellipsoid / lookup-table RCS patterns, probability of track and the beam pattern. |
-| **Classifier** | Generate data and train; confusion matrix; one sample trajectory per class. |
+| **Classifier** | Generate data and train; confusion matrix; one sample trajectory per class; the classifier study with ROC / PR curves and the hard cases. |
 | **Experiments** | Run several policies over several seeds on a scenario; table of mean ± std and box plots; CSV download. |
 
 ### Colours in the 3-D view
 
 * radar / beam: teal = search, blue = track, purple = interleaved (track part; its search cells are teal), grey = idle, red = offline
-* coloured spheres = true targets (orange A, purple B, green C, yellow D)
+* coloured spheres = true targets (orange UAV, purple aircraft, green missile)
 * white box + wire sphere = confirmed fused track and its 3σ uncertainty;
   the label shows the predicted class and confidence
 * small points = detections of the current step (red = false alarm)
@@ -113,7 +102,13 @@ YAML files in `configs/scenarios/`. Copy one and edit:
 * `radars`: name, position `[east, north, up]` in metres, `heading_deg`
   (boresight, counter-clockwise from east); any `RadarParams` field can be
   overridden here or in `radar_defaults`.
-* `targets`: list of `{label: 0..3}` (optionally `position`).
+* `targets`: list of `{target_class: uav | aircraft | missile}`, optionally with a `variant`
+  (e.g. `fixed_wing`, `fighter`, `supersonic`). The simulator then draws the variant, the RCS and a
+  valid trajectory through the area from the class envelope at every seed; a very fast missile that
+  cannot fly the whole episode inside the terrain grid flies its planned part and then leaves the area.
+  An explicit target adds `variant`, `position`, `velocity` and `motion` (`CV`, `CA` with
+  `acceleration_mps2`, `CT` with `turn_rate_rad_s`, or `segments`). The earlier `{label: 0..3}`
+  behaviour targets still load but are not scored by the classifier.
 * `share_actions: true` lets every radar action also decide whether its
   reports are sent to the fusion centre (fusion participation); with
   `reward.w_comm` each delivered report costs reward (`share_control.yaml`).
@@ -122,7 +117,7 @@ YAML files in `configs/scenarios/`. Copy one and edit:
 * `stress`: `fail_radar`, `fail_time_s`, `comm_drop_prob`,
   `max_reports_per_radar`, `noise_scale`, `outages` (list of
   `[radar index or all, t0, t1]`: the radar transmits but detects nothing in
-  that window; `track_loss.yaml` uses a 20 s outage on all radars to force
+  that window; `track_loss.yaml` uses a 20 s outage (25–45 s) on all radars to force
   track loss and reacquisition).
 * `site`: latitude / longitude of the area; it selects the terrain.
 * `terrain`: `{source: auto}` downloads real elevation tiles once (cached in
@@ -130,7 +125,29 @@ YAML files in `configs/scenarios/`. Copy one and edit:
   `procedural` and `tiles` force one source. Terrain blocks radar line of
   sight, and targets keep at least 30 m above the ground.
 
-## 5. Metrics
+## 5. Target-class datasets
+
+Recipes in `configs/datasets/` describe a dataset of UAV / aircraft / missile
+episodes: number of episodes, duration, radar and target counts, class
+weights, train / validation / test split, terrain profiles and, for missile
+datasets, the route pattern (converging, diverging, hub), salvo or terminal
+dive. One script plans, simulates and audits a dataset:
+
+```bash
+python scripts/produce_class_targets_dataset.py --recipe configs/datasets/missile_routes_pilot5.yaml \
+    --output data/processed/missile_routes_pilot5 --report reports/missile_routes_pilot5
+```
+
+Each episode is written as Canonical Episode Records (`metadata.json`,
+`records.npz`) under its split; `manifest.json` keeps the SHA-256 of every
+file and the report folder gets the plan and an audit that compares the
+realised targets with their variant envelopes. Episodes can be opened from
+**Scenario Management → Dataset replay**; the replay re-simulates the episode
+with its recorded actions and is verified against the records, so a dataset
+must be regenerated after a change to the radar model or the tracker (its
+episode folder names, which carry a configuration hash, change too).
+
+## 6. Metrics
 
 Every number in the dashboard is defined in `src/core/evaluation.py`
 (`METRIC_INFO`); the Experiments tab shows the same table under
@@ -153,18 +170,25 @@ Every number in the dashboard is defined in `src/core/evaluation.py`
 On the 3-D Simulation tab, "Single radar vs network" lists every radar's
 local track next to the fused track.
 
-## 6. MARL training (optional)
+## 7. Training the task manager (PPO, optional)
 
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cpu
-python -m src.services.training_service --scenario nominal --steps 200000
-python -m src.services.training_service --ippo      # IPPO baseline
-python -m src.services.training_service --central   # policy at the fusion centre (central_ppo)
+python -m src.services.classifier_study --episodes 40       # first: the observation uses the classifier
+python -m src.services.training_service --task --decisions 30000
 ```
 
-After training, `central_ppo`, `mappo` or `ippo` appears in the policy list of the dashboard. The team reward includes continuity terms (`reward.w_interrupt`, `reward.w_loss`): targets that lose their track and fused tracks deleted by the tracker are penalised.
+One PPO agent at the fusion centre sends, every second, a track-update
+request (or none) to each radar; the radars' own schedulers decide. Training
+first imitates the rule-based task manager `task_greedy` (200 teacher episodes,
+behaviour cloning), then fine-tunes with PPO; the checkpoint
+`models/checkpoints/ppo_task.pt` and its learning history appear as `ppo_task`
+in the policy lists. A checkpoint fits only scenarios with the track-slot and
+radar counts it was trained on (nominal: 6 slots, 4 radars); others skip it with
+a warning. The earlier mode-setting learners (`--central`, `--ippo`, MAPPO) are
+kept in the code but hidden from the dashboard.
 
-## 7. Tests
+## 8. Tests
 
 ```bash
 pytest
