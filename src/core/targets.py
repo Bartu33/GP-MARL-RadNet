@@ -33,8 +33,21 @@ from .geometry import body_rotation
 from .rcs import ConstantRCS, EllipsoidRCS, LookupTableRCS, RCSModel
 from .target_classes import RCS_ASPECTS, TARGET_CLASSES, rcs_model, variant_spec
 
-CLASS_NAMES = ["A_fast_cruise", "B_agile_hover", "C_erratic_slow", "D_drift"]
-CLASS_SHORT = ["A · fast", "B · agile", "C · erratic", "D · drift"]
+# Target classes of the project: UAV / aircraft / missile (src/core/target_classes.py),
+# indexed by their label 0 / 1 / 2.  The classifier, the observation and the
+# dashboard use this label space.
+CLASS_NAMES = sorted(TARGET_CLASSES, key=lambda c: TARGET_CLASSES[c]["label"])        # uav, aircraft, missile
+CLASS_SHORT = [TARGET_CLASSES[c]["name"] for c in CLASS_NAMES]                        # UAV, Aircraft, Missile
+# Earlier behaviour classes (labels 0-3 of legacy-label targets), kept only to
+# read and display older scenarios and datasets.
+LEGACY_CLASS_NAMES = ["A_fast_cruise", "B_agile_hover", "C_erratic_slow", "D_drift"]
+LEGACY_CLASS_SHORT = ["A · fast", "B · agile", "C · erratic", "D · drift"]
+
+
+def class_short(label: int, legacy: bool = False) -> str:
+    """Display name of a class label in the given label space."""
+    names = LEGACY_CLASS_SHORT if legacy else CLASS_SHORT
+    return names[label] if 0 <= label < len(names) else f"class {label}"
 G = 9.81
 
 

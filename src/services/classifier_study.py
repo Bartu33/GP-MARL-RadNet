@@ -55,7 +55,7 @@ def _scenario(label: int, rng: np.random.Generator, duration_s: float, n_radars:
     return _merge(DEFAULTS, {
         "name": "classifier_study", "duration_s": duration_s, "area_radius_m": 3000,
         "radar_defaults": {"fov_az_deg": 60, "search_sector_deg": 120, "r_max_m": 14000},
-        "radars": radars, "targets": [{"label": label}], "max_track_slots": 3,
+        "radars": radars, "targets": [{"target_class": CLASS_NAMES[label]}], "max_track_slots": 3,
     })
 
 
@@ -85,9 +85,27 @@ def _windows(hist, stds):
     return feats, seqs
 
 
-def generate(n_per_class: int = 40, duration_s: float = 80.0, seed: int = 0, n_radars: int = 3) -> dict:
+EARLY_S = (3.0, 6.0)       # windows at the start of a fused track: 6 s = first classification in the simulator
+# physically overlapping variant pairs (speed / altitude envelopes overlap): the hard cases
+HARD_PAIRS = [("aircraft/fighter", "missile/subsonic_cruise"), ("uav/fixed_wing", "aircraft/transport")]
+
+
+def _early(hist, stds, length_s):
+    """The first ``length_s`` seconds of a track history as one window (None if too short)."""
+    t = np.array([h[0] for h in hist])
+    if t[-1] - t[0] < length_s - 1e-9:
+        return None
+    X = np.array([h[1] for h in hist])
+    std = np.asarray(stds, float)
+    m = t <= t[0] + length_s + 1e-9
+    if m.sum() < 6:
+        return None
+    return window_features(t[m], X[m], float(std[m].mean())), _sequence(t[m], X[m], std[m])
+
+
+def generate(n_per_class: int = 40, duration_s: float = 40.0, seed: int = 0, n_radars: int = 3) -> dict:
     rng = np.random.default_rng(seed)
-    out = {k: [] for k in ("feat", "seq", "y", "episode", "source", "radar")}
+    out = {k: [] for k in ("feat", "seq", "y", "episode", "source", "radar", "variant")}
     ep = 0
     for label in range(len(CLASS_NAMES)):
         for _ in range(n_per_class):
@@ -107,6 +125,12 @@ def generate(n_per_class: int = 40, duration_s: float = 80.0, seed: int = 0, n_r
                         rec = seen[key].setdefault(tr.id, ([], []))
                         rec[0].append((env.t, tr.x.copy()))
                         rec[1].append(tr.ekf.pos_std)
+            variant = f"{env.targets[0].target_class}/{env.targets[0].variant}"
+
+            def add(f, s, src, radar):
+                out["feat"].append(f); out["seq"].append(s); out["y"].append(label); out["episode"].append(ep)
+                out["source"].append(src); out["radar"].append(radar); out["variant"].append(variant)
+
             for key, tracks in seen.items():
                 for hist, stds in tracks.values():
                     if len(hist) < 2:
@@ -114,12 +138,15 @@ def generate(n_per_class: int = 40, duration_s: float = 80.0, seed: int = 0, n_r
                     F, S = _windows(hist, stds)
                     src = "fused" if key == "fused" else "local"
                     for f, s in zip(F, S):
-                        out["feat"].append(f); out["seq"].append(s); out["y"].append(label)
-                        out["episode"].append(ep); out["source"].append(src); out["radar"].append(key)
+                        add(f, s, src, key)
+                    if key == "fused":                       # evaluation only: young tracks
+                        for length in EARLY_S:
+                            w = _early(hist, stds, length)
+                            if w is not None:
+                                add(*w, f"fused_early{length:g}", key)
             F, S = _windows(truth, np.zeros(len(truth)))         # upper bound: true states
             for f, s in zip(F, S):
-                out["feat"].append(f); out["seq"].append(s); out["y"].append(label)
-                out["episode"].append(ep); out["source"].append("truth"); out["radar"].append("truth")
+                add(f, s, "truth", "truth")
             ep += 1
     return {k: np.array(v) for k, v in out.items()}
 
@@ -143,6 +170,8 @@ def check_dataset(d: dict, test_eps: set) -> dict:
              for c in range(len(CLASS_NAMES))}
     return {
         "windows_per_class": dict(zip(CLASS_NAMES, counts.tolist())),
+        "windows_per_variant": ({v: int(n) for v, n in zip(*np.unique(d["variant"][fused], return_counts=True))}
+                                if "variant" in d else {}),
         "class_balance_min_over_max": float(counts.min() / max(counts.max(), 1)),
         "episodes_in_train_and_test": int(len(set(ep[tr]) & set(ep[te]))),
         "best_single_feature": best,
@@ -289,6 +318,8 @@ def run_study(d: dict, test_frac: float = 0.3, seed: int = 0) -> dict:
             continue
         models = {"gbm": fit_gbm(Ftr, ytr), "mlp": fit_mlp(Ftr, ytr),
                   "gru": GRUClassifier(Str.shape[2], len(CLASS_NAMES)).fit(Str, ytr)}
+        if train_src == "fused":
+            fused_models = models
         for test_src in ("fused", "local") if train_src != "truth" else ("truth",):
             _, _, _, Fte, Ste, yte = data[test_src]
             if len(yte) == 0:
@@ -297,7 +328,65 @@ def run_study(d: dict, test_frac: float = 0.3, seed: int = 0) -> dict:
                 proba = m.predict_proba(Ste if name == "gru" else Fte)
                 report["results"].append({"model": name, "train_on": train_src, "test_on": test_src,
                                           **_scores(proba, yte)})
+    if "variant" in d and "fused_models" in locals():
+        report.update(hard_case_analysis(d, is_te, fused_models))
     return report
+
+
+def hard_case_analysis(d: dict, is_te: np.ndarray, models: dict) -> dict:
+    """Where the easy overall score hides the hard cases (models trained on fused
+    tracks, tested on fused tracks of held-out episodes):
+
+    * by_variant: accuracy per target variant;
+    * hard_pairs: the physically overlapping variant pairs, accuracy on their
+      windows and how often each is taken for the other;
+    * early: tracks seen only for their first 3 s or 6 s (6 s is when the
+      simulator first classifies a track).
+    Only GBM (the simulator's model) and GRU (the best sequence model)."""
+    from sklearn.metrics import f1_score
+    out = {"by_variant": {}, "hard_pairs": [], "early": []}
+    m = (d["source"] == "fused") & is_te
+    y, var = d["y"][m], d["variant"][m]
+    pred = {"gbm": models["gbm"].predict_proba(d["feat"][m]).argmax(1),
+            "gru": models["gru"].predict_proba(d["seq"][m]).argmax(1)}
+    for v in sorted(set(var)):
+        k = var == v
+        out["by_variant"][v] = {"n": int(k.sum()), **{f"{n}_accuracy": float((p[k] == y[k]).mean())
+                                                       for n, p in pred.items()}}
+    for a, b in HARD_PAIRS:
+        ka, kb = var == a, var == b
+        if not (ka.any() and kb.any()):
+            continue
+        la, lb = int(y[ka][0]), int(y[kb][0])
+        row = {"pair": f"{a} vs {b}", "n": [int(ka.sum()), int(kb.sum())]}
+        for n, p in pred.items():
+            row[f"{n}_accuracy"] = float(np.concatenate([p[ka] == la, p[kb] == lb]).mean())
+            row[f"{n}_{a}_taken_for_{b.split('/')[0]}"] = float((p[ka] == lb).mean())
+            row[f"{n}_{b}_taken_for_{a.split('/')[0]}"] = float((p[kb] == la).mean())
+        # the advisor's check on the hard pair: can one feature alone separate it?
+        from sklearn.tree import DecisionTreeClassifier
+        tr = (d["source"] == "fused") & ~is_te & np.isin(d["variant"], [a, b])
+        te = m.copy(); te[m] = ka | kb
+        best = 0.0
+        for j, name in enumerate(FEATURE_NAMES):
+            st = DecisionTreeClassifier(max_depth=2, random_state=0).fit(d["feat"][tr, j:j + 1], d["y"][tr])
+            acc = float((st.predict(d["feat"][te, j:j + 1]) == d["y"][te]).mean())
+            if acc > best:
+                best, row["best_single_feature"] = acc, name
+        row["best_single_feature_accuracy"] = best
+        out["hard_pairs"].append(row)
+    for length in EARLY_S:
+        k = (d["source"] == f"fused_early{length:g}") & is_te
+        if not k.any():
+            continue
+        ye = d["y"][k]
+        row = {"window_s": length, "n": int(k.sum())}
+        for n, p in (("gbm", models["gbm"].predict_proba(d["feat"][k]).argmax(1)),
+                     ("gru", models["gru"].predict_proba(d["seq"][k]).argmax(1))):
+            row[f"{n}_macro_f1"] = float(f1_score(ye, p, average="macro", labels=range(len(CLASS_NAMES))))
+            row[f"{n}_accuracy"] = float((p == ye).mean())
+        out["early"].append(row)
+    return out
 
 
 def train_simulation_model(d: dict, path: Path = SIM_MODEL_PATH, seed: int = 0) -> dict:
@@ -346,6 +435,9 @@ def main():
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     REPORT_PATH.write_text(json.dumps(rep, indent=2))
     print(json.dumps(rep["dataset"], indent=1)[:1500])
+    for key in ("by_variant", "hard_pairs", "early"):
+        if key in rep:
+            print(key, json.dumps(rep[key], indent=1))
     for r in rep["results"]:
         print(f"{r['model']:4s} train={r['train_on']:6s} test={r['test_on']:6s} "
               f"macroF1={r['macro_f1']:.3f} balAcc={r['balanced_accuracy']:.3f} ECE={r['ece']:.3f} "

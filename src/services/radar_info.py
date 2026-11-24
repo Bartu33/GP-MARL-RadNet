@@ -7,17 +7,14 @@ functions the simulator uses (``RadarParams``, ``snr_linear``,
 """
 from __future__ import annotations
 
-from functools import reduce
-from math import gcd, lcm
-
 import numpy as np
 
 from src.core import geometry as geo
-from src.core.detection import pd_nonfluctuating, pd_swerling1
 from src.core.modes import INTERLEAVE_SEARCH_BEAMS, Mode
-from src.core.radar import K_BOLTZMANN, RadarParams, antenna_gain, measurement_sigmas, noise_power, snr_linear
+from src.core.radar import (K_BOLTZMANN, RadarParams, antenna_gain, doppler_blind, look_detection_probability,
+                            measurement_sigmas, noise_power, snr_linear, unambiguous_limits)
 from src.core.rcs import ConstantRCS, EllipsoidRCS, LookupTableRCS, ScatteringCentreRCS
-from src.core.targets import CLASS_NAMES
+from src.core.targets import class_short
 
 C = geo.C_LIGHT
 db = lambda x: 10 * np.log10(x)
@@ -31,8 +28,7 @@ def stagger_unambiguous(p: RadarParams) -> tuple[float, float]:
     every PRF at once is lambda lcm(PRF) / 2, so +-lambda lcm(PRF) / 4 is
     measured unambiguously.  With a single PRF these are the usual limits.
     """
-    prfs = [int(round(f)) for f in p.prf_stagger_hz]
-    return C / (2 * reduce(gcd, prfs)), p.wavelength * reduce(lcm, prfs) / 4
+    return unambiguous_limits(p.prf_stagger_hz, p)
 
 
 def radar_parameters(p: RadarParams) -> list[tuple[str, str, str]]:
@@ -68,8 +64,11 @@ def radar_parameters(p: RadarParams) -> list[tuple[str, str, str]]:
         ("Derived", "radial-velocity resolution λ / 2T_CPI (track)", f"{lam / (2 * tr.dwell_s):.2f} m/s"),
         ("Derived", "unambiguous range c / 2·PRF", f"{C / (2 * prf) / 1000:.1f} km"),
         ("Derived", "unambiguous radial velocity ±λ·PRF / 4", f"±{lam * prf / 4:.0f} m/s"),
-        ("Waveform", "PRF stagger (one PRF per look)",
+        ("Waveform", "PRF stagger (every look: one coherent sub-dwell per PRF)",
          ", ".join(f"{f / 1e3:g}" for f in p.prf_stagger_hz) + " kHz"),
+        ("Waveform", "track sub-dwell per PRF", f"{tr.n_pulses // len(p.prf_stagger_hz)} pulses, "
+                                                f"{tr.dwell_s / len(p.prf_stagger_hz) * 1e3:.1f} ms"),
+        ("Detection", "detection rule (M of N PRF sub-dwells)", f"{p.prf_m_of_n} of {len(p.prf_stagger_hz)}"),
         ("Derived", "unambiguous range over the stagger c / 2·gcd(PRF)",
          f"{stagger_unambiguous(p)[0] / 1000:.1f} km"),
         ("Derived", "unambiguous radial velocity over the stagger ±λ·lcm(PRF) / 4",
@@ -87,16 +86,25 @@ def radar_parameters(p: RadarParams) -> list[tuple[str, str, str]]:
 def ambiguity_notes(p: RadarParams, max_speed_mps: float) -> list[str]:
     """Plain warnings where the scenario exceeds what this waveform can measure unambiguously.
 
-    Ambiguities are resolved across the PRF stagger (``RadarParams.prf_stagger_hz``),
-    so the limits are those of :func:`stagger_unambiguous`; what remains of a
-    single PRF's folding is the blind-speed effect of the clutter notch.
+    Every look uses all PRFs of the stagger (``RadarParams.prf_stagger_hz``) and
+    resolves range and radial velocity over the PRFs that detected the target:
+    over the full set the limits are those of :func:`stagger_unambiguous`, over
+    M of them they are smaller.
     """
     r_u, v_u = stagger_unambiguous(p)
     notes = []
     if max_speed_mps > v_u:
         notes.append(f"{p.name}: targets up to {max_speed_mps:.0f} m/s, but the PRF set measures radial velocity "
-                     f"unambiguously only within ±{v_u:.0f} m/s. A real radar would see folded (aliased) Doppler; "
-                     "the simulator reports the true radial velocity (Doppler ambiguity is not modelled).")
+                     f"unambiguously only within ±{v_u:.0f} m/s; faster targets are reported with folded "
+                     "(aliased) radial velocity.")
+    m = p.prf_m_of_n
+    if m < len(p.prf_stagger_hz):
+        from itertools import combinations
+        v_pair = min(unambiguous_limits(c, p)[1] for c in combinations(p.prf_stagger_hz, m))
+        if max_speed_mps > v_pair:
+            notes.append(f"{p.name}: targets up to {max_speed_mps:.0f} m/s. When one PRF is blind or misses, the "
+                         f"remaining {m} PRFs resolve radial velocity only within ±{v_pair:.0f} m/s; such looks "
+                         "report folded radial velocity.")
     if r_u < p.r_max_m:
         notes.append(f"{p.name}: unambiguous range {r_u / 1000:.1f} km is shorter than the "
                      f"instrumented range {p.r_max_m / 1000:.1f} km.")
@@ -127,17 +135,23 @@ def target_parameters(targets) -> list[dict]:
     rows = []
     for t in targets:
         lo, med, hi = rcs_range(t.rcs)
-        rows.append({"target": f"T{t.id}", "class": CLASS_NAMES[t.label], "RCS model": describe_rcs(t.rcs),
+        cls = (f"{class_short(t.label)} ({t.variant.replace('_', ' ')})" if getattr(t, "target_class", None)
+               else class_short(t.label, legacy=True))
+        rows.append({"target": f"T{t.id}", "class": cls, "RCS model": describe_rcs(t.rcs),
                      "RCS over aspects (min / median / max)": f"{lo:.3g} / {med:.3g} / {hi:.3g} m²",
                      "fluctuation": f"Swerling {t.swerling}" if t.swerling else "none (Swerling 0)"})
     return rows
 
 
 def link_budget(p: RadarParams, r_m: float, sigma_m2: float, mode: Mode = Mode.TRACK,
-                off_az_rad: float = 0.0, off_el_rad: float = 0.0, swerling: int = 0) -> dict:
+                off_az_rad: float = 0.0, off_el_rad: float = 0.0, swerling: int = 0,
+                r_dot_mps: float | None = None) -> dict:
     """Radar equation (Eq. 27) term by term in dB, then P_D and accuracy.
 
-    SNR = P_t G_t G_r λ² σ N / ((4π)³ R⁴ L k T_0 B F)   with N pulses integrated."""
+    SNR = P_t G_t G_r λ² σ N / ((4π)³ R⁴ L k T_0 B F)   with N pulses integrated
+    over the whole look.  The look is split into one coherent sub-dwell per PRF
+    of the stagger (SNR / n each) and declared a detection on M of them;
+    ``r_dot_mps`` removes the sub-dwells whose PRF makes the target blind."""
     prof = p.profiles[mode]
     g = antenna_gain(off_az_rad, off_el_rad, p)
     lam = p.wavelength
@@ -157,22 +171,27 @@ def link_budget(p: RadarParams, r_m: float, sigma_m2: float, mode: Mode = Mode.T
     ]
     chi = float(snr_linear(r_m, sigma_m2, g, p, prof.n_pulses))
     sig = measurement_sigmas(chi, p, prof)
+    n_prf = len(p.prf_stagger_hz)
+    n_blind = 0 if r_dot_mps is None else sum(doppler_blind(r_dot_mps, f, p) for f in p.prf_stagger_hz)
     out = {
         "terms": terms,
         "snr_db": db(max(chi, 1e-30)),
-        "pd_constant_rcs": float(pd_nonfluctuating(chi, p.pfa)),
-        "pd_swerling1": float(pd_swerling1(chi, p.pfa)),
-        "pd_model": "Swerling I (RCS fluctuates each look)" if swerling == 1 else "non-fluctuating (Marcum)",
+        "sub_dwell_snr_db": db(max(chi / n_prf, 1e-30)),
+        "n_blind_prfs": int(n_blind),
+        "pd_constant_rcs": float(look_detection_probability(chi, p, n_blind)),
+        "pd_swerling1": float(look_detection_probability(chi, p, n_blind, swerling=1)),
+        "pd_model": (f"{p.prf_m_of_n}-of-{n_prf} PRF sub-dwells, "
+                     + ("Swerling I (RCS fluctuates each look)" if swerling == 1 else "non-fluctuating (Marcum)")),
         "sigma": {"range": f"{sig[0]:.1f} m", "azimuth": f"{sig[1] * 1e3:.2f} mrad",
                   "elevation": f"{sig[2] * 1e3:.2f} mrad", "radial velocity": f"{sig[3]:.2f} m/s"},
         "max_range_pd50_km": None,
     }
     # range at which this target would give P_D = 0.5 (bisection on the same equation)
     lo, hi = 100.0, 200_000.0
-    pd = pd_swerling1 if swerling == 1 else pd_nonfluctuating
     for _ in range(60):
         mid = (lo + hi) / 2
-        if pd(snr_linear(mid, sigma_m2, g, p, prof.n_pulses), p.pfa) > 0.5:
+        if look_detection_probability(snr_linear(mid, sigma_m2, g, p, prof.n_pulses), p, n_blind,
+                                      swerling=swerling) > 0.5:
             lo = mid
         else:
             hi = mid

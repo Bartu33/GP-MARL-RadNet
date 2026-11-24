@@ -59,6 +59,42 @@ PD_MODELS = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Medium-PRF dwell: n coherent sub-dwells, M-of-N detection
+# ---------------------------------------------------------------------------
+
+def binomial_at_least(p, n: int, m: int):
+    """P(at least m successes in n independent trials of probability p)."""
+    from math import comb
+    p = np.asarray(p, float)
+    return sum(comb(n, k) * p ** k * (1 - p) ** (n - k) for k in range(m, n + 1)) if m <= n else np.zeros_like(p)
+
+
+_LAGUERRE = np.polynomial.laguerre.laggauss(64)
+
+
+def pd_m_of_n(snr_total, pfa: float, n: int, m: int, n_blind: int = 0, model: str = "marcum",
+              swerling: int = 0):
+    """P_D of one look split into ``n`` coherent sub-dwells (one per PRF of the
+    stagger), declared a detection when at least ``m`` of them cross the
+    threshold.  ``snr_total`` is the SNR of the whole look; each sub-dwell has
+    1/n of the pulses and so ``snr_total / n``.  Sub-dwells whose PRF puts the
+    target in the clutter notch (``n_blind``) cannot detect.  Noise is
+    independent between sub-dwells; the RCS is the same within one look
+    (``swerling=1``: exponential from look to look, averaged here; with the RCS
+    already sampled per look use ``swerling=0``).  With n = m = 1 this is the
+    single-dwell model."""
+    usable = n - n_blind
+    if usable < m:
+        return np.zeros_like(np.asarray(snr_total, float))
+    sub = np.asarray(snr_total, float) / n
+    if swerling != 1:
+        return binomial_at_least(PD_MODELS[model](sub, pfa), usable, m)
+    x, w = _LAGUERRE                                   # E over sigma ~ Exp(1): int f(x) e^-x dx
+    vals = [binomial_at_least(PD_MODELS[model](sub * xi, pfa), usable, m) for xi in x]
+    return np.clip(sum(wi * v for wi, v in zip(w, vals)), 0.0, 1.0)
+
+
 def probability_of_detection(snr_linear, pfa: float, model: str = "marcum", **kw):
     """Dispatch to one of the P_D models above (Eq. (30))."""
     return PD_MODELS[model](snr_linear, pfa, **kw)

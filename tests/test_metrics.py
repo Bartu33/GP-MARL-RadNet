@@ -32,12 +32,12 @@ def test_in_beam_uses_half_power_width():
 
 
 def _tr(i, label=0):
-    probs = np.eye(4)[label]
+    probs = np.eye(3)[label]                         # UAV / aircraft / missile
     return SimpleNamespace(id=i, class_probs=probs, x=np.zeros(6))
 
 
 def test_missed_update_is_not_a_track_loss_but_deletion_is():
-    tgt = [SimpleNamespace(id=0, label=0, p=np.zeros(3), v=np.zeros(3))]
+    tgt = [SimpleNamespace(id=0, label=0, target_class="uav", p=np.zeros(3), v=np.zeros(3))]
     ev = TrackEvaluator(1, dt=0.5)
     ev.tracks(tgt, [], [], {0: _tr(5)}, {5}, None)      # tracked by track 5
     ev.tracks(tgt, [], [], {}, {5}, None)               # not matched, track 5 still exists (coasting)
@@ -52,7 +52,7 @@ def test_missed_update_is_not_a_track_loss_but_deletion_is():
 
 
 def test_switch_to_another_existing_track_is_an_id_switch():
-    tgt = [SimpleNamespace(id=0, label=1, p=np.zeros(3), v=np.zeros(3))]
+    tgt = [SimpleNamespace(id=0, label=1, target_class="aircraft", p=np.zeros(3), v=np.zeros(3))]
     ev = TrackEvaluator(1, dt=0.5)
     ev.tracks(tgt, [], [], {0: _tr(3, 1)}, {3, 4}, None)
     ev.tracks(tgt, [], [], {0: _tr(4, 1)}, {3, 4}, None)

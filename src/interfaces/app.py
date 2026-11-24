@@ -21,7 +21,7 @@ from src.core.modes import Mode
 from src.core.radar import RadarParams, antenna_gain, measurement_sigmas, snr_linear
 from src.core.rcs import EllipsoidRCS, LookupTableRCS, m2_to_dbsm
 from src.core.scenario import build_radars, list_scenarios, load_scenario, validate_scenario
-from src.core.targets import CLASS_NAMES, CLASS_SHORT, advance, spawn_target
+from src.core.targets import CLASS_NAMES, CLASS_SHORT
 from src.interfaces import analysis_views, dataset_browser, plots, viewer3d
 from src.models.baselines.policies import LEARNED, POLICIES
 from src.services import radar_info
@@ -49,15 +49,19 @@ CKPT_DIR = ROOT / "models" / "checkpoints"
 TRAINED = [n for n in LEARNED if (CKPT_DIR / f"{n}.pt").exists()]
 POLICY_NAMES = TRAINED + POLICY_NAMES
 POLICY_HELP = {
-    "fixed_scan": "Always search.",
-    "round_robin": "Alternate search / track, cycling through tracks.",
-    "nearest": "Each radar refreshes its closest track that is due for a revisit, else searches.",
-    "central_greedy": "Central heuristic: most uncertain due tracks first, no duplicates, spare radars search.",
+    "fixed_scan": "Baseline (sets radar modes): always search.",
+    "round_robin": "Baseline (sets radar modes): alternate search / track, cycling through tracks.",
+    "nearest": "Baseline (sets radar modes): each radar refreshes its closest track that is due, else searches.",
+    "central_greedy": "Baseline (the centre sets radar modes): most uncertain due tracks first, no duplicates, "
+                      "spare radars search.",
+    "central_greedy_confirm": "Baseline (the centre sets radar modes): central_greedy plus one confirmation dwell "
+                              "for every new tentative track.",
     "interleaved_greedy": "Like central_greedy but tracking radars keep searching (INTERLEAVED mode; "
                           "needs a scenario with interleaved_actions: true, e.g. 'interleaved').",
-    "task_greedy": "Fusion-centre task manager (rule-based): sends track-update requests for due tracks; "
-                   "each radar's local scheduler accepts, delays, partially serves or rejects them "
-                   "(src/core/scheduler.py). The centre never sets radar modes.",
+    "task_greedy": "Fusion-centre task manager (rule-based), the method of this project: sends track-update "
+                   "requests -- first one confirmation dwell for each new tentative track, then the confirmed "
+                   "tracks due for a revisit -- and each radar's local scheduler accepts, delays, partially "
+                   "serves or rejects them (src/core/scheduler.py). The centre never sets radar modes.",
     "random": "Random actions (sanity check).",
     "ppo_task": "Learned fusion-centre task manager: one PPO agent sends a track-update request (or none) to "
                 "each radar every second; the radars' local schedulers decide (models/checkpoints/ppo_task.pt).",
@@ -99,7 +103,9 @@ with tab_scen:
         site_names = [base_scen["site"]["name"]] + [s["name"] for s in sim.MAP_SITES if s["name"] != base_scen["site"]["name"]]
         selected_site = c_site.selectbox("Map / Terrain Location", site_names, key="scen_site_sel")
         selected_policy = c_pol.selectbox("Coordination Policy", POLICY_NAMES,
-                                          index=POLICY_NAMES.index("central_greedy") if "central_greedy" in POLICY_NAMES else 0,
+                                          index=POLICY_NAMES.index("task_greedy") if "task_greedy" in POLICY_NAMES else 0,
+                                          help="\n".join(f"**{k}** – {v}" for k, v in POLICY_HELP.items()
+                                                         if k in POLICY_NAMES),
                                           key="scen_pol_sel")
 
         c_dur, c_dt, c_seed = st.columns(3)
@@ -121,51 +127,59 @@ with tab_scen:
                 r["position"] = [pos_x, pos_y, pos_z]
                 r["heading_deg"] = hd
 
-        with st.expander("Detailed Target Configuration (Archetypes & Motion)", expanded=False):
-            st.caption("Target archetypes, legacy labels, and kinematic motion models. Optionally specify explicit initial positions and velocities.")
+        with st.expander("Detailed Target Configuration (Class, Variant & Motion)", expanded=False):
+            st.caption("Each target is a UAV, an aircraft or a missile. With 'planned' motion the simulator draws "
+                       "the variant (unless fixed), the RCS and a valid trajectory through the area from the class "
+                       "envelope at every seed; with an explicit start the target flies the chosen motion model.")
+            from src.core.target_classes import TARGET_CLASSES
             targets_conf = [dict(t) for t in base_scen.get("targets", [])]
             for ti, tgt in enumerate(targets_conf):
                 st.markdown(f"**Target #{ti}**")
                 t_col1, t_col2, t_col3 = st.columns(3)
-                tt_options = ["aircraft_like", "uav_like", "missile_like"]
-                curr_tt = tgt.get("target_type", "aircraft_like" if tgt.get("label", 0) == 0 else "uav_like")
-                if curr_tt not in tt_options:
-                    tt_options.append(curr_tt)
-                tt_selected = t_col1.selectbox(f"Archetype #{ti}", tt_options, index=tt_options.index(curr_tt), key=f"tgt_tt_{ti}")
-                lbl_val = t_col2.selectbox(f"Legacy Class #{ti} [Ground Truth]", [0, 1, 2, 3], index=int(tgt.get("label", 0)),
-                                           format_func=lambda l: f"Class {l} ({CLASS_NAMES[l]})", key=f"tgt_lbl_{ti}")
-                mot_dict = tgt.get("motion", {})
-                mot_model = mot_dict.get("model", "CV") if isinstance(mot_dict, dict) else "CV"
-                mot_selected = t_col3.selectbox(f"Motion Model #{ti}", ["CV", "CA", "CT", "SegmentedMotion"],
-                                                index=["CV", "CA", "CT", "SegmentedMotion"].index(mot_model) if mot_model in ["CV", "CA", "CT", "SegmentedMotion"] else 0,
+                curr_cls = tgt.get("target_class") or CLASS_NAMES[min(int(tgt.get("label", 0)), len(CLASS_NAMES) - 1)]
+                cls_sel = t_col1.selectbox(f"Class #{ti}", CLASS_NAMES, index=CLASS_NAMES.index(curr_cls),
+                                           format_func=lambda c: TARGET_CLASSES[c]["name"], key=f"tgt_cls_{ti}")
+                variants = ["auto"] + list(TARGET_CLASSES[cls_sel]["variants"])
+                curr_var = tgt.get("variant") if tgt.get("variant") in variants else "auto"
+                var_sel = t_col2.selectbox(f"Variant #{ti}", variants, index=variants.index(curr_var),
+                                           format_func=lambda v: v.replace("_", " "), key=f"tgt_var_{ti}")
+                motions = ["planned (class envelope)", "CV", "CA", "CT"]
+                curr_mot = (tgt["motion"].get("model", "CV") if isinstance(tgt.get("motion"), dict)
+                            and "segments" not in tgt["motion"] else motions[0])
+                mot_selected = t_col3.selectbox(f"Motion #{ti}", motions,
+                                                index=motions.index(curr_mot) if curr_mot in motions else 0,
                                                 key=f"tgt_mot_{ti}")
-                tgt["target_type"] = tt_selected
-                tgt["label"] = lbl_val
-
-                # Explicit initial position & velocity kinematics
-                has_explicit_init = "position" in tgt and "velocity" in tgt
-                k_col1, k_col2, k_col3, k_col4 = st.columns(4)
-                use_custom = k_col1.checkbox(f"Explicit Initial Pos/Vel #{ti}", value=has_explicit_init, key=f"tgt_custom_{ti}")
-                if use_custom:
-                    def_pos = tgt.get("position", [0.0 + ti * 1000.0, 0.0 + ti * 1000.0, 500.0 + ti * 200.0])
-                    px = k_col2.number_input(f"Pos X (m) #{ti}", value=float(def_pos[0]), step=250.0, key=f"tgt_px_{ti}")
-                    py = k_col3.number_input(f"Pos Y (m) #{ti}", value=float(def_pos[1]), step=250.0, key=f"tgt_py_{ti}")
-                    pz = k_col4.number_input(f"Alt Z (m) #{ti}", value=float(def_pos[2]), step=50.0, key=f"tgt_pz_{ti}")
-                    s_col1, s_col2 = st.columns(2)
-                    def_vel = tgt.get("velocity", [150.0 if ti == 0 else (20.0 if ti in (1, 3) else 280.0), 0.0, 0.0])
-                    def_speed = float(np.hypot(def_vel[0], def_vel[1]))
-                    spd = s_col1.number_input(f"Speed (m/s) #{ti}", value=def_speed, step=10.0, key=f"tgt_spd_{ti}")
-                    hdg = s_col2.slider(f"Heading Azimuth (deg) #{ti}", 0.0, 360.0, 0.0, step=5.0, key=f"tgt_hdg_{ti}")
-                    vx = spd * np.cos(np.radians(hdg))
-                    vy = spd * np.sin(np.radians(hdg))
-                    tgt["position"] = [float(px), float(py), float(pz)]
-                    tgt["velocity"] = [float(vx), float(vy), 0.0]
-                    tgt["motion"] = {"model": mot_selected}
+                new_tgt = {"target_class": cls_sel}
+                if mot_selected == motions[0]:
+                    if var_sel != "auto":
+                        new_tgt["variant"] = var_sel
                 else:
-                    tgt.pop("position", None)
-                    tgt.pop("velocity", None)
-                    if isinstance(tgt.get("motion"), dict) and mot_selected != "SegmentedMotion":
-                        tgt["motion"]["model"] = mot_selected
+                    # explicit start: position, speed and heading
+                    k_col1, k_col2, k_col3 = st.columns(3)
+                    def_pos = tgt.get("position", [0.0 + ti * 1000.0, -4000.0, 500.0])
+                    px = k_col1.number_input(f"Pos X (m) #{ti}", value=float(def_pos[0]), step=250.0, key=f"tgt_px_{ti}")
+                    py = k_col2.number_input(f"Pos Y (m) #{ti}", value=float(def_pos[1]), step=250.0, key=f"tgt_py_{ti}")
+                    pz = k_col3.number_input(f"Alt Z (m) #{ti}", value=float(def_pos[2]), step=50.0, key=f"tgt_pz_{ti}")
+                    variant = var_sel if var_sel != "auto" else list(TARGET_CLASSES[cls_sel]["variants"])[0]
+                    lo, hi = TARGET_CLASSES[cls_sel]["variants"][variant].speed_typical_mps
+                    s_col1, s_col2 = st.columns(2)
+                    spd = s_col1.number_input(f"Speed (m/s) #{ti}", value=float((lo + hi) / 2), step=10.0,
+                                              key=f"tgt_spd_{ti}")
+                    hdg = s_col2.slider(f"Heading Azimuth (deg) #{ti}", 0.0, 360.0, 90.0, step=5.0, key=f"tgt_hdg_{ti}")
+                    motion = {"model": mot_selected}
+                    if mot_selected == "CA":
+                        acc = st.number_input(f"Acceleration along the heading (m/s²) #{ti}", value=2.0, step=0.5,
+                                              key=f"tgt_acc_{ti}")
+                        motion["acceleration_mps2"] = [float(acc * np.cos(np.radians(hdg))),
+                                                       float(acc * np.sin(np.radians(hdg))), 0.0]
+                    elif mot_selected == "CT":
+                        motion["turn_rate_rad_s"] = float(np.radians(st.number_input(
+                            f"Turn rate (deg/s, + = left) #{ti}", value=3.0, step=0.5, key=f"tgt_turn_{ti}")))
+                    new_tgt.update({"variant": variant, "position": [float(px), float(py), float(pz)],
+                                    "velocity": [float(spd * np.cos(np.radians(hdg))),
+                                                 float(spd * np.sin(np.radians(hdg))), 0.0],
+                                    "motion": motion})
+                targets_conf[ti] = new_tgt
 
         with st.expander("Channel & Environment Parameters", expanded=False):
             ch_col1, ch_col2 = st.columns(2)
@@ -327,7 +341,11 @@ with tab_scen:
         if trans_res["transitions"]:
             df_trans = pd.DataFrame(trans_res["transitions"])[["time_s", "track_id", "from_radar", "to_radar", "time_since_last_update_s", "sigma_pos_before_m", "sigma_pos_after_m"]]
             st.dataframe(df_trans.head(15), width="stretch", hide_index=True)
-        st.warning("**Note:** These transitions represent centralized opportunistic sensor assignments via shared track slots. The codebase uses opportunistic scheduling rather than a distributed peer-to-peer handover protocol.")
+        st.info("**Note:** A transition means that the next update of a fused track came from another radar. "
+                "With the task-manager policies (task_greedy, ppo_task) the fusion centre sends track-update "
+                "requests and each radar's own scheduler decides whether and when to serve them; with the "
+                "mode-setting baselines the centre assigns the track slot directly. There is no radar-to-radar "
+                "handover protocol.")
 
         st.markdown("---")
         st.markdown("##### E. Ground-Truth Evaluation Metrics (Category C — evaluation only)")
@@ -337,11 +355,25 @@ with tab_scen:
             analysis_views.render_ground_truth(ep_an.ground_truth_metrics(records_data))
 
 
+@st.cache_data(show_spinner=False)
+def sample_class_trajectories(duration_s: float = 30.0):
+    """One planned trajectory per class (UAV, aircraft, missile) over procedural terrain."""
+    from src.core.terrain import build_terrain
+    from src.services.class_dataset_service import plan_target, resolve_recipe
+    ter = build_terrain(load_scenario("nominal")["site"], {"source": "procedural"}, 0)
+    cfg = resolve_recipe({})["trajectory"]
+    out = []
+    for lab, cls in enumerate(CLASS_NAMES):
+        _, info = plan_target(cls, np.random.default_rng(lab + 1), ter, duration_s, 0.5, (0.0, 0.0), cfg)
+        out.append((lab, np.asarray(info["trajectory"])))
+    return out
+
+
 # ============================================================== 3-D simulation
 with tab_sim:
     c1, c2, c3, c4, c5 = st.columns([2, 2, 1, 1, 1])
     scen = c1.selectbox("Scenario", list_scenarios(), index=list_scenarios().index("nominal"))
-    pol = c2.selectbox("Coordination policy", POLICY_NAMES, index=POLICY_NAMES.index("central_greedy"),
+    pol = c2.selectbox("Coordination policy", POLICY_NAMES, index=POLICY_NAMES.index("task_greedy"),
                        help="\n".join(f"**{k}** – {v}" for k, v in POLICY_HELP.items()))
     seed = c3.number_input("Seed", 0, 9999, 0)
     has_clf = sim.CLASSIFIER_PATH.exists()
@@ -414,7 +446,10 @@ with tab_sim:
             rng_m, sig_m2, _ = fr["radars"][ri_]["link"][ti_]
             los = fr["radars"][ri_]["los"][ti_]
             sw = 1 if "1" in payload["targets"][ti_]["fluctuation"] else 0
-            lb = radar_info.link_budget(radars_p[ri_], max(rng_m, 1.0), sig_m2, swerling=sw)
+            tg = fr["targets"][ti_]
+            los_vec = np.asarray(tg["p"], float) - radars_p[ri_].pos
+            r_dot = float(np.dot(tg["v"], los_vec) / max(np.linalg.norm(los_vec), 1e-9))
+            lb = radar_info.link_budget(radars_p[ri_], max(rng_m, 1.0), sig_m2, swerling=sw, r_dot_mps=r_dot)
             st.markdown(f"**t = {fr['t']:.1f} s** · range **{rng_m / 1000:.2f} km** · RCS at this aspect "
                         f"**{sig_m2:.3g} m²** ({10 * np.log10(max(sig_m2, 1e-12)):.1f} dBsm) · line of sight: "
                         + {0: "outside coverage", 1: "visible", 2: "hidden by terrain"}[los])
@@ -425,10 +460,21 @@ with tab_sim:
             c2.metric("SNR", f"{lb['snr_db']:.1f} dB",
                       help="Signal-to-noise ratio of one track dwell with the beam on the target: the sum of the "
                            "radar-equation terms in the table.")
+            rule = f"{radars_p[ri_].prf_m_of_n} of {len(radars_p[ri_].prf_stagger_hz)} PRF sub-dwells"
             c2.metric("P_D, constant RCS (Marcum)", f"{lb['pd_constant_rcs']:.3f}",
-                      help="Detection probability at this SNR for a non-fluctuating target (Marcum Q-function).")
+                      help=f"Detection probability of the look for a non-fluctuating target: each PRF sub-dwell "
+                           f"has {lb['sub_dwell_snr_db']:.1f} dB (Marcum Q-function), detection needs {rule}.")
             c2.metric("P_D, Swerling I", f"{lb['pd_swerling1']:.3f}",
-                      help="Detection probability at this SNR for a slowly fluctuating target (Swerling I).")
+                      help=f"Same for a slowly fluctuating target (Swerling I: one RCS per look), {rule}.")
+            n_prf, m_prf = len(radars_p[ri_].prf_stagger_hz), radars_p[ri_].prf_m_of_n
+            if lb["n_blind_prfs"] > n_prf - m_prf:
+                c2.warning(f"Radial velocity {r_dot:.1f} m/s puts this target in the clutter notch of "
+                           f"{lb['n_blind_prfs']} of {n_prf} PRFs: fewer than {m_prf} can see it, so this radar "
+                           "cannot detect it in this look (blind speed; zero Doppler = flying across the beam).")
+            elif lb["n_blind_prfs"]:
+                c2.warning(f"Radial velocity {r_dot:.1f} m/s puts this target in the clutter notch of "
+                           f"{lb['n_blind_prfs']} of {n_prf} PRFs; at least {m_prf} of the other "
+                           f"{n_prf - lb['n_blind_prfs']} must detect it.")
             c2.caption(f"This target uses the {lb['pd_model']} model. It would be detected with P_D = 0.5 out to "
                        f"{lb['max_range_pd50_km']:.1f} km at this RCS.")
             c2.markdown("**Measurement accuracy at this SNR**  \n" +
@@ -491,7 +537,9 @@ with tab_lab:
     c, d = st.columns(2)
     snr_db = np.linspace(-5, 25, 300)
     chi = 10 ** (snr_db / 10)
+    from src.core.radar import look_detection_probability
     pd_curves = {"Marcum Q (Eq. 31)": det.pd_nonfluctuating(chi, pfa), "Swerling I": det.pd_swerling1(chi, pfa),
+                 f"MPRF look, {p.prf_m_of_n} of {len(p.prf_stagger_hz)} PRFs (simulator)": look_detection_probability(chi, p),
                  "erfc approx (Alpdemir Eq. 1)": det.pd_erfc_approx(chi, pfa), "logistic (Eq. 34)": det.pd_logistic(snr_db)}
     c.plotly_chart(plots.line(snr_db, pd_curves, "Probability of detection", "SNR (dB)", "P_D"), width="stretch")
     sig = np.array([measurement_sigmas(x, p, p.profiles[Mode[mode]]) for x in chi])
@@ -557,30 +605,26 @@ with tab_cls:
         study_path = ROOT / "models" / "metadata" / "classifier_study.json"
         rows = json.loads(study_path.read_text())["results"] if study_path.exists() else []
         gbm = next((r for r in rows if r["model"] == "gbm" and r["train_on"] == r["test_on"] == "fused"
-                    and "confusion" in r), None)
+                    and "confusion" in r and len(r["confusion"]) == len(CLASS_NAMES)), None)
         if gbm:
             st.caption(f"Simulator classifier (GBM, fused tracks) on held-out episodes: {gbm['n']} windows · "
                        f"macro-F1 {gbm['macro_f1']:.2f} · balanced accuracy {gbm['balanced_accuracy']:.2f}")
             st.plotly_chart(plots.confusion(gbm["confusion"], CLASS_SHORT), width="stretch")
-        rng = np.random.default_rng(1)
-        trajs = []
-        for lab in range(4):
-            s, mot = spawn_target(lab, lab, rng, 6000)
-            P = [s.p.copy()]
-            for _ in range(160):
-                advance(s, mot, 0.5)
-                P.append(s.p.copy())
-            trajs.append((lab, np.array(P)))
-        st.plotly_chart(plots.trajectories_3d(trajs, "One sample trajectory per class (80 s)"), width="stretch")
+        st.plotly_chart(plots.trajectories_3d(sample_class_trajectories(), "One sample trajectory per class (30 s)"),
+                        width="stretch")
 
     st.subheader("Classifier study: MLP vs GRU, fused vs single-radar tracks")
     study = ROOT / "models" / "metadata" / "classifier_study.json"
-    if not study.exists():
+    import json
+    rep_s = json.loads(study.read_text()) if study.exists() else None
+    old_study = rep_s is not None and set(rep_s.get("dataset", {}).get("windows_per_class", {}) or CLASS_NAMES) != set(CLASS_NAMES)
+    if rep_s is None:
         st.info("Run once: `python -m src.services.classifier_study --episodes 40` "
                 "(multi-radar episodes, ~10 min on a CPU).")
+    elif old_study:
+        st.warning("This study file was made with the earlier A–D behaviour classes. Re-run it for "
+                   "UAV / aircraft / missile: `python -m src.services.classifier_study --episodes 40`.")
     else:
-        import json
-        rep_s = json.loads(study.read_text())
         res = pd.DataFrame(rep_s["results"]).drop(columns="confusion", errors="ignore")
         piv = res.pivot_table(index=["train_on", "test_on"], columns="model", values="macro_f1").round(3)
         st.dataframe(piv, width="stretch")
@@ -633,6 +677,24 @@ with tab_cls:
             f"(training uses a class-balanced subset) · episodes in both train and test: "
             f"{ds_chk['episodes_in_train_and_test']} · best single feature: `{ds_chk['best_single_feature']}` "
             f"({ds_chk['best_single_feature_accuracy']:.0%} accuracy alone).")
+        if rep_s.get("hard_pairs") or rep_s.get("early") or rep_s.get("by_variant"):
+            st.markdown("**Hard cases** – the overall scores are high because UAV, aircraft and missile differ "
+                        "strongly in speed and altitude. These tables show where it is not easy (GBM = the "
+                        "simulator's model, GRU = best sequence model; fused tracks of held-out episodes).")
+            h1, h2 = st.columns(2)
+            if rep_s.get("hard_pairs"):
+                hp = pd.DataFrame(rep_s["hard_pairs"]).round(3)
+                h1.dataframe(hp, hide_index=True, width="stretch")
+                h1.caption("Physically overlapping variant pairs: accuracy on their windows, how often one is "
+                           "taken for the other, and the best single feature on this pair alone.")
+            if rep_s.get("early"):
+                h2.dataframe(pd.DataFrame(rep_s["early"]).round(3), hide_index=True, width="stretch")
+                h2.caption("Young tracks: only their first 3 s or 6 s (the simulator first classifies a track "
+                           "after 6 s). The models were trained on 10 s windows.")
+            if rep_s.get("by_variant"):
+                bv = pd.DataFrame(rep_s["by_variant"]).T.reset_index().rename(columns={"index": "variant"})
+                st.dataframe(bv.round(3), hide_index=True, width="stretch")
+                st.caption("Accuracy per target variant; n = test windows (fast missiles give few windows).")
 
 
 # ============================================================== Experiments
@@ -640,7 +702,8 @@ with tab_exp:
     st.subheader("Policy comparison")
     a, b, c = st.columns([2, 3, 1])
     scen_e = a.selectbox("Scenario ", list_scenarios(), key="exp_scen")
-    pols = b.multiselect("Policies", POLICY_NAMES, default=TRAINED + ["fixed_scan", "round_robin", "nearest", "central_greedy"])
+    pols = b.multiselect("Policies", POLICY_NAMES, default=TRAINED + ["task_greedy", "central_greedy_confirm",
+                                                                     "central_greedy", "round_robin", "fixed_scan"])
     n_seeds = c.number_input("Seeds", 1, 10, 3)
     if st.button("Run comparison", type="primary"):
         bar = st.progress(0.0, text="Running episodes…")

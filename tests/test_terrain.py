@@ -8,7 +8,7 @@ from src.core.modes import Mode
 from src.core.radar import RadarAction, RadarParams, RadarState, los_status, radar_step
 from src.core.rcs import ConstantRCS
 from src.core.scenario import build_radars, load_scenario
-from src.core.targets import TargetState, advance, spawn_target
+from src.core.targets import TargetState, advance, spawn_class_target, spawn_target
 from src.core.terrain import Terrain, build_terrain
 from src.services.simulation_service import export_episode_records, load_episode_records
 
@@ -130,8 +130,9 @@ def test_minimum_agl_over_entire_interpolated_valley_route(valley):
 def test_clearance_does_not_modify_analytic_cv_route(valley):
     sc, terrain, _ = valley
     spec = sc["targets"][0]
-    target, motion = spawn_target(0, spec["label"], np.random.default_rng(0), sc["area_radius_m"],
-                                 position=spec["position"], velocity=spec["velocity"], motion=spec["motion"])
+    target, motion = spawn_class_target(0, spec["target_class"], spec["variant"], np.random.default_rng(0),
+                                        sc["area_radius_m"], position=spec["position"], velocity=spec["velocity"],
+                                        motion=spec["motion"])
     for step in range(1, 401):
         advance(target, motion, sc["dt"], terrain=terrain)
         np.testing.assert_array_equal(target.p, [0, -5000 + 25 * step, 200])

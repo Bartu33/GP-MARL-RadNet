@@ -87,6 +87,31 @@ class RadarNetEnv(ParallelEnv):
         self.share = bool(scenario.get("share_actions", False))
         self.n_base_actions = 2 + self.K * (2 if self.interleaved else 1)
 
+    def _plan_class_target(self, spec: dict, rng) -> dict:
+        """Draw variant, RCS and a valid trajectory through the area for a
+        class-only target (UAV / aircraft / missile), with the planner of the
+        class datasets, so built-in scenarios and datasets share one target
+        model.  Uses the target's own random stream: the same seed gives every
+        policy the same targets."""
+        from src.services.class_dataset_service import plan_target, resolve_recipe
+        if not hasattr(RadarNetEnv, "_TRAJECTORY_CFG"):
+            RadarNetEnv._TRAJECTORY_CFG = resolve_recipe({})["trajectory"]
+        total = float(self.sc["duration_s"])
+        # A fast target crosses the area in far less than a long episode (a 950 m/s
+        # missile flies 57 km in 60 s, more than the terrain grid).  If no trajectory
+        # of the full length fits, the planned part is shortened and the target then
+        # flies straight on and leaves the area, as a real one would.
+        for planned in [total] + [d for d in (40.0, 30.0, 20.0) if d < total]:
+            try:
+                target, _ = plan_target(spec["target_class"], rng, self.terrain, planned, float(self.sc["dt"]),
+                                        (0.0, 0.0), RadarNetEnv._TRAJECTORY_CFG, variant=spec.get("variant"))
+            except ValueError:
+                continue
+            if planned < total:
+                target["motion"]["segments"].append({"model": "CV", "duration_s": total - planned})
+            return target
+        raise ValueError(f"no trajectory for a {spec['target_class']} target, even shortened to 20 s")
+
     def config_snapshot(self) -> dict:
         """Resolved inputs and actual radar parameters; never writes files."""
         return scenario_snapshot(self.sc, episode_seed=self._seed,
@@ -130,6 +155,8 @@ class RadarNetEnv(ParallelEnv):
         self.radar_states = [RadarState.initial(p) for p in self.radar_params]
         self.targets, self.motions = [], []
         for i, spec in enumerate(self.sc["targets"]):
+            if "target_class" in spec and "motion" not in spec:
+                spec = self._plan_class_target(spec, self.rng_targets[i])
             if "target_class" in spec:
                 s, m = spawn_class_target(i, spec["target_class"], spec["variant"], self.rng_targets[i],
                                           self.sc["area_radius_m"], position=spec["position"],
@@ -166,6 +193,7 @@ class RadarNetEnv(ParallelEnv):
         # local schedulers: used when the centre sends track-update requests (step_requests)
         self.schedulers = [LocalScheduler(p, self.dt, **self.sc.get("scheduler", {})) for p in self.radar_params]
         self.last_answers: dict = {}
+        self.step_answers: dict = {}
         self.last_report_counts: dict = {}
         self.track_events = {"info_gain": 0.0, "confirmed_deleted": 0, "newly_confirmed": 0}
         self._update_slots()
@@ -216,10 +244,15 @@ class RadarNetEnv(ParallelEnv):
         never sets a radar mode.  Returns the same tuple as :meth:`step`."""
         t_next = self.t + self.dt
         tracks = {tr.id: tr for tr in self.tracker.tracks}
-        self.last_answers, looks = {}, {}
+        # step_answers: answers given in this step (rewards); last_answers: each radar's
+        # answers to the last requests it received, kept until it gets new ones (the
+        # observation; a 1-s decision spans two 0.5-s steps, the second without requests)
+        self.step_answers, looks = {}, {}
         for i, sch in enumerate(self.schedulers):
             st = self.radar_states[i]
-            self.last_answers[i] = sch.submit(self.t, requests.get(i, []), tracks, st)
+            self.step_answers[i] = sch.submit(self.t, requests.get(i, []), tracks, st)
+            if requests.get(i) or i not in self.last_answers:
+                self.last_answers[i] = self.step_answers[i]
             looks[i] = sch.next_action(t_next, tracks, st)
         served = {i: sch.last_served for i, sch in enumerate(self.schedulers) if sch.last_served is not None}
         out = self.step({a: 1 for a in self.agents}, radar_actions=looks)
@@ -552,7 +585,9 @@ class RadarNetEnv(ParallelEnv):
         for ti, tr in match.items():
             tgt = self.targets[ti]
             errs.append(np.linalg.norm(tr.x[:3] - tgt.p))
-            if tr.class_probs is not None:
+            # the classifier predicts UAV / aircraft / missile; legacy behaviour labels (A-D)
+            # are another label space and are not scored
+            if tr.class_probs is not None and tgt.target_class is not None:
                 cls_gain.append(tr.class_probs[tgt.label] - 1.0 / len(CLASS_NAMES))
                 cls_hits.append(float(np.argmax(tr.class_probs) == tgt.label))
         err_term = np.mean([min(3.0, e / w["err_scale_m"]) for e in errs]) if errs else 3.0

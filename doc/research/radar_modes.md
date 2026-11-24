@@ -6,11 +6,24 @@ and selected by the agents through the environment's action space
 
 | Mode | What the radar does in one step (0.5 s) | Effect in the model |
 |---|---|---|
-| **SEARCH** | Visits 8 consecutive cells of a serpentine azimuth × elevation raster over its search sector; 8 pulses (2 ms) per cell. | Wide coverage, low integration gain → lower SNR and larger measurement covariance. Revisit time = raster cells / 8 (default 80 / 8 = 10 steps = 5 s). |
-| **TRACK** | One long dwell (96 pulses, 24 ms) on the *predicted* position of a chosen track. | +10.8 dB coherent gain vs. a search cell and finer radial-velocity resolution (λ / 2T_CPI), but only targets inside that beam are seen and more energy and heat are spent. |
-| **INTERLEAVED** | Time-shared: 4 search cells (8 pulses each) **and** one medium track dwell (48 pulses, 12 ms) in the same step. | Keeps surveying while tracking; +7.8 dB on the tracked target vs. a search cell; costs between a search look and a track dwell. |
+| **SEARCH** | Visits 8 consecutive cells of a serpentine azimuth × elevation raster over its search sector; 32 pulses (2 ms) per cell. | Wide coverage, low integration gain → lower SNR and larger measurement covariance. Revisit time = raster cells / 8 (default 80 / 8 = 10 steps = 5 s). |
+| **TRACK** | One long dwell (384 pulses, 24 ms) on the *predicted* position of a chosen track. | +10.8 dB coherent gain vs. a search cell and finer radial-velocity resolution (λ / 2T_CPI), but only targets inside that beam are seen and more energy and heat are spent. |
+| **INTERLEAVED** | Time-shared: 4 search cells (32 pulses each) **and** one medium track dwell (192 pulses, 12 ms) in the same step. | Keeps surveying while tracking; +7.8 dB on the tracked target vs. a search cell; costs between a search look and a track dwell. |
 | **IDLE** | No transmission. | Recovers energy and cools down. Also forced automatically when the energy budget or the thermal limit would be exceeded (the search raster does not advance then). |
 | **OFFLINE** | Agent failure (stress test). | No reports. |
+
+**Waveform.** All modes use a medium-PRF stagger of 14, 16 and 18 kHz. Every look (each search
+cell and each track dwell) is split into three coherent sub-dwells, one per PRF, each with a third of
+the pulses (a 384-pulse track dwell = 3 × 128). A target is reported when at least **2 of the 3**
+sub-dwells detect it; its range and radial velocity are then unfolded over the PRFs that detected it
+(Chinese remainder). Over all three PRFs range is unambiguous to 74.9 km and radial velocity to
+±7555 m/s; over a pair only to ±839–1079 m/s, so a very fast target seen by just two PRFs is reported
+with folded radial velocity. A sub-dwell whose PRF puts the target in the ±1 m/s clutter notch cannot
+detect it (blind speed); with one PRF blind the other two must both detect, and a zero-Doppler
+(tangential) target is never reported. Each sub-dwell has a third of the look's SNR, so P_D = 0.5 needs
+about 16 dB of look SNR instead of 11.5 dB for one coherent dwell; Doppler resolution is that of a
+sub-dwell (λ / 2 T_sub), and the accuracy of a report uses the SNR of the sub-dwells that detected it.
+Dwell times, and so energy, heat and time budgets, are those of the earlier 4 kHz waveform.
 
 **Track-while-scan** comes for free: every detection — from a search,
 track or interleaved look — goes to the tracker, so search also refreshes

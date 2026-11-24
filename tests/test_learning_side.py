@@ -86,7 +86,7 @@ def test_classifier_study_runs_and_splits_by_episode():
     from src.services import classifier_study as cs
     d = cs.generate(3, duration_s=50.0, seed=3)
     assert d["seq"].shape[1:] == (cs.SEQ_LEN, len(cs.SEQ_NAMES))
-    assert set(np.unique(d["source"])) <= {"fused", "local", "truth"}
+    assert set(np.unique(d["source"])) <= {"fused", "local", "truth", "fused_early3", "fused_early6"}
     rep = cs.run_study(d)
     assert rep["dataset"]["episodes_in_train_and_test"] == 0
     for r in rep["results"]:
@@ -137,7 +137,7 @@ def test_simulation_classifier_trained_on_fused_tracks(tmp_path):
     meta = cs.train_simulation_model(d, path=tmp_path / "checkpoints" / "sim.joblib")
     clf = FlightProfileClassifier.load(tmp_path / "checkpoints" / "sim.joblib")
     assert clf.fitted and meta["trained_on"].startswith("fused")
-    assert clf.predict_proba(d["feat"][:3]).shape == (3, 4)
+    assert clf.predict_proba(d["feat"][:3]).shape == (3, 3)                    # UAV / aircraft / missile
 
 
 def test_trained_policy_refuses_a_scenario_of_another_size(monkeypatch):

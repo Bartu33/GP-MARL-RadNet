@@ -55,6 +55,7 @@
               2742.3,
               20.2
             ],
+            "prf_m_of_n": 2,
             "prf_stagger_hz": [
               14000.0,
               16000.0,
@@ -136,6 +137,7 @@
               -2285.6,
               18.2
             ],
+            "prf_m_of_n": 2,
             "prf_stagger_hz": [
               14000.0,
               16000.0,
@@ -338,6 +340,10 @@
             "texture_family": "dry_canyon",
             "valley_width_m": 3232.7
           },
+          "tracker": {
+            "confirm_hits": 3,
+            "confirm_window": 48
+          },
           "zones": [
             {
               "height_m": 214.6,
@@ -385,7 +391,7 @@
         },
         "terrain_seed": 41972189
       },
-      "dataset_episode_id": "ep-000000-06a37b58a197",
+      "dataset_episode_id": "ep-000000-d35912e0daf7",
       "episode_index": 0,
       "episode_seed": 4474440346618437414,
       "generation_status": "planned",
@@ -410,7 +416,7 @@
       ],
       "radar_count": 2,
       "recipe_version": 2,
-      "resolved_configuration_hash": "fbd9e42513a04ed53462a9f3fccda45e581fc4df628bbde8b56575d26819531d",
+      "resolved_configuration_hash": "582f8e35e0efa918fa3c8343d2e26aed8e3ae2c8dc24eed216441c087fa62a21",
       "resolved_scenario": {
         "area_radius_m": 7500.0,
         "description": "2 radar(s), targets: missile/subsonic_cruise, missile/subsonic_cruise; converging routes",
@@ -570,6 +576,10 @@
           "texture_family": "dry_canyon",
           "valley_width_m": 3232.7
         },
+        "tracker": {
+          "confirm_hits": 3,
+          "confirm_window": 48
+        },
         "zones": [
           {
             "height_m": 214.6,
@@ -721,6 +731,7 @@
               -1474.2,
               18.2
             ],
+            "prf_m_of_n": 2,
             "prf_stagger_hz": [
               14000.0,
               16000.0,
@@ -931,6 +942,10 @@
             "texture_family": "rocky_mountain",
             "valley_width_m": 2912.0
           },
+          "tracker": {
+            "confirm_hits": 3,
+            "confirm_window": 48
+          },
           "zones": [
             {
               "height_m": 113.6,
@@ -1008,7 +1023,7 @@
         },
         "terrain_seed": 1074075674
       },
-      "dataset_episode_id": "ep-000001-4917b90ec27b",
+      "dataset_episode_id": "ep-000001-5bd9a94dd1c7",
       "episode_index": 1,
       "episode_seed": 7967058699555305636,
       "generation_status": "planned",
@@ -1035,7 +1050,7 @@
       ],
       "radar_count": 1,
       "recipe_version": 2,
-      "resolved_configuration_hash": "d70826fc1131c5a8112184db8594387730ba578c26e3f40480cfd9df139eeb01",
+      "resolved_configuration_hash": "bd5571a4510bc41ffe699fe2a0c6933fc266bab52962e30335fc82d73108f03b",
       "resolved_scenario": {
         "area_radius_m": 7500.0,
         "description": "1 radar(s), targets: missile/subsonic_cruise, missile/subsonic_cruise, missile/supersonic; diverging routes",
@@ -1202,6 +1217,10 @@
           "source": "procedural",
           "texture_family": "rocky_mountain",
           "valley_width_m": 2912.0
+        },
+        "tracker": {
+          "confirm_hits": 3,
+          "confirm_window": 48
         },
         "zones": [
           {
@@ -1419,6 +1438,7 @@
               -1385.2,
               14.7
             ],
+            "prf_m_of_n": 2,
             "prf_stagger_hz": [
               14000.0,
               16000.0,
@@ -1500,6 +1520,7 @@
               -2567.1,
               10.8
             ],
+            "prf_m_of_n": 2,
             "prf_stagger_hz": [
               14000.0,
               16000.0,
@@ -1581,6 +1602,7 @@
               4071.7,
               11.0
             ],
+            "prf_m_of_n": 2,
             "prf_stagger_hz": [
               14000.0,
               16000.0,
@@ -1816,6 +1838,10 @@
             "texture_family": "dry_canyon",
             "valley_width_m": 4163.0
           },
+          "tracker": {
+            "confirm_hits": 3,
+            "confirm_window": 48
+          },
           "zones": [
             {
               "height_m": 165.0,
@@ -1883,7 +1909,7 @@
         },
         "terrain_seed": 1983953727
       },
-      "dataset_episode_id": "ep-000002-c3e227794a9f",
+      "dataset_episode_id": "ep-000002-a5562e3d4bcb",
       "episode_index": 2,
       "episode_seed": 8689893069832811935,
       "generation_status": "planned",
@@ -1911,7 +1937,7 @@
       ],
       "radar_count": 3,
       "recipe_version": 2,
-      "resolved_configuration_hash": "2c46943d00fb894db722a83263562d19b4db65607fe38b05a37df85aecb516bc",
+      "resolved_configuration_hash": "65382c879bf29e849384a0c29af5932e134e06731d2b0f9ac5a2bf8c8e834e2b",
       "resolved_scenario": {
         "area_radius_m": 7500.0,
         "description": "3 radar(s), targets: missile/supersonic, missile/supersonic, missile/supersonic; hub routes",
@@ -2103,6 +2129,10 @@
           "source": "procedural",
           "texture_family": "dry_canyon",
           "valley_width_m": 4163.0
+        },
+        "tracker": {
+          "confirm_hits": 3,
+          "confirm_window": 48
         },
         "zones": [
           {
@@ -2299,6 +2329,7 @@
               2111.9,
               11.4
             ],
+            "prf_m_of_n": 2,
             "prf_stagger_hz": [
               14000.0,
               16000.0,
@@ -2479,6 +2510,10 @@
             "texture_family": "grassland_valley",
             "valley_width_m": 3043.9
           },
+          "tracker": {
+            "confirm_hits": 3,
+            "confirm_window": 48
+          },
           "zones": [
             {
               "height_m": 144.6,
@@ -2536,7 +2571,7 @@
         },
         "terrain_seed": 1230028793
       },
-      "dataset_episode_id": "ep-000003-b15e73b9d8a4",
+      "dataset_episode_id": "ep-000003-2ad4bc8fcf50",
       "episode_index": 3,
       "episode_seed": 4724209572628961330,
       "generation_status": "planned",
@@ -2558,7 +2593,7 @@
       ],
       "radar_count": 1,
       "recipe_version": 2,
-      "resolved_configuration_hash": "287befb1df875cc22e27d39ce76f0360b2fc92352702ecb4aeba7acdbb8eb884",
+      "resolved_configuration_hash": "5550d8e11e96477ba1fe4c8f5e553104dd63fd1b9a23fb9443427cae8a5cf367",
       "resolved_scenario": {
         "area_radius_m": 7500.0,
         "description": "1 radar(s), targets: missile/subsonic_cruise, missile/subsonic_cruise; diverging routes",
@@ -2695,6 +2730,10 @@
           "source": "procedural",
           "texture_family": "grassland_valley",
           "valley_width_m": 3043.9
+        },
+        "tracker": {
+          "confirm_hits": 3,
+          "confirm_window": 48
         },
         "zones": [
           {
@@ -2867,6 +2906,7 @@
               2239.2,
               17.4
             ],
+            "prf_m_of_n": 2,
             "prf_stagger_hz": [
               14000.0,
               16000.0,
@@ -2948,6 +2988,7 @@
               -2362.1,
               19.9
             ],
+            "prf_m_of_n": 2,
             "prf_stagger_hz": [
               14000.0,
               16000.0,
@@ -3170,6 +3211,10 @@
             "texture_family": "rocky_mountain",
             "valley_width_m": 3397.3
           },
+          "tracker": {
+            "confirm_hits": 3,
+            "confirm_window": 48
+          },
           "zones": [
             {
               "height_m": 130.7,
@@ -3207,7 +3252,7 @@
         },
         "terrain_seed": 118003790
       },
-      "dataset_episode_id": "ep-000004-de2e4072ea78",
+      "dataset_episode_id": "ep-000004-1ef44b816c84",
       "episode_index": 4,
       "episode_seed": 7859925214371535490,
       "generation_status": "planned",
@@ -3235,7 +3280,7 @@
       ],
       "radar_count": 2,
       "recipe_version": 2,
-      "resolved_configuration_hash": "c82ee567098fedfae1efd3bb2af1ec36068987ef4c4a223832954ae7ff678502",
+      "resolved_configuration_hash": "6e6ed7638adeb3d0989f5e7923ab412f4498d929f1674b63d78b29d0b447e9ec",
       "resolved_scenario": {
         "area_radius_m": 7500.0,
         "description": "2 radar(s), targets: aircraft/transport, missile/subsonic_cruise, missile/supersonic; hub routes",
@@ -3414,6 +3459,10 @@
           "source": "procedural",
           "texture_family": "rocky_mountain",
           "valley_width_m": 3397.3
+        },
+        "tracker": {
+          "confirm_hits": 3,
+          "confirm_window": 48
         },
         "zones": [
           {

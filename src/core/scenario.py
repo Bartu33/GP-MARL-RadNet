@@ -198,17 +198,25 @@ def _radar_spec(spec, path, relationships=True):
 
 
 def _target_class(target, path):
-    """UAV / aircraft / missile target: explicit motion, label fixed by the class."""
+    """UAV / aircraft / missile target, label fixed by the class.
+
+    Either explicit (``variant``, ``position``, ``velocity`` and ``motion``, as the
+    dataset planners write them) or class only, optionally with a ``variant``:
+    the environment then draws the variant, the RCS and a valid trajectory
+    through the area from the class envelope at every reset (seeded)."""
     name = target["target_class"]
     if not isinstance(name, str) or name not in TARGET_CLASSES:
         raise ValueError(f"{path}.target_class: expected one of {list(TARGET_CLASSES)}")
     variants = TARGET_CLASSES[name]["variants"]
-    if target.get("variant") not in variants:
+    explicit = "motion" in target
+    if (explicit or "variant" in target) and target.get("variant") not in variants:
         raise ValueError(f"{path}.variant: expected one of {list(variants)} for {name}")
     if "target_type" in target:
         raise ValueError(f"{path}.target_type: cannot be combined with target_class")
-    if "motion" not in target:
-        raise ValueError(f"{path}.motion: required with target_class")
+    if not explicit:
+        for key in ("position", "velocity", "rcs_dbsm"):
+            if key in target:
+                raise ValueError(f"{path}.{key}: requires an explicit motion with target_class")
     if "label" in target:
         _number(target["label"], f"{path}.label", integer=True)
         if target["label"] != TARGET_CLASSES[name]["label"]:

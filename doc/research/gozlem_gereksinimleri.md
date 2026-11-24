@@ -73,8 +73,8 @@ içinde; tüm radarlar aynı satır sırasını görüyor; gerçek durum kullan�
 
 ## 3. Görev yöneticisi gözlemi (`src/core/observation.py`)
 
-o_t = [ {τ_j}, {ρ_i}, Q_t, maskeler ]. Boyut: K·22 + N·16 + N·K·8 + K + N·K + 1
-(nominal K = 6, N = 4: **419**; multi_target K = 12, N = 4: **773**).
+o_t = [ {τ_j}, {ρ_i}, Q_t, maskeler ]. Boyut: K·22 + N·16 + N·K·9 + K + N·K + 1
+(nominal K = 6, N = 4: **443**; multi_target K = 12, N = 4: **821**).
 Bütün konumlar **ortak dünya koordinatında** (ENU, kartezyen); radarlar
 kendi kutupsal koordinatlarında ölçer, dönüşümü füzyon merkezindeki EKF yapar.
 
@@ -83,8 +83,8 @@ kendi kutupsal koordinatlarında ölçer, dönüşümü füzyon merkezindeki EKF
 | Özellik | Ölçek | Kaynak |
 |---|---|---|
 | satır dolu | 0/1 | `env.slots` |
-| konum x, y, z | / alan yarıçapı, / 5000 m | `track.x` |
-| hız vx, vy, vz | / 300 m/s | `track.x` |
+| konum x, y, z | / (2 · alan yarıçapı), / 5000 m | `track.x` |
+| hız vx, vy; vz | / 1000 m/s; / 300 m/s | `track.x` |
 | log10(1 + σ_konum) | / 3 | `ekf.pos_std` |
 | log det P_konum | / 50 | `ekf.P` |
 | onaylı | 0/1 | M-of-N onayı |
@@ -95,9 +95,9 @@ kendi kutupsal koordinatlarında ölçer, dönüşümü füzyon merkezindeki EKF
 | son 3 s'de güncelleyen radar sayısı | / N | `updated_by` |
 | sınıf entropisi | / log C (1 = bilinmiyor) | `class_probs` |
 | bekleyen talep var | 0/1 | zamanlayıcı kuyrukları |
-| anlık SNR (son rapor) | / 30 dB | `track.snr` |
-| kayan ortalama SNR (son 10 rapor, **doğrusal** ortalama, dB'ye çevrilmiş) | / 30 dB | `track.snr` |
-| SNR standart sapması (dB) | / 10 dB | `track.snr` |
+| anlık SNR (son rapor) | / 80 dB | `track.snr` |
+| kayan ortalama SNR (son 10 rapor, **doğrusal** ortalama, dB'ye çevrilmiş) | / 80 dB | `track.snr` |
+| SNR standart sapması (dB) | / 20 dB, 1'de kırpılmış | `track.snr` |
 | istenen bakışlarda tespit oranı | 0–1 (geçmiş yoksa 0,5) | `track.dwells` |
 | bakış geçmişi var | 0/1 | `track.dwells` |
 
@@ -118,36 +118,60 @@ Lerro & Bar-Shalom (1993).
 | Özellik | Ölçek | Kaynak |
 |---|---|---|
 | çevrimiçi | 0/1 | `RadarState.online` |
-| konum x, y; sin/cos(yön) | / alan yarıçapı | `RadarParams` |
+| konum x, y; sin/cos(yön) | / (2 · alan yarıçapı) | `RadarParams` |
 | enerji, ısı payı, boş takip kanalı | 0–1 | `RadarState` (Eq. 54–57) |
 | zamanlayıcı kuyruğu | / c_max | `LocalScheduler.queue` |
-| son adımdaki cevaplar: kabul, gecikmeli, kısmi, ret | oran (toplam 1; talep yoksa 0) | `env.last_answers` |
+| son taleplerine verdiği cevaplar: kabul, gecikmeli, kısmi, ret | oran (toplam 1; hiç talep almadıysa 0) | `env.last_answers` (yeni talep gelene kadar korunur) |
 | merkeze ulaşan rapor sayısı | / 20, kırpılmış | `env.last_report_counts` (iletişim durumu) |
 | şu an takip bakışında | 0/1 | `RadarState.mode` |
 | takip bakışına ayrılan adım oranı | 0–1 | `env.track_load` |
 
-### 3.3 Hizmet kalitesi ve geçmiş Q_ij (8 özellik, radar × iz)
+### 3.3 Hizmet kalitesi ve geçmiş Q_ij (9 özellik, radar × iz)
 
 "Radar i, iz j'yi şimdi tam takip bakışıyla güncellerse ne olur?"
 
 | Özellik | Ölçek | Hesap |
 |---|---|---|
 | kapsanabilir | 0/1 (maske) | menzil, azimut, elevasyon, çevrimiçi |
-| tahmini SNR (0,1 m² referans) | / 30 dB | radar denklemi (Eq. 27) |
-| tahmini çapraz menzil σ | / 1000 m | r · σ_az (Eq. 42) |
+| tahmini SNR (0,1 m² referans) | / 80 dB | radar denklemi (Eq. 27) |
+| tahmini çapraz menzil σ | / 100 m, kırpılmış | r · σ_az (Eq. 42) |
 | beklenen bilgi kazancı ½(log det P − log det P⁺) | / 15 nat | P⁺ = (P⁻¹ + Hᵀ R⁻¹ H)⁻¹ |
 | bir takip bakışının enerji maliyeti | / E_max | kaynak modeli |
-| bu radarın bu izdeki son SNR'ı | / 30 dB (0 = hiç) | `track.snr[i]` |
+| bu radarın bu izdeki son SNR'ı | / 80 dB (0 = hiç) | `track.snr[i]` |
 | bu radarın bu izi en son güncellemesinden beri geçen süre | / 10 s (1 = hiç) | `track.updated_by[i]` |
 | bu radarın bu izdeki istenen bakışlarda tespit oranı | 0–1 (geçmiş yoksa 0,5) | `track.dwells[i]` |
+| bu radarın PRF'lerinden izin kör hızına düşen beklenen oran | 0–1 | `blind_share`: izin radyal hızı ve EKF belirsizliği, her PRF'nin ±1 m/s kör bantları |
 
-Son üç özellik "hangi radarı ne zaman tercih etmeliyiz" sorusunun
+Kör hız özelliği orta PRF dalga biçiminin sonucudur: bir bakış 3 PRF alt
+aralığından en az 2'sinde tespit ister, dolayısıyla izin radyal hızı bir
+radarın iki PRF'sinin kör bandına düşüyorsa o radar hedefi ne kadar güçlü
+olursa olsun göremez; başka bir radar seçilmelidir. Hız belirsizken (yeni
+doğmuş iz) olasılık küçük kalır; tek bir hız tahminiyle "kör" demek yeni
+izlerin %47'sini yanlışlıkla kör gösteriyordu.
+
+Son dört özellik "hangi radarı ne zaman tercih etmeliyiz" sorusunun
 cevabıdır: hangi radar bu hedefi iyi görüyor, en son kim güncelledi,
 kimin bakışları boşa gidiyor.
 
 Bilgi kazancı, önerideki ödülün ana terimi (β_I) ile aynı büyüklüktür;
 ajan böylece hangi talebin ödülü en çok artıracağını gözlemden
 çıkarabilir.
+
+### 3.4 Ölçeklerin seçimi
+
+Ölçekler, orta PRF dalga biçimi ve İHA / uçak / füze hedefleriyle nominal ve
+multi_target senaryolarında (6'şar tohum, kural tabanlı görev yöneticisi)
+ölçülen değer aralıklarından seçildi. Eski ölçeklerde SNR özelliklerinin
+%20–60'ı 1'in üstündeydi (raporların SNR'ı 10–80 dB: uçak RCS'si +25 dBsm'e
+kadar, takip bakışı 384 darbe), iz konumları alan dışına taşıyordu (izler
+14 km menzile kadar tutulur) ve füze hızları 950 m/s'e çıkıyordu. Yeni
+ölçeklerle bütün özelliklerde ±1 dışına taşan oran %0,3'ün altında.
+
+Aynı ölçümde bir hata da bulundu ve düzeltildi: 1 saniyelik karar iki 0,5 s
+adımı kapsar, ikinci adımda talep olmadığı için zamanlayıcı cevapları
+siliniyordu; gözlemdeki "son cevaplar" özellikleri hep 0 görünüyordu.
+Artık her radarın son taleplerine verdiği cevaplar yeni talebe kadar korunur;
+ödüldeki ret sayımı ise yalnızca o adımın cevaplarını (`step_answers`) kullanır.
 
 ## 4. Doğrulama (`tests/test_observation.py`)
 
@@ -164,7 +188,7 @@ ajan böylece hangi talebin ödülü en çok artıracağını gözlemden
 | `test_track_features_follow_the_tracker` | iz özetinin özellikleri izleyiciyle tutarlı |
 
 Ayrıca gözlemin dayandığı büyüklükler kendi testleriyle doğrulandı:
-ölçüm kovaryansı ve P_D (`radar_physics_report`, 21/21), izleyici
+ölçüm kovaryansı, P_D, PRF kademesi ve kör hızlar (`radar_physics_report`, 25/25), izleyici
 tutarlılığı (NEES, `test_tracker.py`), zamanlayıcı cevapları
 (`test_scheduler.py`).
 
@@ -189,7 +213,7 @@ raporunun yaşı, gerçek bir ağ arayüzü tanımlandığında eklenecek.
 Tek ajan, füzyon merkezinde, düz PPO (hiyerarşi ve çok ajan yok).
 
 * **Karar periyodu:** 1 s (2 benzetim adımı).
-* **Gözlem:** Bölüm 3'teki vektör (nominal'de 419 boyut).
+* **Gözlem:** Bölüm 3'teki vektör (nominal'de 443 boyut).
 * **Aksiyon:** her radar için "iz 1 … iz K" ya da "talep yok"
   (MultiDiscrete, N × (K+1)); radarın kapsamadığı izler maskelenir.
   Talepler radarların yerel zamanlayıcısına gider; radar yine kabul,
@@ -216,13 +240,25 @@ Tek ajan, füzyon merkezinde, düz PPO (hiyerarşi ve çok ajan yok).
   `ppo_task` olarak görünür.
 * MAPPO, IPPO ve central_ppo kodda duruyor ama arayüzde artık önerilmiyor
   (radar modunu doğrudan seçtikleri için).
+* **Öğretmen kuralı (`policies.task_order`):** önce her yeni onaysız ize tek
+  bir doğrulama bakışı (en yeni önce; tek noktadan başlatılan izin tahmini
+  konumu hızlı hedefte birkaç saniyede kayar), bu bakışı kaçıran aday arama
+  onu tekrar bulana kadar istenmez; sonra zamanı gelen onaylı izler (en
+  belirsiz önce). `task_greedy` ve PPO'nun öğretmeni aynı fonksiyonu kullanır;
+  kural `central_greedy_confirm` politikasınınkiyle aynı. 10 eşleşmiş
+  tohumda eski kurala göre kapsama nominal'de 0,673 → 0,736, multi_target'ta
+  0,656 → 0,725; en uzun iz ~4 s uzun; talep sayısı yarıya iniyor. Onaylı ama
+  hedefle eşleşmeyen iz sayısı ise iki katına çıkıyor (0,48 → 0,96): bunların
+  %57'si gerçek bir uçak / füzenin 1,5 km yakınında, yani hızlı hedeflerin
+  kopya ya da eskiyen izleri (15 s zaman aşımına kadar sürüyorlar); izleyicide
+  ele alınması gereken bir konu.
 
 ## 7. Açık konular / sonraki adım
 
 * **Aksiyonun genişletilmesi:** öncelik ve son tarih seçimi, füzyonda
   radar güven katsayısı (bozulan radar senaryosuyla), PRF profili.
-* **K seçimi:** Gözlem boyutu K ile doğrusal büyüyor (N·K·8 terimi);
-  12 iz için 773. Daha büyük sahnelerde iz başına ortak ağırlıklı bir
+* **K seçimi:** Gözlem boyutu K ile doğrusal büyüyor (N·K·9 terimi);
+  12 iz için 821. Daha büyük sahnelerde iz başına ortak ağırlıklı bir
   kodlayıcı (ör. attention / DeepSets) düşünülebilir.
 * **Normalizasyon:** Ölçekler bu senaryolara göre seçildi; farklı alan
   boyutlarında yeniden kontrol edilmeli.

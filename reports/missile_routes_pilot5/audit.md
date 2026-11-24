@@ -1,11 +1,11 @@
 # Hedef sınıfları pilot dataset denetimi
 
-Dataset: `C:\Users\tahau\Desktop\marl\demo\data\processed\missile_routes_pilot5`  
+Dataset: `data`  
 Tüm kontrolleri geçen hedef: **13 / 13**
 
 Değerler `min / medyan / max`. Bantlar `docs/target_classification.md` ve `src/core/target_classes.py` ile aynı kaynaktan.
 
-## ep-000000-06a37b58a197 (train)
+## ep-000000-d35912e0daf7 (train)
 - Arazi: valley_linear_canyon / asymmetric / dry_canyon
 - Arazi profili: **deep_canyon**, kabartı 2472 m (ayarlanan relief 1256 m, vadi 3233 m)
 - Rota deseni: **converging** (2 füze, fazlar ['in', 'in'], yönler [-141.0, 37.2]°)
@@ -14,14 +14,14 @@ Değerler `min / medyan / max`. Bantlar `docs/target_classification.md` ve `src/
 - Radar: 2 — R1 (-4551, 2742) yön -57°, R2 (-1708, -2286) yön 13°
 - Planlanan görünürlük oranı: [0.903, 0.71]
 - Arama barları (°): R1 [2.0, 7.0, 15.0, 25.0]; R2 [2.0, 7.0, 15.0, 25.0]
-- Yanlış alarm raporu: 9
+- Yanlış alarm raporu: 11
 
 | T | Sınıf/varyant | Manevra | Hız m/s | AGL m | v_z m/s | a_n g | Dönüş °/s | RCS (görülen) dBsm | Rapor (radar başına) | Tespit adımı | İzlenen adım | İlk rapor / iz s | SNR dB | \|ṙ\| m/s | Kontroller |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| T0 | missile/subsonic_cruise (L2) | CA+CV | 256 / 274 / 274 | 50 / 62 / 73 | 0.8 / 0.8 / 0.8 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -10.5 / -2.9 / 2.1 | 3 {1: 3} | 5% | 0% | 1.0 / — | 19.8 / 23.7 / 61.0 | 257 / 274 / 274 | tamam |
-| T1 | missile/subsonic_cruise (L2) | CV+CV+CV | 252 / 252 / 252 | 46 / 61 / 73 | 0.9 / 0.9 / 0.9 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -17.4 / -1.5 / 1.7 | 2 {1: 2} | 3% | 0% | 19.5 / — | 14.3 / 33.1 / 51.9 | 253 / 253 / 254 | tamam |
+| T0 | missile/subsonic_cruise (L2) | CA+CV | 256 / 274 / 274 | 50 / 62 / 73 | 0.8 / 0.8 / 0.8 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -10.5 / -2.9 / 2.1 | 3 {1: 3} | 5% | 0% | 1.0 / — | 20.1 / 21.6 / 59.9 | 256 / 274 / 277 | tamam |
+| T1 | missile/subsonic_cruise (L2) | CV+CV+CV | 252 / 252 / 252 | 46 / 61 / 73 | 0.9 / 0.9 / 0.9 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -17.4 / -1.5 / 1.7 | 2 {1: 2} | 3% | 0% | 23.0 / — | 42.0 / 47.0 / 52.1 | 252 / 252 / 253 | tamam |
 
-## ep-000001-4917b90ec27b (train)
+## ep-000001-5bd9a94dd1c7 (train)
 - Arazi: ridge_multi_obstacle / asymmetric / rocky_mountain
 - Arazi profili: **knife_ridges**, kabartı 1100 m (ayarlanan relief 1100 m, vadi 2912 m)
 - Rota deseni: **diverging** (3 füze, fazlar ['out', 'out', 'out'], yönler [-22.9, 3.8, -177.4]°)
@@ -30,15 +30,15 @@ Değerler `min / medyan / max`. Bantlar `docs/target_classification.md` ve `src/
 - Radar: 1 — R1 (-2826, -1474) yön 36°
 - Planlanan görünürlük oranı: [0.387, 0.935, 0.387]
 - Arama barları (°): R1 [2.0, 7.0, 15.0, 25.0]
-- Yanlış alarm raporu: 7
+- Yanlış alarm raporu: 6
 
 | T | Sınıf/varyant | Manevra | Hız m/s | AGL m | v_z m/s | a_n g | Dönüş °/s | RCS (görülen) dBsm | Rapor (radar başına) | Tespit adımı | İzlenen adım | İlk rapor / iz s | SNR dB | \|ṙ\| m/s | Kontroller |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| T0 | missile/subsonic_cruise (L2) | CV+CT | 226 / 226 / 226 | 37 / 108 / 187 | -3.6 / -3.6 / -3.6 | 0.00 / 0.00 / 1.01 | 0.0 / 0.0 / 2.5 | -6.2 / -3.7 / -1.9 | 0 {} | 0% | 3% | — / 6.0 | — | — | tamam |
-| T1 | missile/subsonic_cruise (L2) | CV | 250 / 250 / 250 | 43 / 133 / 177 | 13.1 / 13.1 / 13.1 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -7.2 / -6.6 / -3.1 | 11 {0: 11} | 18% | 33% | 19.5 / 4.5 | 14.6 / 22.9 / 31.8 | 240 / 243 / 244 | tamam |
-| T2 | missile/supersonic (L2) | CV | 648 / 648 / 648 | 117 / 401 / 424 | -1.1 / -1.1 / -1.1 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -3.7 / -3.3 / 3.2 | 6 {0: 6} | 10% | 77% | 2.0 / 3.5 | 26.2 / 39.4 / 63.3 | 12 / 576 / 605 | tamam |
+| T0 | missile/subsonic_cruise (L2) | CV+CT | 226 / 226 / 226 | 37 / 108 / 187 | -3.6 / -3.6 / -3.6 | 0.00 / 0.00 / 1.01 | 0.0 / 0.0 / 2.5 | -6.2 / -3.7 / -1.9 | 0 {} | 0% | 0% | — / — | — | — | tamam |
+| T1 | missile/subsonic_cruise (L2) | CV | 250 / 250 / 250 | 43 / 133 / 177 | 13.1 / 13.1 / 13.1 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -7.2 / -6.6 / -3.1 | 0 {} | 0% | 0% | — / — | — | — | tamam |
+| T2 | missile/supersonic (L2) | CV | 648 / 648 / 648 | 117 / 401 / 424 | -1.1 / -1.1 / -1.1 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -3.7 / -3.3 / 3.2 | 5 {0: 5} | 8% | 62% | 2.0 / 7.5 | 28.4 / 40.5 / 48.9 | 104 / 464 / 605 | tamam |
 
-## ep-000002-c3e227794a9f (validation)
+## ep-000002-a5562e3d4bcb (validation)
 - Arazi: basin_highlands / dense / dry_canyon
 - Arazi profili: **highland_bowl**, kabartı 1307 m (ayarlanan relief 1086 m, vadi 4163 m)
 - Rota deseni: **hub** (3 füze, fazlar ['in', 'out', 'out'], yönler [13.2, -166.4, 156.1]°)
@@ -47,15 +47,15 @@ Değerler `min / medyan / max`. Bantlar `docs/target_classification.md` ve `src/
 - Radar: 3 — R1 (-5458, -1385) yön 26°, R2 (955, -2567) yön 152°, R3 (270, 4072) yön -134°
 - Planlanan görünürlük oranı: [0.419, 0.484, 0.742]
 - Arama barları (°): R1 [2.0, 7.0, 15.0, 25.0]; R2 [2.0, 7.0, 15.0, 25.0]; R3 [2.0, 7.0, 15.0, 25.0]
-- Yanlış alarm raporu: 12
+- Yanlış alarm raporu: 18
 
 | T | Sınıf/varyant | Manevra | Hız m/s | AGL m | v_z m/s | a_n g | Dönüş °/s | RCS (görülen) dBsm | Rapor (radar başına) | Tespit adımı | İzlenen adım | İlk rapor / iz s | SNR dB | \|ṙ\| m/s | Kontroller |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| T0 | missile/supersonic (L2) | CV | 577 / 577 / 577 | 39 / 93 / 405 | 2.9 / 2.9 / 2.9 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -8.8 / -4.8 / 4.5 | 1 {0: 1} | 2% | 0% | 30.0 / — | 24.5 / 24.5 / 24.5 | 576 / 576 / 576 | tamam |
-| T1 | missile/supersonic (L2) | CA+CV+CV | 450 / 450 / 722 | 153 / 203 / 413 | 1.5 / 1.5 / 1.5 | 0.00 / 0.00 / 0.01 | 0.0 / 0.0 / 0.0 | -5.7 / -2.4 / 1.7 | 1 {0: 1} | 2% | 0% | 1.5 / — | 27.0 / 27.0 / 27.0 | 687 / 687 / 687 | tamam |
-| T2 | missile/supersonic (L2) | CV | 575 / 575 / 575 | 47 / 169 / 306 | 12.1 / 12.1 / 12.1 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -3.1 / -1.1 / 4.4 | 0 {} | 0% | 0% | — / — | — | — | tamam |
+| T0 | missile/supersonic (L2) | CV | 577 / 577 / 577 | 39 / 93 / 405 | 2.9 / 2.9 / 2.9 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -8.8 / -4.8 / 4.5 | 7 {0: 2, 1: 5} | 12% | 35% | 18.5 / 20.0 | 11.9 / 44.4 / 64.6 | 59 / 448 / 576 | tamam |
+| T1 | missile/supersonic (L2) | CA+CV+CV | 450 / 450 / 722 | 153 / 203 / 413 | 1.5 / 1.5 / 1.5 | 0.00 / 0.00 / 0.01 | 0.0 / 0.0 / 0.0 | -5.7 / -2.4 / 1.7 | 2 {0: 1, 1: 1} | 3% | 0% | 1.5 / — | 18.9 / 27.0 / 35.0 | 384 / 535 / 685 | tamam |
+| T2 | missile/supersonic (L2) | CV | 575 / 575 / 575 | 47 / 169 / 306 | 12.1 / 12.1 / 12.1 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -3.1 / -1.1 / 4.4 | 4 {1: 4} | 7% | 65% | 10.0 / 11.0 | 28.8 / 37.3 / 49.2 | 562 / 564 / 571 | tamam |
 
-## ep-000003-b15e73b9d8a4 (train)
+## ep-000003-2ad4bc8fcf50 (train)
 - Arazi: valley_sinuous_pass / dense / grassland_valley
 - Arazi profili: **twisting_gorge**, kabartı 1509 m (ayarlanan relief 1258 m, vadi 3044 m)
 - Rota deseni: **diverging** (2 füze, fazlar ['out', 'out'], yönler [152.2, 144.2]°)
@@ -68,10 +68,10 @@ Değerler `min / medyan / max`. Bantlar `docs/target_classification.md` ve `src/
 
 | T | Sınıf/varyant | Manevra | Hız m/s | AGL m | v_z m/s | a_n g | Dönüş °/s | RCS (görülen) dBsm | Rapor (radar başına) | Tespit adımı | İzlenen adım | İlk rapor / iz s | SNR dB | \|ṙ\| m/s | Kontroller |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| T0 | missile/subsonic_cruise (L2) | CV | 224 / 224 / 224 | 72 / 150 / 198 | -3.3 / -3.3 / -3.3 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -6.1 / -5.5 / 0.0 | 2 {0: 2} | 3% | 0% | 1.0 / — | 38.5 / 49.7 / 60.9 | 57 / 105 / 153 | tamam |
-| T1 | missile/subsonic_cruise (L2) | CA | 200 / 217 / 233 | 43 / 144 / 174 | -0.6 / -0.6 / -0.6 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -5.3 / -3.7 / 3.1 | 1 {0: 1} | 2% | 0% | 1.0 / — | 46.6 / 46.6 / 46.6 | 179 / 179 / 179 | tamam |
+| T0 | missile/subsonic_cruise (L2) | CV | 224 / 224 / 224 | 72 / 150 / 198 | -3.3 / -3.3 / -3.3 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -6.1 / -5.5 / 0.0 | 2 {0: 2} | 3% | 0% | 1.0 / — | 43.5 / 52.0 / 60.4 | 57 / 105 / 153 | tamam |
+| T1 | missile/subsonic_cruise (L2) | CA | 200 / 217 / 233 | 43 / 144 / 174 | -0.6 / -0.6 / -0.6 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -5.3 / -3.7 / 3.1 | 1 {0: 1} | 2% | 0% | 1.0 / — | 48.5 / 48.5 / 48.5 | 179 / 179 / 179 | tamam |
 
-## ep-000004-de2e4072ea78 (test)
+## ep-000004-1ef44b816c84 (test)
 - Arazi: mountain_chokepoint / dense / rocky_mountain
 - Arazi profili: **alpine_chokepoint**, kabartı 1231 m (ayarlanan relief 911 m, vadi 3397 m)
 - Rota deseni: **hub** (2 füze, fazlar ['in', 'out'], yönler [-26.9, 129.4]°)
@@ -84,9 +84,9 @@ Değerler `min / medyan / max`. Bantlar `docs/target_classification.md` ve `src/
 
 | T | Sınıf/varyant | Manevra | Hız m/s | AGL m | v_z m/s | a_n g | Dönüş °/s | RCS (görülen) dBsm | Rapor (radar başına) | Tespit adımı | İzlenen adım | İlk rapor / iz s | SNR dB | \|ṙ\| m/s | Kontroller |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| T0 | aircraft/transport (L1) | CT+CV | 127 / 127 / 127 | 1111 / 2304 / 2399 | 7.8 / 7.8 / 7.8 | 0.00 / 0.00 / 0.60 | 0.0 / 0.0 / 2.7 | 16.7 / 21.8 / 25.4 | 2 {1: 2} | 3% | 0% | 23.0 / — | 11.2 / 33.0 / 54.8 | 31 / 33 / 35 | tamam |
-| T1 | missile/subsonic_cruise (L2) | CV | 259 / 259 / 259 | 49 / 100 / 149 | 1.0 / 1.0 / 1.0 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -9.7 / -9.3 / -2.3 | 13 {0: 11, 1: 2} | 22% | 55% | 7.5 / 14.0 | 12.7 / 42.1 / 57.5 | 244 / 257 / 258 | tamam |
-| T2 | missile/supersonic (L2) | CV+CV | 634 / 634 / 634 | 115 / 234 / 360 | -8.5 / -8.5 / -8.5 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -4.2 / -2.1 / 1.8 | 3 {0: 1, 1: 2} | 5% | 0% | 1.5 / — | 28.5 / 31.2 / 38.2 | 452 / 534 / 586 | tamam |
+| T0 | aircraft/transport (L1) | CT+CV | 127 / 127 / 127 | 1111 / 2304 / 2399 | 7.8 / 7.8 / 7.8 | 0.00 / 0.00 / 0.60 | 0.0 / 0.0 / 2.7 | 16.7 / 21.8 / 25.4 | 9 {0: 6, 1: 3} | 13% | 50% | 13.5 / 15.5 | 13.6 / 61.8 / 79.3 | 32 / 51 / 87 | tamam |
+| T1 | missile/subsonic_cruise (L2) | CV | 259 / 259 / 259 | 49 / 100 / 149 | 1.0 / 1.0 / 1.0 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -9.7 / -9.3 / -2.3 | 8 {0: 8} | 13% | 53% | 13.0 / 14.5 | 26.9 / 47.7 / 58.6 | 257 / 258 / 259 | tamam |
+| T2 | missile/supersonic (L2) | CV+CV | 634 / 634 / 634 | 115 / 234 / 360 | -8.5 / -8.5 / -8.5 | 0.00 / 0.00 / 0.00 | 0.0 / 0.0 / 0.0 | -4.2 / -2.1 / 1.8 | 2 {0: 1, 1: 1} | 3% | 0% | 1.0 / — | 35.5 / 38.4 / 41.2 | 430 / 509 / 587 | tamam |
 
 ## Varyant bantları (referans)
 

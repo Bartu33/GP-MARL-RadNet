@@ -16,7 +16,7 @@ architecture and [doc/research/](doc/research/) for the research notes.
 |---|---|---|
 | Physics-informed radar detection model (geometry, RCS, radar equation, P_D gate, SNR-dependent noise, false alarms, resource state) | `src/core/radar.py`, `geometry.py`, `rcs.py`, `detection.py` | working, unit-tested |
 | Radar operating modes (search raster, track dwell, idle) | `src/core/modes.py` | working |
-| Synthetic targets — 4 behaviour classes, motion models | `src/core/targets.py` | working |
+| Synthetic targets — UAV / aircraft / missile classes with variants, motion models | `src/core/target_classes.py`, `src/core/targets.py` | working |
 | Multi-agent environment (PettingZoo `ParallelEnv`) | `src/core/env.py`, scenarios in `configs/scenarios/` | working, API-tested |
 | EKF tracker + centralised multi-radar fusion | `src/models/tracking/` | working |
 | Flight-profile classifier (kinematic features + gradient boosting) | `src/models/classifier/` | working |

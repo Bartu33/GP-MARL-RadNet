@@ -410,8 +410,15 @@ const MODE = ['IDLE', 'SEARCH', 'TRACK', 'OFFLINE', 'INTERLEAVED'];
 const MODE_COL = [0x8DA2AC, 0x4FD1C5, 0x7FB3FF, 0xff5c5c, 0xC39BFF];
 const MODE_CSS = ['#8DA2AC', '#4FD1C5', '#7FB3FF', '#ff5c5c', '#C39BFF'];
 const EXAG = 1.5;                       // vertical exaggeration of terrain and altitudes
-document.getElementById('clsLegend').innerHTML = (D.target_legend || D.classes).map((c, i) =>
-  `<span style="margin-right:10px"><i style="background:${CLS_CSS[i % CLS_CSS.length]};border-radius:50%"></i>${c}</span>`).join('');
+// one entry per target, in the colour of its class (target_legend is ordered by target id);
+// without per-target names, one entry per class
+const legendLabel = {};
+((D.frames && D.frames[0] && D.frames[0].targets) || []).forEach(t => { legendLabel[t.id] = t.label; });
+const legendIds = Object.keys(D.target_labels || {}).map(Number).sort((a, b) => a - b);
+document.getElementById('clsLegend').innerHTML = (D.target_legend || D.classes).map((c, i) => {
+  const lab = D.target_legend && legendIds.length === D.target_legend.length ? legendLabel[legendIds[i]] : i;
+  return `<span style="margin-right:10px"><i style="background:${CLS_CSS[(lab ?? i) % CLS_CSS.length]};border-radius:50%"></i>${c}</span>`;
+}).join('');
 
 /* ------------------------------------------------------------------ terrain tiles
    Terrain = DEM tiles (AWS Terrain Tiles, "terrarium" encoding) draped with

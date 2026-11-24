@@ -4,7 +4,7 @@ from __future__ import annotations
 import numpy as np
 import plotly.graph_objects as go
 
-from src.core.targets import CLASS_SHORT
+from src.core.targets import CLASS_SHORT, class_short
 
 DARK = dict(template="plotly_dark", paper_bgcolor="#0E1417", plot_bgcolor="#151D21",
             margin=dict(l=40, r=20, t=40, b=40), font=dict(size=12))
@@ -39,7 +39,7 @@ def map_2d(payload: dict, frame_index: int, trail: int = 60) -> go.Figure:
         ys = [q["p"][1] for f in frames for q in f["targets"] if q["id"] == t["id"]]
         c = CLASS_COLORS[t["label"]]
         fig.add_trace(go.Scatter(x=xs, y=ys, mode="lines", line=dict(color=c, width=1), opacity=0.5, showlegend=False))
-        disp_name = t.get("display_name") or payload.get("target_labels", {}).get(t["id"]) or f"truth {CLASS_SHORT[t['label']]}"
+        disp_name = t.get("display_name") or payload.get("target_labels", {}).get(t["id"]) or f"truth {class_short(t['label'])}"
         fig.add_trace(go.Scatter(x=[t["p"][0]], y=[t["p"][1]], mode="markers", marker=dict(color=c, size=9),
                                  name=disp_name))
     for tr in fr["tracks"]:
@@ -150,7 +150,7 @@ def ppi(payload: dict, frame_index: int, radar_index: int, afterglow: int = 8, t
             x, y = km(t["p"][0], t["p"][1])
             fig.add_trace(go.Scatter(x=[x], y=[y], mode="markers", showlegend=False,
                                      marker=dict(size=6, color=CLASS_COLORS[t["label"]]),
-                                     hovertemplate=f"truth {CLASS_SHORT[t['label']]}<extra></extra>"))
+                                     hovertemplate=f"truth {class_short(t['label'])}<extra></extra>"))
     net = {t["id"]: t for t in fr["tracks"] if t["conf"]}
     for t in net.values():
         x, y = km(t["p"][0], t["p"][1])

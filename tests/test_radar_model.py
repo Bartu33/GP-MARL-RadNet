@@ -6,8 +6,8 @@ from src.core import geometry as geo
 from src.core.detection import (aggregate_track_probability, pd_nonfluctuating, pd_swerling1,
                                 probability_of_track, run_of_misses_probability)
 from src.core.modes import DEFAULT_PROFILES, Mode
-from src.core.radar import (RadarAction, RadarParams, RadarState, antenna_gain, measurement_sigmas,
-                            radar_step, snr_linear)
+from src.core.radar import (RadarAction, RadarParams, RadarState, antenna_gain, look_detection_probability,
+                            measurement_sigmas, radar_step, snr_linear)
 from src.core.rcs import ConstantRCS, EllipsoidRCS, LookupTableRCS, ScatteringCentreRCS, sample_swerling
 from src.core.targets import TargetState
 
@@ -113,7 +113,7 @@ def test_empirical_pd_matches_model():
     p = RadarParams(position=(0, 0, 0), heading_deg=0.0, false_alarms_per_beam=0.0)
     n_p = DEFAULT_PROFILES[Mode.TRACK].n_pulses
     r = np.hypot(9000.0, 300.0)
-    sigma = 10 ** 1.15 / snr_linear(r, 1.0, antenna_gain(0, 0, p), p, n_p)   # ~11.5 dB SNR
+    sigma = 10 ** 1.6 / snr_linear(r, 1.0, antenna_gain(0, 0, p), p, n_p)    # ~16 dB look SNR
     tgt = _target_at(9000.0, sigma=sigma)
     beam = tuple(geo.measure(tgt.p, tgt.v, p.pos, p.heading)[1:3])
     rng = np.random.default_rng(1)
@@ -126,7 +126,7 @@ def test_empirical_pd_matches_model():
         if dets:
             pds.append(dets[0]["detection_probability"])
     chi = snr_linear(np.linalg.norm(tgt.p), sigma, antenna_gain(0, 0, p), p, n_p)
-    pd = float(pd_nonfluctuating(chi, p.pfa))
+    pd = float(look_detection_probability(chi, p))          # 2-of-3 PRF sub-dwells
     assert 0.05 < pd < 0.95                       # the test is informative
     assert hits / n == pytest.approx(pd, abs=0.03)
 
@@ -234,3 +234,24 @@ def test_doppler_blind_speeds_follow_prf_stagger():
     v_blind = p.prf_stagger_hz[0] * p.wavelength / 2
     assert doppler_blind(-v_blind, p.prf_stagger_hz[0], p)
     assert not any(doppler_blind(-v_blind, prf, p) for prf in p.prf_stagger_hz[1:])
+
+
+def test_mprf_look_is_m_of_n_over_prf_sub_dwells():
+    from src.core.detection import pd_m_of_n
+    p = RadarParams()
+    chi = 10 ** 1.7
+    q = float(pd_nonfluctuating(chi / 3, p.pfa))                       # one sub-dwell: 1/3 of the pulses
+    assert look_detection_probability(chi, p) == pytest.approx(3 * q ** 2 * (1 - q) + q ** 3)
+    assert look_detection_probability(chi, p, n_blind=1) == pytest.approx(q ** 2)
+    assert look_detection_probability(chi, p, n_blind=2) == 0.0
+    assert pd_m_of_n(chi, p.pfa, 1, 1) == pytest.approx(float(pd_nonfluctuating(chi, p.pfa)))   # single dwell
+
+
+def test_unfold_resolves_inside_the_combined_interval_and_aliases_beyond():
+    from src.core.radar import unambiguous_limits, unfold
+    p = RadarParams()
+    r_u, v_u = unambiguous_limits(p.prf_stagger_hz, p)
+    assert unfold(12000.0, -900.0, p.prf_stagger_hz, p) == pytest.approx((12000.0, -900.0))   # all three PRFs
+    _, v_pair = unambiguous_limits((14e3, 16e3), p)                    # +-839 m/s
+    r, v = unfold(12000.0, -900.0, (14e3, 16e3), p)
+    assert r == pytest.approx(12000.0) and v == pytest.approx(-900.0 + 2 * v_pair)     # folded

@@ -139,3 +139,17 @@ def test_track_features_follow_the_tracker():
         assert f[11] == pytest.approx(min(1, (env.t - tr.last_update_t) / 10))
         assert f[9] == float(tr.confirmed)
         assert 0 <= f[15] <= 1
+
+
+def test_blind_share_is_small_when_the_radial_velocity_is_unknown():
+    """A fresh track (unknown velocity) must not look blind; a hovering target
+    with a well-known zero radial velocity is blind at every PRF."""
+    from types import SimpleNamespace
+    from src.core.observation import blind_share
+    from src.core.radar import RadarParams
+    p = RadarParams(position=(0, 0, 0))
+    x = np.array([5000.0, 0.0, 300.0, 0.0, 0.0, 0.0])
+    fresh = SimpleNamespace(x=x, ekf=SimpleNamespace(P=np.diag([100.0] * 3 + [120.0 ** 2] * 3)))
+    hover = SimpleNamespace(x=x, ekf=SimpleNamespace(P=np.diag([100.0] * 3 + [0.2 ** 2] * 3)))
+    assert blind_share(fresh, p) < 0.05
+    assert blind_share(hover, p) > 0.95

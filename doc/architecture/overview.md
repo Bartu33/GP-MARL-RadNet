@@ -3,7 +3,7 @@
 ## One environment step (`src/core/env.py`)
 
 1. **Targets move** — `core/targets.py` integrates each synthetic target
-   (four behaviour classes, see below).
+   (UAV / aircraft / missile classes, see below).
 2. **Agents act** — each radar chooses *idle*, *search* or *track slot k*
    (`core/modes.py`). A track action steers one long dwell at the predicted
    position of the k-th track of the shared track table.
@@ -45,14 +45,25 @@
   one-hot, online flag and episode progress.
 * **Global state** for a centralised critic: concatenation of all observations.
 
-## Target classes (synthetic, `core/targets.py`)
+## Target classes (`core/target_classes.py`)
 
-| Label | Name | Motion signature | RCS model |
-|---|---|---|---|
-| 0 | A · fast cruise | 110–230 m/s, bank-to-turn coordinated turns, near-constant altitude | three-radius ellipsoid, Swerling I |
-| 1 | B · agile hover | stop-and-go, hover segments, abrupt heading changes, climbs | small ellipsoid, Swerling I |
-| 2 | C · erratic slow | 7–19 m/s, random-walk turn rate, short-period vertical oscillation | very small constant, Swerling I |
-| 3 | D · drift | 2–9 m/s wind drift, slow climb, turbulence | synthetic lookup table |
+Three classes, each with physically distinct variants; label 0 / 1 / 2 is the label space of the
+classifier, the observation and the dashboard. In the built-in scenarios a target is given by its class
+only, and the environment draws the variant, the RCS and a valid trajectory through the area from the
+class envelope at every seed (the planner of the class datasets).
+
+| Label | Class | Variant | Speed | Altitude AGL | Max lateral load | Mean RCS per aspect | Fluctuation |
+|---|---|---|---|---|---|---|---|
+| 0 | UAV | multirotor | 0–20 m/s | 30–400 m | 0.8 g | nose -22…-12, side -20…-10, tail -22…-12, top -15…-5 dBsm | Swerling 1 |
+| 0 | UAV | fixed wing | 18–62 m/s | 100–1500 m | 1.0 g | nose -15…-5, side -5…3, tail -15…-5, top 0…8 dBsm | Swerling 1 |
+| 1 | Aircraft | transport | 80–200 m/s | 300–4000 m | 0.6 g | nose 10…18, side 15…25, tail 10…18, top 18…28 dBsm | Swerling 1 |
+| 1 | Aircraft | fighter | 120–320 m/s | 100–4000 m | 8.2 g | nose 0…7, side 7…15, tail 3…10, top 10…18 dBsm | Swerling 1 |
+| 2 | Missile | subsonic cruise | 200–280 m/s | 30–200 m | 4.1 g | nose -20…-10, side -3…3, tail -12…-5, top -2…5 dBsm | Swerling 3 |
+| 2 | Missile | supersonic | 450–950 m/s | 30–800 m | 15.3 g | nose -12…-5, side 0…6, tail -8…-2, top 2…8 dBsm | Swerling 3 |
+| 2 | Missile | terminal dive | 450–1100 m/s | 30–15000 m | 30.6 g | nose -12…-5, side 0…6, tail -8…-2, top 2…8 dBsm | Swerling 3 |
+
+The earlier behaviour classes (A fast cruise, B agile hover, C erratic slow, D drift) remain in
+`core/targets.py` only to read older scenarios and datasets.
 
 ## Equations → code
 

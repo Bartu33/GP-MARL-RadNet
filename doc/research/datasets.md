@@ -18,7 +18,7 @@ system, so no licence restriction blocks the project.
 
 | Dataset | Data type | Targets | Sensor | Size | Access / licence | Use for us |
 |---|---|---|---|---|---|---|
-| **Own synthetic data** (`data/synthetic/`) | Fused EKF tracks → 10 s windows of kinematic features | 4 behaviour classes (A–D) | Simulated radar of this repo | ~2 700 windows per 60 episodes/class (scalable) | Ours, regenerate any time | Main training / test data of the flight-profile classifier |
+| **Own synthetic data** (`data/synthetic/`) | Fused EKF tracks → 10 s windows of kinematic features | 3 classes (UAV, aircraft, missile) | Simulated radar of this repo | ~2 700 windows per 60 episodes/class (scalable) | Ours, regenerate any time | Main training / test data of the flight-profile classifier |
 | [DIAT-µSAT](https://ieee-dataport.org/documents/diat-msat-micro-doppler-signature-dataset-small-unmanned-aerial-vehicle-suav) | Micro-Doppler spectrogram images | Small drones, bionic bird, mini-helicopter | CW X-band | 4 849 images | IEEE DataPort; free educational access on e-mail request from an institutional address; cite the original papers | Micro-Doppler extension (aerial targets, closest to our domain) |
 | [60 GHz mmWave UAS and birds](https://ieee-dataport.org/open-access/millimeter-wave-60-ghz-radar-measurements-uas-and-birds) | Raw amplitude + phase (.pkl) | Small drones, bionic bird | 60 GHz FMCW | — | IEEE DataPort open access (account may be needed); documentation incomplete | Micro-Doppler extension; signal processing practice |
 | RRN-ATR-Net (IEEE DataPort, DOI 10.21227/2q85-nz22) | Radar echoes | Quadrotor, fixed-wing, helicopter, bionic bird | TI AWR1642BOOST, anechoic chamber | 1 200 samples | IEEE DataPort | Range-Doppler classification reference |

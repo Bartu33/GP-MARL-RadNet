@@ -132,3 +132,17 @@ def test_comm_losses_do_not_change_detections_of_the_radars():
             env.step({a: 1 for a in env.agents})        # everybody searches: actions independent of tracks
         counts.append(env.evaluator.det_hit)
     assert counts[0] == counts[1]
+
+
+def test_fast_class_targets_get_a_trajectory_for_long_episodes():
+    """A supersonic missile cannot fly a full 60 s leg inside the terrain grid; the
+    planned part is shortened and the target flies on and leaves the area."""
+    sc = load_scenario("nominal")
+    sc["terrain"] = {"source": "procedural"}
+    sc["targets"] = [{"target_class": "missile", "variant": "supersonic"}]
+    for seed in range(3):
+        env = RadarNetEnv(sc, seed=seed)
+        env.reset(seed=seed)
+        assert env.targets[0].variant == "supersonic"
+        while env.agents:
+            env.step({a: 1 for a in env.agents})

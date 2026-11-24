@@ -65,6 +65,7 @@ class TaskManagerEnv(Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self.sim.reset(seed=seed)
+        self._confirm_sent = {}            # teacher: track id -> hits when its confirmation dwell was asked
         self._obs = central_observation(self.sim)
         return self._obs["vector"], {"action_mask": self.action_mask()}
 
@@ -98,21 +99,28 @@ class TaskManagerEnv(Env):
         return reqs, dup, redundant
 
     def greedy_action(self) -> np.ndarray:
-        """Teacher: the rule-based task manager in this action space.  Tracks that
-        are due for a revisit, most uncertain first, each to the nearest radar that
-        can cover it and has not been given a request in this decision; tracks with
-        a pending request are skipped; radars without a request search."""
+        """Teacher: the rule-based task manager (``task_greedy``) in this action
+        space.  Requests in the order of ``policies.task_order`` -- a confirmation
+        dwell for each new tentative track (newest first), then the confirmed
+        tracks due for a revisit (most uncertain first) -- each to the nearest
+        radar that can cover it and has not been given a request in this
+        decision; radars without a request search."""
+        from src.models.baselines.policies import task_order
         sim, mask = self.sim, self.action_mask()
-        pending = {q.req.track_id for sch in sim.schedulers for q in sch.queue}
+        slot = {tr.id: k for k, tr in enumerate(sim.slots) if tr is not None}
+        if not hasattr(self, "_confirm_sent"):
+            self._confirm_sent = {}
         action = np.full(self.N, self.K)
-        order = sorted([(k, tr) for k, tr in enumerate(sim.slots)
-                        if tr is not None and _due(sim, tr) and tr.id not in pending],
-                       key=lambda kt: (not kt[1].confirmed, -kt[1].ekf.pos_std))
-        for k, tr in order:
+        for tr, confirm in task_order(sim, self._confirm_sent):
+            k = slot.get(tr.id)
+            if k is None:
+                continue
             free = [i for i in range(self.N) if action[i] == self.K and mask[i, k]]
             if free:
                 i = min(free, key=lambda j: np.linalg.norm(tr.x[:3] - sim.radar_params[j].pos))
                 action[i] = k
+                if confirm:
+                    self._confirm_sent[tr.id] = tr.hits
         return action
 
     def step(self, action):
@@ -123,7 +131,7 @@ class TaskManagerEnv(Env):
         for s in range(self.substeps):
             _, _, _, truncs, _ = self.sim.step_requests(reqs if s == 0 else {})
             if s == 0:
-                rejected = sum(a.response == Response.REJECTED for ans in self.sim.last_answers.values()
+                rejected = sum(a.response == Response.REJECTED for ans in self.sim.step_answers.values()
                                for a in ans)
             ev = self.sim.track_events
             gain += ev["info_gain"]

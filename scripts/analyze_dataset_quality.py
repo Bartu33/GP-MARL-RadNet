@@ -36,7 +36,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.core.targets import CLASS_NAMES
+from src.core.targets import LEGACY_CLASS_NAMES as CLASS_NAMES  # legacy-label (A-D) planner datasets
 from src.services.simulation_service import load_episode_records
 
 # Styling

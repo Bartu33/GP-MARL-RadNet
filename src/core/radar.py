@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from . import geometry as geo
-from .detection import probability_of_detection
+from .detection import pd_m_of_n, probability_of_detection
 from .modes import DEFAULT_PROFILES, INTERLEAVE_SEARCH_BEAMS, Mode, ModeProfile, SearchRaster
 from .rcs import incidence_in_body, sample_swerling
 
@@ -61,12 +61,16 @@ class RadarParams:
     # slowly varying bias, Eq. (38)
     bias_rho: float = 0.995
     bias_std: tuple = (2.0, 1e-4, 1e-4, 0.05)
-    # false alarms, Eq. (58): expected number per beam position = P_FA * N_cells
+    # false alarms, Eq. (58): expected number per beam position after the M-of-N
+    # combination of the PRF sub-dwells (clutter residue included)
     false_alarms_per_beam: float = 0.03
-    # PRF stagger: each look uses the next PRF of this set.  Ambiguities are
-    # resolved across the set (Chinese remainder), so reports carry unfolded
-    # r and r_dot; what remains is the blind-speed effect below.
+    # Medium-PRF stagger: every look (search cell or track dwell) is split into
+    # one coherent sub-dwell per PRF of this set, with an equal share of its
+    # pulses.  A target is reported when at least ``prf_m_of_n`` sub-dwells
+    # detect it; range and radial velocity are then unfolded (Chinese
+    # remainder) over the PRFs that detected it, as multifunction MPRF radars do.
     prf_stagger_hz: tuple = (14e3, 16e3, 18e3)
+    prf_m_of_n: int = 2
     # MTI / clutter notch half-width in radial velocity: a target whose folded
     # Doppler falls inside the notch of the current PRF is not detected.
     clutter_notch_mps: float = 1.0
@@ -104,7 +108,7 @@ class RadarState:
     online: bool = True
     bias: np.ndarray = field(default_factory=lambda: np.zeros(4))
     raster: SearchRaster | None = None
-    prf_index: int = 0
+    prf_index: int = 0                        # kept for old callers; every look now uses all PRFs
     last_beams: list = field(default_factory=list)   # [(az, el), ...] of the last look
     last_dwell_s: float = 0.0
     last_energy_used_j: float = 0.0
@@ -158,7 +162,10 @@ def measurement_sigmas(snr_lin: float, p: RadarParams, profile: ModeProfile) -> 
     d_r = geo.C_LIGHT / (2 * p.bandwidth_hz)                      # Eq. (40)
     d_a = np.deg2rad(p.beamwidth_az_deg)
     d_e = np.deg2rad(p.beamwidth_el_deg)
-    d_rdot = p.wavelength / (2 * profile.dwell_s)                  # Eqs. (44)-(45)
+    # Eqs. (44)-(45): Doppler resolution of one coherent sub-dwell (one PRF of the
+    # stagger, 1/n of the look); the n sub-dwell estimates are combined, which the
+    # SNR of the whole look in s already accounts for
+    d_rdot = p.wavelength / (2 * profile.dwell_s / len(p.prf_stagger_hz))
     return np.array([
         max(p.floor_r_m, p.k_r * d_r / s),                         # Eq. (41)
         max(p.floor_ang_rad, p.k_ang * d_a / s),                   # Eq. (42)
@@ -170,6 +177,29 @@ def measurement_sigmas(snr_lin: float, p: RadarParams, profile: ModeProfile) -> 
 def signal_quality(snr_db: float, p: RadarParams) -> float:
     """Normalised quality score, Eq. (49)."""
     return float(np.clip((snr_db - p.snr_threshold_db) / (p.snr_good_db - p.snr_threshold_db), 0, 1))
+
+
+def unambiguous_limits(prfs, p: RadarParams) -> tuple[float, float]:
+    """Unambiguous range and radial velocity when the PRFs in ``prfs`` are combined
+    (Chinese remainder): range folds every c / 2 gcd(PRF), radial velocity every
+    lambda lcm(PRF) / 2."""
+    from functools import reduce
+    from math import gcd, lcm
+    f = [int(round(x)) for x in prfs]
+    return geo.C_LIGHT / (2 * reduce(gcd, f)), p.wavelength * reduce(lcm, f) / 4
+
+
+def unfold(r: float, r_dot: float, prfs, p: RadarParams) -> tuple[float, float]:
+    """Range and radial velocity as the radar resolves them from the PRFs that
+    detected the target: correct inside the combined unambiguous interval,
+    folded (aliased) beyond it."""
+    r_u, v_u = unambiguous_limits(prfs, p)
+    return r % r_u, (r_dot + v_u) % (2 * v_u) - v_u
+
+
+def look_detection_probability(snr_total, p: RadarParams, n_blind: int = 0, swerling: int = 0):
+    """P_D of one look of this radar (all PRFs of the stagger, M-of-N)."""
+    return pd_m_of_n(snr_total, p.pfa, len(p.prf_stagger_hz), p.prf_m_of_n, n_blind, p.pd_model, swerling)
 
 
 def doppler_blind(r_dot: float, prf_hz: float, p: RadarParams) -> bool:
@@ -254,15 +284,15 @@ def radar_step(targets, action: RadarAction, state: RadarState, p: RadarParams,
 
     # --- target-originated reports ----------------------------------------
     if beams:
-        prf = p.prf_stagger_hz[state.prf_index % len(p.prf_stagger_hz)]
-        state.prf_index = (state.prf_index + 1) % len(p.prf_stagger_hz)
+        n_prf = len(p.prf_stagger_hz)
         for tgt in targets:
             truth = geo.measure(tgt.p, tgt.v, p.pos, p.heading)          # steps 1-2
             if not visible(truth, p):                                     # step 3
                 continue
             if terrain is not None and not terrain.line_of_sight(p.pos, tgt.p):
                 continue                                                  # terrain occlusion
-            if doppler_blind(truth[3], prf, p):
+            seen = np.array([not doppler_blind(truth[3], f, p) for f in p.prf_stagger_hz])
+            if seen.sum() < p.prf_m_of_n:
                 continue                                                  # blind speed / clutter notch
             u_b = incidence_in_body(p.pos, tgt.p, tgt.R_WT)               # step 4
             sigma = sample_swerling(tgt.rcs.mean_rcs(u_b), tgt.swerling, rng)  # step 5
@@ -272,13 +302,18 @@ def radar_step(targets, action: RadarAction, state: RadarState, p: RadarParams,
                                           p, pr.n_pulses)), pr) for b, pr in looks),   # steps 6-7
                        key=lambda c: c[0])
             chi, profile = best
-            pd = float(probability_of_detection(chi, p.pfa, p.pd_model))  # step 8
-            if rng.random() >= pd:
+            # step 8, medium PRF: one coherent sub-dwell per PRF, M-of-N detection
+            pd_sub = float(probability_of_detection(chi / n_prf, p.pfa, p.pd_model))
+            hit = seen & (rng.random(n_prf) < pd_sub)
+            if hit.sum() < p.prf_m_of_n:
                 continue
-            snr_db = 10 * np.log10(max(chi, 1e-30))
-            sig = measurement_sigmas(chi, p, profile)                     # step 9
+            pd = float(pd_m_of_n(chi, p.pfa, n_prf, p.prf_m_of_n, int((~seen).sum()), p.pd_model))
+            chi_used = chi * hit.sum() / n_prf                            # sub-dwells that detected it
+            snr_db = 10 * np.log10(max(chi_used, 1e-30))
+            sig = measurement_sigmas(chi_used, p, profile)                # step 9
             z = truth + state.bias + rng.normal(0.0, sig)                 # Eq. (35)
             z[1] = geo.wrap_angle(z[1])
+            z[0], z[3] = unfold(z[0], z[3], [f for f, h in zip(p.prf_stagger_hz, hit) if h], p)
             if p.quantize:                                                # Eq. (47)
                 d_r = geo.C_LIGHT / (2 * p.bandwidth_hz)
                 z[0] = d_r * np.round(z[0] / d_r)

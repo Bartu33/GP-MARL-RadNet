@@ -1,13 +1,13 @@
 # Dense scene for the tracking study: the nominal four-radar layout with
-# twelve targets (three of each behaviour class).  More targets than one radar
+# nine targets (three of each class: UAV, aircraft, missile).  More targets than one radar
 # can serve with track dwells at the same time, so data association, track
 # management and the radars' time budget are all stressed.
 # All numbers are synthetic and non-operational.
 name: multi_target
-description: Twelve targets (three per class) in the nominal four-radar layout.
+description: Nine targets (three UAVs, three aircraft, three missiles) in the nominal four-radar layout.
 site: {name: "Utah Valley · US", lat: 40.30, lon: -111.70}
 dt: 0.5
-duration_s: 120
+duration_s: 60
 area_radius_m: 6500
 seed: 2
 max_track_slots: 12
@@ -25,15 +25,12 @@ radars:
   - {name: R4, position: [-6000,  5000, 15], heading_deg: -40}
 
 targets:
-  - {label: 0}
-  - {label: 1}
-  - {label: 2}
-  - {label: 3}
-  - {label: 0}
-  - {label: 1}
-  - {label: 2}
-  - {label: 3}
-  - {label: 0}
-  - {label: 1}
-  - {label: 2}
-  - {label: 3}
+  - {target_class: uav}
+  - {target_class: aircraft}
+  - {target_class: missile}
+  - {target_class: uav}
+  - {target_class: aircraft}
+  - {target_class: missile}
+  - {target_class: uav}
+  - {target_class: aircraft}
+  - {target_class: missile}

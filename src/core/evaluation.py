@@ -192,6 +192,7 @@ class TrackEvaluator:
             self.valid[ti].append(ok)
             self.in_cov[ti].append(cov)
             self.correct[ti].append(ok and tr.class_probs is not None
+                                    and getattr(tgt, "target_class", None) is not None   # same label space
                                     and int(np.argmax(tr.class_probs)) == tgt.label)
         return {"track_losses": losses, "interrupted": interrupted}
 

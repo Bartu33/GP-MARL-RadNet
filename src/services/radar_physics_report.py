@@ -27,7 +27,8 @@ import pandas as pd
 from src.core import geometry as geo
 from src.core.detection import pd_nonfluctuating, pd_swerling1
 from src.core.modes import DEFAULT_PROFILES, Mode
-from src.core.radar import (RadarAction, RadarParams, RadarState, antenna_gain, measurement_sigmas,
+from src.core.radar import (RadarAction, RadarParams, RadarState, antenna_gain, doppler_blind,
+                            look_detection_probability, measurement_sigmas,
                             radar_step, snr_linear)
 from src.core.rcs import ConstantRCS, EllipsoidRCS, sample_swerling
 from src.core.targets import TargetState
@@ -73,6 +74,25 @@ def empirical_pd(snr_db, n, rng, swerling=0):
     return hits / n, chi, p.pfa
 
 
+def blind_speed_rates(n, rng, snr_db=17.0):
+    """Detection rate of a track dwell on a closing target at the first blind
+    speed of the first PRF of the stagger, and on the same target at a speed
+    no PRF is blind to.  Returns (rate blind, rate clear, look SNR)."""
+    p = RadarParams(position=(0, 0, 0), heading_deg=0.0, false_alarms_per_beam=0.0)
+    r = np.hypot(9000.0, 300.0)
+    sigma = 10 ** (snr_db / 10) / snr_linear(r, 1.0, antenna_gain(0, 0, p), p, TRACK.n_pulses)
+    tgt = _target(9000.0, sigma)
+    u = tgt.p / np.linalg.norm(tgt.p)
+    act = _track_look(tgt, p)
+    out = []
+    for speed in (p.wavelength * p.prf_stagger_hz[0] / 2, 50.0):    # blind at PRF 1 / clear at all
+        tgt.v = -speed * u
+        hits = sum(len(radar_step([tgt], act, RadarState.initial(p), p, 0.5, rng)[0]) for _ in range(n))
+        out.append(hits / n)
+    chi = snr_linear(np.linalg.norm(tgt.p), sigma, antenna_gain(0, 0, p), p, TRACK.n_pulses)
+    return out[0], out[1], chi
+
+
 def measurement_errors(r, n, rng, snr_db=None):
     """Errors of n simulated looks at a target at range r (RCS 1 m², or scaled so that
     the mean SNR is ``snr_db``); only looks that detect it give a report."""
@@ -83,16 +103,16 @@ def measurement_errors(r, n, rng, snr_db=None):
     tgt = _target(r, sigma)
     truth = geo.measure(tgt.p, tgt.v, p.pos, p.heading)
     act = _track_look(tgt, p)
-    errs, sig, snr = [], None, None
+    errs, sigs, snr = [], [], None
     for _ in range(n):
         dets, _ = radar_step([tgt], act, RadarState.initial(p), p, 0.5, rng)
         if dets:
             e = dets[0]["z"] - truth
             e[1] = geo.wrap_angle(e[1])
             errs.append(e)
-            sig = np.sqrt(np.diag(dets[0]["measurement_covariance"]))
+            sigs.append(np.sqrt(np.diag(dets[0]["measurement_covariance"])))
             snr = dets[0]["snr_db"] if "snr_db" in dets[0] else np.nan
-    return np.array(errs), sig, snr
+    return np.array(errs), np.array(sigs), snr
 
 
 def run_checks(n_mc: int = 3000, seed: int = 0) -> pd.DataFrame:
@@ -176,14 +196,47 @@ def run_checks(n_mc: int = 3000, seed: int = 0) -> pd.DataFrame:
                      "0 ≤ E ≤ E_max, H ≤ H_max", f"E ok: {e_ok}, H ok: {h_ok}", "-", e_ok and h_ok,
                      "test_resources_stay_bounded", "PN Eqs. (52)-(56)"))
 
+    # waveform: medium-PRF stagger and blind speeds
+    from src.core.target_classes import TARGET_CLASSES
+    from src.services.radar_info import stagger_unambiguous
+    r_u, v_u = stagger_unambiguous(p)
+    v_fast = max(v.speed_range_mps[1] for c in TARGET_CLASSES.values() for v in c["variants"].values())
+    rows.append(_row("Waveform", "PRF stagger resolves range",
+                     "unambiguous range over the stagger, c / 2·gcd(PRF)",
+                     f"≥ instrumented range {p.r_max_m / 1000:.1f} km", f"{r_u / 1000:.1f} km", "-",
+                     r_u >= p.r_max_m, "test_parameter_table_and_derived_values", "Richards (2022), MPRF"))
+    rows.append(_row("Waveform", "PRF stagger resolves radial velocity",
+                     "unambiguous radial velocity over the stagger, ±λ·lcm(PRF) / 4",
+                     f"≥ fastest target class {v_fast:.0f} m/s", f"±{v_u:.0f} m/s", "-",
+                     v_u >= v_fast, "test_parameter_table_and_derived_values", "Richards (2022), MPRF"))
+    zero = all(doppler_blind(0.5 * p.clutter_notch_mps, f, p) for f in p.prf_stagger_hz)
+    vv = np.arange(1.01, 1.1 * v_fast, 0.01) * p.clutter_notch_mps
+    worst = max(sum(doppler_blind(x, f, p) for f in p.prf_stagger_hz) for x in vv[::7])
+    rows.append(_row("Waveform", "Clutter notch and blind speeds",
+                     f"PRFs blind at once: zero Doppler / any |ṙ| in ({p.clutter_notch_mps:g}, {1.1 * v_fast:.0f}] m/s",
+                     f"{len(p.prf_stagger_hz)} / ≤ 1", f"{len(p.prf_stagger_hz) if zero else '<' + str(len(p.prf_stagger_hz))} / {worst}",
+                     "exact", zero and worst <= 1, "test_doppler_blind_speeds_follow_prf_stagger",
+                     "Skolnik (2001), MTI blind speeds"))
+
     # ------------------------------------------------------------ Monte Carlo
-    pd_emp, chi, pfa = empirical_pd(11.5, n_mc, rng)
-    pd_mod = float(pd_nonfluctuating(chi, pfa))
+    pd_emp, chi, pfa = empirical_pd(16.0, n_mc, rng)
+    pd_mod = float(look_detection_probability(chi, p))
     tol = 3 * np.sqrt(pd_mod * (1 - pd_mod) / n_mc)
-    rows.append(_row("P_D", "Detection rate vs Marcum model (non-fluctuating)",
-                     f"empirical P_D at {10 * np.log10(chi):.1f} dB SNR, {n_mc} looks", _f(pd_mod),
+    rows.append(_row("P_D", f"Detection rate vs {p.prf_m_of_n}-of-{len(p.prf_stagger_hz)} PRF model (non-fluctuating)",
+                     f"empirical P_D at {10 * np.log10(chi):.1f} dB look SNR, {n_mc} looks", _f(pd_mod),
                      _f(pd_emp), f"±{tol:.3f} (3σ binomial)", abs(pd_emp - pd_mod) <= tol,
-                     "test_empirical_pd_matches_model", "Marcum (1960); PN Eq. (31)"))
+                     "test_empirical_pd_matches_model", "Marcum (1960); PN Eq. (31); binomial M-of-N"))
+
+    n_b = n_mc // 2
+    r_bl, r_cl, chi_b = blind_speed_rates(n_b, rng)
+    m_bl, m_cl = (float(look_detection_probability(chi_b, p, k)) for k in (1, 0))
+    t_bl, t_cl = (3 * np.sqrt(max(m * (1 - m), 1e-4) / n_b) for m in (m_bl, m_cl))
+    rows.append(_row("Waveform", "Blind speed in the simulator",
+                     f"P_D at {10 * np.log10(chi_b):.1f} dB: closing at the first blind speed of "
+                     f"{p.prf_stagger_hz[0] / 1e3:g} kHz / at 50 m/s, {n_b} looks each",
+                     f"{_f(m_bl)} / {_f(m_cl)}", f"{_f(r_bl)} / {_f(r_cl)}", f"±{t_bl:.3f} / ±{t_cl:.3f} (3σ)",
+                     abs(r_bl - m_bl) <= t_bl and abs(r_cl - m_cl) <= t_cl and m_bl < m_cl,
+                     "test_doppler_blind_speeds_follow_prf_stagger", "Skolnik (2001), MTI blind speeds"))
 
     chi_sw, pfa_sw = 20.0, 1e-6
     n_sw = max(n_mc * 5, 10000)
@@ -218,15 +271,17 @@ def run_checks(n_mc: int = 3000, seed: int = 0) -> pd.DataFrame:
                      "test_false_alarm_rate", "PN Eq. (50)"))
 
     # constant-RCS target at 18 dB: above the detection threshold, below the accuracy floors
-    errs, sig, _ = measurement_errors(9000.0, n_mc, rng, snr_db=18.0)
+    # each report carries its own sigma (2 or 3 PRF sub-dwells detected), so the
+    # errors are compared with it: error / reported sigma should have mean 0, std 1
+    errs, sigs, _ = measurement_errors(9000.0, n_mc, rng, snr_db=18.0)
+    zs = errs / sigs
     names = ["range [m]", "azimuth [rad]", "elevation [rad]", "radial velocity [m/s]"]
     for k, nm in enumerate(names):
-        m, sd = errs[:, k].mean(), errs[:, k].std()
+        m, sd = zs[:, k].mean(), zs[:, k].std()
         rows.append(_row("Covariance", f"Measurement error at 18 dB SNR, {nm}",
-                         f"mean / std of {len(errs)} reports",
-                         f"0 / {sig[k]:.3g}", f"{m:.2g} / {sd:.3g} (std ratio {sd / sig[k]:.3f})",
-                         "mean ±3σ/√n, std ±8 %",
-                         abs(m) <= 3 * sig[k] / np.sqrt(len(errs)) + 1e-12 and abs(sd / sig[k] - 1) <= 0.08,
+                         f"error / reported σ over {len(errs)} reports (median σ {np.median(sigs[:, k]):.3g})",
+                         "mean 0, std 1", f"{m:+.3f} / {sd:.3f}", "mean ±3/√n, std ±8 %",
+                         abs(m) <= 3 / np.sqrt(len(errs)) and abs(sd - 1) <= 0.08,
                          "test_measurement_error_statistics", "PN Eqs. (35)-(37)"))
     corr = np.corrcoef(errs.T)
     off = np.max(np.abs(corr - np.eye(4)))
@@ -244,19 +299,23 @@ def make_figures(out: Path, n_mc: int = 1500, seed: int = 1):
     import matplotlib.pyplot as plt
 
     rng = np.random.default_rng(seed)
-    snr_db = np.arange(4.0, 19.0, 1.0)
+    snr_db = np.arange(8.0, 27.0, 1.0)
     emp = np.array([empirical_pd(s, n_mc, rng)[0] for s in snr_db])
     emp_sw = np.array([empirical_pd(s, n_mc, rng, swerling=1)[0] for s in snr_db])
-    pfa = RadarParams().pfa
+    p = RadarParams()
+    pfa = p.pfa
     fine = np.linspace(snr_db[0], snr_db[-1], 200)
+    chi = 10 ** (fine / 10)
+    rule = f"{p.prf_m_of_n} of {len(p.prf_stagger_hz)} PRFs"
     fig, ax = plt.subplots(figsize=(6.5, 4.2))
-    ax.plot(fine, pd_nonfluctuating(10 ** (fine / 10), pfa), "k-", label="Marcum (non-fluctuating)")
-    ax.plot(fine, pd_swerling1(10 ** (fine / 10), pfa), "k--", label="Swerling I closed form")
+    ax.plot(fine, pd_nonfluctuating(chi, pfa), color="0.6", lw=1, label="one coherent dwell, Marcum (reference)")
+    ax.plot(fine, look_detection_probability(chi, p), "k-", label=f"{rule}, non-fluctuating")
+    ax.plot(fine, look_detection_probability(chi, p, swerling=1), "k--", label=f"{rule}, Swerling I")
     e = np.sqrt(emp * (1 - emp) / n_mc)
     ax.errorbar(snr_db, emp, 2 * e, fmt="o", ms=4, capsize=2, color="#c0392b", label="simulated, constant RCS")
     e = np.sqrt(emp_sw * (1 - emp_sw) / n_mc)
     ax.errorbar(snr_db, emp_sw, 2 * e, fmt="s", ms=4, capsize=2, color="#3182bd", label="simulated, Swerling I")
-    ax.set_xlabel("mean SNR per track dwell [dB]")
+    ax.set_xlabel("mean SNR of the whole track look [dB]")
     ax.set_ylabel("probability of detection")
     ax.set_title(f"P_D vs SNR (P_FA = {pfa:g}, {n_mc} looks per point, ±2σ)", fontsize=10)
     ax.grid(alpha=0.3)

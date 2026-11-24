@@ -35,12 +35,12 @@ def _episode_scenario(label: int, rng: np.random.Generator, duration_s: float) -
         "radar_defaults": {"fov_az_deg": 60, "search_sector_deg": 120},
         "radars": [{"name": "R1", "position": [-rng_m * np.cos(ang), -rng_m * np.sin(ang), 15],
                     "heading_deg": float(np.rad2deg(ang))}],
-        "targets": [{"label": label}],
+        "targets": [{"target_class": CLASS_NAMES[label]}],
         "max_track_slots": 3,
     })
 
 
-def generate(n_per_class: int = 60, duration_s: float = 80.0, window_s: float = 10.0,
+def generate(n_per_class: int = 60, duration_s: float = 40.0, window_s: float = 10.0,
              seed: int = 0, track_fraction: float = 0.6) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
     rows = []

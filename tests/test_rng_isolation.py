@@ -140,7 +140,10 @@ def test_extra_radar_draws_do_not_change_other_radars(raw_reports):
 
 
 def test_extra_target_draws_do_not_change_other_targets():
-    a, b = make_env(), make_env()
+    # legacy behaviour targets: ErraticSlow (label 2) draws random numbers while it flies
+    sc = scenario()
+    sc["targets"] = [{"label": i} for i in range(4)]
+    a, b = make_env(deepcopy(sc)), make_env(deepcopy(sc))
     changed = False
     while a.agents:
         # ErraticSlow consumes randomness at every integration substep.

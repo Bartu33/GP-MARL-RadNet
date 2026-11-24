@@ -29,12 +29,19 @@ from .radar import antenna_gain, measurement_sigmas, snr_linear
 from .targets import CLASS_NAMES
 
 REF_RCS_M2 = 0.1            # reference target for the predicted SNR (the centre does not know the true RCS)
+# Scales, chosen from the feature ranges of nominal / multi_target episodes with the
+# medium-PRF waveform and UAV / aircraft / missile targets: tracks are kept out to the
+# 14 km instrumented range (beyond the area), missiles fly up to 950 m/s, and report
+# SNR spans ~10-80 dB (aircraft up to +25 dBsm, MPRF track dwells of 384 pulses).
+POS_SCALE = 2.0             # x, y / (POS_SCALE * area radius)
+V_SCALE = 1000.0            # horizontal velocity, m/s
+SNR_SCALE = 80.0            # SNR levels, dB
 CHI2_GATE = 13.28           # 99 % gate of chi-square(4): NIS scale
 
 TRACK_FEATURES = [
     "valid",                 # 1 = slot holds a track
-    "x / area_radius", "y / area_radius", "z / 5000 m",
-    "vx / 300 m/s", "vy / 300 m/s", "vz / 300 m/s",
+    "x / (2 area_radius)", "y / (2 area_radius)", "z / 5000 m",
+    "vx / 1000 m/s", "vy / 1000 m/s", "vz / 300 m/s",
     "log10(1 + pos_std) / 3",
     "logdet(P_pos) / 50",    # log determinant of the 3x3 position covariance (m^6, natural log)
     "confirmed",
@@ -46,32 +53,36 @@ TRACK_FEATURES = [
     "class entropy / log(C) (1 = unknown)",
     "pending request at some radar",
     # SNR of the reports associated with the track (all radars, last SNR_HISTORY reports)
-    "instantaneous SNR: last report / 30 dB",
-    "rolling mean SNR (linear average, in dB) / 30 dB",
-    "SNR standard deviation in dB / 10 dB",
+    "instantaneous SNR: last report / 80 dB",
+    "rolling mean SNR (linear average, in dB) / 80 dB",
+    "SNR standard deviation in dB / 20 dB (clipped at 1)",
     "detection rate of requested dwells",       # corrects the SNR selection bias (misses carry no SNR)
     "dwell history available",
 ]
 RADAR_FEATURES = [
     "online",
-    "x / area_radius", "y / area_radius",
+    "x / (2 area_radius)", "y / (2 area_radius)",
     "sin(heading)", "cos(heading)",
     "energy / E_max", "heat margin", "free tracking channels / c_max",
     "scheduler queue length / c_max",
-    "last answers: accepted", "delayed", "partial", "rejected",   # fractions of last step's requests
+    "last answers: accepted", "delayed", "partial", "rejected",   # fractions, answers to its last requests
     "reports delivered last step / 20 (clipped)",
     "tracking now (track or interleaved dwell)",
     "share of steps spent on track dwells (cumulative)",
 ]
 QUALITY_FEATURES = [
     "coverable (range, field of view, elevation)",
-    "predicted SNR for a 0.1 m^2 target / 30 dB",
-    "predicted cross-range sigma / 1000 m",
+    "predicted SNR for a 0.1 m^2 target / 80 dB",
+    "predicted cross-range sigma / 100 m (clipped)",
     "expected information gain 0.5*(logdet P - logdet P+) / 15 nats",
     "energy cost of a track dwell / E_max",
-    "last SNR measured by this radar on this track / 30 dB (0 = never)",
+    "last SNR measured by this radar on this track / 80 dB (0 = never)",
     "time since this radar last updated the track / 10 s (1 = never)",
     "detection rate of this radar's requested dwells on the track (0.5 = no history)",
+    # medium PRF: PRFs of this radar whose clutter notch holds the track's predicted
+    # radial velocity; with M-of-N detection, more than N - M blind PRFs means the
+    # radar cannot see the target in this look however strong the echo
+    "expected share of PRFs blind to the track (radial-velocity uncertainty included)",
 ]
 
 
@@ -118,8 +129,8 @@ def track_summary(env, tr) -> tuple[np.ndarray, bool]:
     pending = any(q.req.track_id == tr.id for sch in env.schedulers for q in sch.queue)
     f = np.array([
         1.0,
-        tr.x[0] / area, tr.x[1] / area, tr.x[2] / 5000.0,
-        tr.x[3] / 300.0, tr.x[4] / 300.0, tr.x[5] / 300.0,
+        tr.x[0] / (POS_SCALE * area), tr.x[1] / (POS_SCALE * area), tr.x[2] / 5000.0,
+        tr.x[3] / V_SCALE, tr.x[4] / V_SCALE, tr.x[5] / 300.0,
         np.log10(1 + tr.ekf.pos_std) / 3.0,
         logdet / 50.0,
         float(tr.confirmed),
@@ -137,7 +148,7 @@ def track_summary(env, tr) -> tuple[np.ndarray, bool]:
 
 def _snr_features(tr) -> list:
     st = snr_statistics(tr)
-    last, mean, std = (st[0] / 30.0, st[1] / 30.0, min(2.0, st[2] / 10.0)) if st else (0.0, 0.0, 0.0)
+    last, mean, std = (st[0] / SNR_SCALE, st[1] / SNR_SCALE, min(1.0, st[2] / 20.0)) if st else (0.0, 0.0, 0.0)
     rate = dwell_detection_rate(tr)
     return [last, mean, std, rate if rate is not None else 0.5, float(rate is not None)]
 
@@ -154,7 +165,7 @@ def radar_summary(env, i: int) -> np.ndarray:
     h_margin = 1 - np.clip((st.heat_k - p.h_ambient_k) / (p.h_max_k - p.h_ambient_k), 0, 1)
     return np.array([
         float(st.online),
-        p.pos[0] / area, p.pos[1] / area,
+        p.pos[0] / (POS_SCALE * area), p.pos[1] / (POS_SCALE * area),
         np.sin(p.heading), np.cos(p.heading),
         st.energy_j / p.e_max_j, h_margin, st.channels_free / p.c_max,
         len(sch.queue) / p.c_max,
@@ -184,14 +195,36 @@ def service_quality(env, i: int, tr) -> tuple[np.ndarray, bool]:
     cost = (p.pt_w * prof.dwell_s / p.efficiency + p.e_processing_j) / p.e_max_j
     return np.array([
         1.0,
-        10 * np.log10(max(chi, 1e-12)) / 30.0,
-        min(1.0, r * sig[1] / 1000.0),
+        10 * np.log10(max(chi, 1e-12)) / SNR_SCALE,
+        min(1.0, r * sig[1] / 100.0),
         # 15 nats: with the 16 kHz MPRF track dwell (384 pulses) a full update of a fresh
         # track gives ~10-12 nats, so a 10-nat scale would saturate the feature
         min(1.0, gain / 15.0),
         cost,
         *_pair_history(env, i, tr),
+        blind_share(tr, p),
     ]), True
+
+
+def blind_share(tr, p) -> float:
+    """Expected share of this radar's PRFs whose clutter notch holds the track's
+    radial velocity.  The radial velocity is uncertain (EKF covariance projected
+    on the line of sight), so each PRF counts with the probability that the true
+    value falls in one of its blind bands (notch +- clutter_notch_mps around every
+    multiple of lambda PRF / 2).  A fresh track with an unknown velocity gives a
+    small value instead of a false 'blind'."""
+    from scipy.special import ndtr
+    rel = tr.x[:3] - p.pos
+    u = rel / max(np.linalg.norm(rel), 1e-9)
+    m = float(u @ tr.x[3:])
+    sd = float(np.sqrt(max(u @ tr.ekf.P[3:, 3:] @ u, 1e-6)))
+    out = 0.0
+    for f in p.prf_stagger_hz:
+        step = p.wavelength * f / 2                              # blind speeds every lambda PRF / 2
+        k = np.arange(np.floor((m - 5 * sd) / step) - 1, np.ceil((m + 5 * sd) / step) + 2)
+        c = k * step
+        out += float(np.sum(ndtr((c + p.clutter_notch_mps - m) / sd) - ndtr((c - p.clutter_notch_mps - m) / sd)))
+    return min(1.0, out / len(p.prf_stagger_hz))
 
 
 def _pair_history(env, i: int, tr) -> list:
@@ -200,7 +233,7 @@ def _pair_history(env, i: int, tr) -> list:
     st = snr_statistics(tr, i)
     last_t = tr.updated_by.get(i)
     rate = dwell_detection_rate(tr, i)
-    return [st[0] / 30.0 if st else 0.0,
+    return [st[0] / SNR_SCALE if st else 0.0,
             min(1.0, (env.t - last_t) / 10.0) if last_t is not None else 1.0,
             rate if rate is not None else 0.5]
 

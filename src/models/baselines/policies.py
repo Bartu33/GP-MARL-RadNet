@@ -34,6 +34,7 @@ def _low_energy(env, i, frac=0.15) -> bool:
 
 
 REVISIT_S = 2.0          # a confirmed track is refreshed at most this often
+CONFIRM_S = 1.0          # a confirmation dwell must happen within this time of the track's birth
 STD_DUE_M = 150.0        # ... or earlier when its position uncertainty grows beyond this
 
 
@@ -43,6 +44,32 @@ def _due(env, tr) -> bool:
     Otherwise the radar's time is better spent searching for new targets."""
     return (not tr.confirmed or env.t - tr.last_update_t >= REVISIT_S
             or tr.ekf.pos_std > STD_DUE_M)
+
+
+def task_order(env, confirm_sent: dict) -> list:
+    """Order of track-update requests of the rule-based task manager, with
+    confirmation dwells as multifunction radars use them (same rule as
+    ``central_greedy_confirm``):
+
+    1. tentative tracks that are new or were re-detected since their last
+       confirmation request (``confirm_sent``: track id -> hits when it was
+       requested), newest first: one dedicated dwell while the predicted position
+       of a one-point track is still accurate; a candidate that misses it is not
+       asked for again until search detects it again;
+    2. confirmed tracks due for a revisit (``_due``), most uncertain first.
+
+    Tracks with a request pending at some radar are skipped.  Returns
+    [(track, is_confirmation)].  ``confirm_sent`` is pruned of deleted tracks;
+    the caller records each confirmation request it sends."""
+    live = {tr.id for tr in env.tracker.tracks}
+    for tid in [t for t in confirm_sent if t not in live]:
+        del confirm_sent[tid]
+    pending = {q.req.track_id for sch in env.schedulers for q in sch.queue}
+    fresh = sorted([tr for tr in env.tracker.tracks if not tr.confirmed and tr.id not in pending
+                    and confirm_sent.get(tr.id) != tr.hits], key=lambda tr: -tr.born_t)
+    due = sorted([tr for tr in env.tracker.tracks if tr.confirmed and tr.id not in pending and _due(env, tr)],
+                 key=lambda tr: -tr.ekf.pos_std)
+    return [(tr, True) for tr in fresh] + [(tr, False) for tr in due]
 
 
 class FixedScan(Policy):
@@ -143,34 +170,42 @@ class TaskManagerGreedy(Policy):
     """Rule-based fusion-centre task manager (structure B of the proposal).
 
     It does not set radar modes.  Every step it sends track-update requests
-    (``scheduler.Request``) for the tracks that are due for a revisit, most
-    uncertain first, each to the coverable radar with the fewest requests in
-    this step (ties: nearest).  A track that already has a pending request at
-    some radar is not requested again (no redundant illumination).  The
-    radars' local schedulers accept, delay, partially serve or reject them.
-    Deadline = now + ``REVISIT_S``; priority = position uncertainty / 100 m.
+    (``scheduler.Request``) in the order of :func:`task_order`: first one
+    confirmation dwell for each new tentative track (deadline: the next
+    decision, high priority), then the confirmed tracks that are due for a
+    revisit, most uncertain first; each to the coverable radar with the fewest
+    requests in this step (ties: nearest).  A track that already has a pending
+    request at some radar is not requested again (no redundant illumination).
+    The radars' local schedulers accept, delay, partially serve or reject them.
+    Revisit deadline = now + ``REVISIT_S``; priority = position uncertainty / 100 m.
     """
     name = "task_greedy"
+
+    def reset(self, env):
+        self.confirm_sent = {}
 
     def act(self, env, obs):              # not used: run_episode calls requests()
         return {a: 1 for a in env.agents}
 
     def requests(self, env) -> dict:
         from src.core.scheduler import Request
-        pending = {q.req.track_id for sch in env.schedulers for q in sch.queue}
+        if not hasattr(self, "confirm_sent"):
+            self.confirm_sent = {}
         load = {i: 0 for i in range(env.n_radars)}
         out: dict = {}
-        due = sorted([tr for tr in env.tracker.tracks if _due(env, tr) and tr.id not in pending],
-                     key=lambda tr: (not tr.confirmed, -tr.ekf.pos_std))
-        for tr in due:
+        for tr, confirm in task_order(env, self.confirm_sent):
             cands = [i for i in range(env.n_radars)
                      if env.radar_states[i].online and _coverable(env, i, tr)]
             if not cands:
                 continue
             i = min(cands, key=lambda j: (load[j], np.linalg.norm(tr.x[:3] - env.radar_params[j].pos)))
             load[i] += 1
-            out.setdefault(i, []).append(Request(tr.id, deadline_s=env.t + REVISIT_S,
-                                                 priority=tr.ekf.pos_std / 100.0, issued_t=env.t))
+            if confirm:
+                self.confirm_sent[tr.id] = tr.hits
+                req = Request(tr.id, deadline_s=env.t + CONFIRM_S, priority=10.0, issued_t=env.t)
+            else:
+                req = Request(tr.id, deadline_s=env.t + REVISIT_S, priority=tr.ekf.pos_std / 100.0, issued_t=env.t)
+            out.setdefault(i, []).append(req)
         return out
 
 

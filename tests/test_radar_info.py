@@ -39,7 +39,9 @@ def test_parameter_table_and_derived_values():
 def test_ambiguity_warning_only_when_targets_are_too_fast():
     p = RadarParams()                                                # PRF stagger resolves both
     assert ri.ambiguity_notes(p, 20.0) == []
-    assert ri.ambiguity_notes(p, 900.0) == []
+    assert ri.ambiguity_notes(p, 600.0) == []
+    pair = ri.ambiguity_notes(p, 900.0)                             # one PRF blind: 2 PRFs resolve only +-839 m/s
+    assert len(pair) == 1 and "remaining 2 PRFs" in pair[0]
     single = RadarParams(prf_stagger_hz=(16e3,))                      # one PRF: both limits bite
     assert any("radial velocity" in n for n in ri.ambiguity_notes(single, 230.0))
     assert any("unambiguous range" in n for n in ri.ambiguity_notes(single, 20.0))
@@ -62,14 +64,14 @@ def test_viewer_payload_carries_parameters_and_links():
 
 def test_auc_scores():
     from src.services.classifier_study import auc_scores
-    y = np.array([0, 0, 1, 1, 2, 2, 3, 3])
-    perfect = np.eye(4)[y] * 0.9 + 0.025
+    y = np.array([0, 0, 1, 1, 2, 2])                                    # UAV, aircraft, missile
+    perfect = np.eye(3)[y] * 0.9 + 0.05
     s = auc_scores(perfect, y)
     assert s["roc_auc_macro"] == pytest.approx(1.0) and s["pr_auc_macro"] == pytest.approx(1.0)
-    flat = np.full((8, 4), 0.25)
+    flat = np.full((6, 3), 1 / 3)
     s = auc_scores(flat, y)
     assert s["roc_auc_macro"] == pytest.approx(0.5)
-    assert s["pr_auc_macro"] == pytest.approx(0.25)                    # chance = class share
-    s = auc_scores(perfect[:4], y[:4])                                   # classes 2, 3 absent
+    assert s["pr_auc_macro"] == pytest.approx(1 / 3)                   # chance = class share
+    s = auc_scores(perfect[:4], y[:4])                                   # class 2 (missile) absent
     assert s["roc_auc_per_class"][2] is None and s["roc_auc_macro"] == pytest.approx(1.0)
-    assert set(s["curves"]["roc"]) == {"A_fast_cruise", "B_agile_hover"}
+    assert set(s["curves"]["roc"]) == {"uav", "aircraft"}

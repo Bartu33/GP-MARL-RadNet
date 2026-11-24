@@ -11,7 +11,7 @@ import pandas as pd
 
 from src.core.env import REPORT_FINAL_STATUSES, RadarNetEnv
 from src.core.scenario import load_scenario
-from src.core.targets import CLASS_SHORT
+from src.core.targets import CLASS_SHORT, LEGACY_CLASS_SHORT, class_short
 from src.core.terrain import build_terrain
 from src.models.baselines.policies import make_policy
 from src.services import radar_info
@@ -190,7 +190,16 @@ def load_classifier(path: Path = CLASSIFIER_PATH):
     if not Path(path).exists():
         return None
     from src.models.classifier.classifier import FlightProfileClassifier
-    return FlightProfileClassifier.load(path)
+    from src.core.targets import CLASS_NAMES
+    clf = FlightProfileClassifier.load(path)
+    if clf.n_classes != len(CLASS_NAMES):
+        # trained on the earlier A-D behaviour classes: not usable with UAV / aircraft / missile
+        import warnings
+        warnings.warn(f"{path} predicts {clf.n_classes} classes, the simulator uses {len(CLASS_NAMES)} "
+                      "(UAV / aircraft / missile); retrain it on the Classifier tab or with "
+                      "`python -m src.services.classifier_study`. Running without a classifier.")
+        return None
+    return clf
 
 
 def single_radar_summary(env: RadarNetEnv) -> dict:
@@ -344,8 +353,7 @@ def format_target_label(target_id: int, label: int, target_type: str | None = No
         else:
             type_str = target_type.replace("_", "-").title()
         return f"T{target_id} — {type_str}{tag}"
-    legacy_name = CLASS_SHORT[label] if 0 <= label < len(CLASS_SHORT) else f"Class {label}"
-    return f"truth {legacy_name}"
+    return f"truth {class_short(label, legacy=True)}"
 
 
 def viewer_payload(env: RadarNetEnv) -> dict:
@@ -354,7 +362,7 @@ def viewer_payload(env: RadarNetEnv) -> dict:
     target_labels = {}
     target_type_map = {}
     for s in env.targets:
-        tt = getattr(s, "target_type", None)
+        tt = f"{s.target_class}/{s.variant}" if getattr(s, "target_class", None) else getattr(s, "target_type", None)
         if not tt and s.id < len(sc.get("targets", [])):
             tt = sc["targets"][s.id].get("target_type")
         target_type_map[s.id] = (s.label, tt)
@@ -368,13 +376,13 @@ def viewer_payload(env: RadarNetEnv) -> dict:
             {
                 **t,
                 "target_type": target_type_map.get(t["id"], (t.get("label", 0), None))[1],
-                "display_name": target_labels.get(t["id"], f"truth {CLASS_SHORT[t.get('label', 0)]}"),
+                "display_name": target_labels.get(t["id"], f"truth {class_short(t.get('label', 0))}"),
             }
             for t in fr.get("targets", [])
         ]
         frames.append(fr_copy)
 
-    target_legend = [target_labels[tid] for tid in sorted(target_labels.keys())] if target_labels else ["A · fast", "B · agile", "C · erratic", "D · drift"]
+    target_legend = [target_labels[tid] for tid in sorted(target_labels.keys())] if target_labels else list(CLASS_SHORT)
 
     return {
         "site": sc["site"],
@@ -391,7 +399,7 @@ def viewer_payload(env: RadarNetEnv) -> dict:
             "fc_ghz": p.fc_hz / 1e9, "pfa": p.pfa, "swerling_note": "",
         } for p in env.radar_params],
         "targets": radar_info.target_parameters(env.targets),
-        "classes": ["A · fast", "B · agile", "C · erratic", "D · drift"],
+        "classes": CLASS_SHORT,                    # classifier output (UAV / aircraft / missile)
         "target_labels": target_labels,
         "target_legend": target_legend,
         "zones": _zones_payload(sc),
@@ -410,6 +418,8 @@ def records_to_viewer_payload(records: dict) -> dict:
     metadata = records.get("metadata", {})
     cfg = metadata.get("config_snapshot", {})
     sc = cfg.get("scenario", {})
+    # older datasets carry the legacy behaviour labels (A-D)
+    legacy = metadata.get("label_space", "legacy_behaviour_v1") == "legacy_behaviour_v1"
     eff_radars = cfg.get("effective_radars", [])
 
     site = sc.get("site", {"name": "Utah Valley · US", "lat": 40.30, "lon": -111.70})
@@ -529,7 +539,7 @@ def records_to_viewer_payload(records: dict) -> dict:
                 "id": tgt_row["target_id"],
                 "label": tgt_row["class_label"],
                 "target_type": target_type_map.get(tgt_row["target_id"], (tgt_row["class_label"], None))[1],
-                "display_name": target_labels.get(tgt_row["target_id"], f"truth {CLASS_SHORT[tgt_row['class_label']]}"),
+                "display_name": target_labels.get(tgt_row["target_id"], f"truth {class_short(tgt_row['class_label'], legacy)}"),
                 "p": [round(float(x), 1) for x in tgt_row["p"]],
                 "v": [round(float(x), 1) for x in tgt_row["v"]],
             }
@@ -544,7 +554,7 @@ def records_to_viewer_payload(records: dict) -> dict:
             "tracks": tracks_frame,
         })
 
-    target_legend = [target_labels[tid] for tid in sorted(target_labels.keys())] if target_labels else ["A · fast", "B · agile", "C · erratic", "D · drift"]
+    target_legend = [target_labels[tid] for tid in sorted(target_labels.keys())] if target_labels else list(LEGACY_CLASS_SHORT if legacy else CLASS_SHORT)
 
     return {
         "site": site,
@@ -553,7 +563,7 @@ def records_to_viewer_payload(records: dict) -> dict:
         "dt": dt,
         "area_radius": area_radius,
         "radars": radars_payload,
-        "classes": ["A · fast", "B · agile", "C · erratic", "D · drift"],
+        "classes": CLASS_SHORT,                    # classifier output (UAV / aircraft / missile)
         "target_labels": target_labels,
         "target_legend": target_legend,
         "zones": _zones_payload(sc),

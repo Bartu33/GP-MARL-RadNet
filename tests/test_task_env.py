@@ -80,14 +80,14 @@ def test_snr_features_follow_the_reports():
     env = TaskManagerEnv(_sc())
     _run(env, 10, lambda m: [int(np.flatnonzero(r)[0]) for r in m])
     o = central_observation(env.sim)
-    base = TRACK_FEATURES.index("instantaneous SNR: last report / 30 dB")
+    base = TRACK_FEATURES.index("instantaneous SNR: last report / 80 dB")
     for k, tr in enumerate(env.sim.slots):
         if tr is None or not tr.snr:
             continue
         last, mean, std = snr_statistics(tr)
         f = o["tracks"][k]
-        assert f[base] == pytest.approx(last / 30)
-        assert f[base + 1] == pytest.approx(mean / 30)
+        assert f[base] == pytest.approx(last / 80)
+        assert f[base + 1] == pytest.approx(mean / 80)
         allv = sorted((x for h in tr.snr.values() for x in h), key=lambda x: x[0])[-10:]
         db = np.array([v for _, v in allv])
         assert mean == pytest.approx(10 * np.log10(np.mean(10 ** (db / 10))))   # linear mean, not dB mean
@@ -193,3 +193,25 @@ def test_behaviour_cloning_imitates_the_teacher():
     assert len(data["obs"]) == 60 and data["action"].shape == (60, tr.env.N)
     match = tr.behaviour_clone(data, epochs=60, lr=3e-3, log=lambda *a: None)
     assert match > 0.9                                                     # fits the teacher on its own data
+
+
+def test_confirmation_dwell_is_requested_once_per_detection():
+    from src.models.baselines.policies import task_order
+    env = TaskManagerEnv(_sc(duration=30))
+    env.reset(seed=0)
+    for _ in range(6):
+        env.step([env.K] * env.N)                                    # search only: tentative tracks appear
+    sim = env.sim
+    tent = [tr for tr in sim.tracker.tracks if not tr.confirmed]
+    assert tent, "no tentative track to test with"
+    sent = {}
+    first = task_order(sim, sent)
+    fresh = [tr for tr, c in first if c]
+    assert fresh and all(not tr.confirmed for tr in fresh)
+    assert [tr.born_t for tr in fresh] == sorted((tr.born_t for tr in fresh), reverse=True)   # newest first
+    for tr in fresh:
+        sent[tr.id] = tr.hits
+    assert not any(c for _, c in task_order(sim, sent))              # asked once: not again ...
+    tr = fresh[0]
+    tr.hits += 1                                                      # ... until it is detected again
+    assert any(t.id == tr.id and c for t, c in task_order(sim, sent))

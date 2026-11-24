@@ -25,7 +25,8 @@ radars:
   - {name: East, position: [6000, 0, 15], heading_deg: 180}
 
 targets:
-  - label: 0
+  - target_class: uav
+    variant: fixed_wing
     position: [0, -5000, 200]
     velocity: [0, 50, 0]
     motion: {model: CV}

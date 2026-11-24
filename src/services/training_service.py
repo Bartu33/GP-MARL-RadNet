@@ -62,7 +62,13 @@ def train_task(args):
     sc = load_scenario(args.scenario)
     sc["duration_s"] = args.episode_s
     cfg = PPOConfig(lr=1e-4, ent_coef=0.003) if args.bc_episodes else PPOConfig()
-    trainer = PPOTrainer(lambda: TaskManagerEnv(sc), cfg=cfg, seed=args.seed)
+    # the simulator's classifier, as in run_episode: the observation's class entropy
+    # must look the same in training and in use
+    clf = load_classifier()
+    if clf is None:
+        print("warning: no classifier (models/checkpoints/flight_profile_gbm.joblib); class entropy will be 1. "
+              "Train it first: python -m src.services.classifier_study --episodes 40")
+    trainer = PPOTrainer(lambda: TaskManagerEnv(sc, classifier=clf), cfg=cfg, seed=args.seed)
     out = Path(args.out) if args.out else DEFAULT_CKPT
     if args.bc_episodes:                                  # imitate task_greedy first, then fine-tune with PPO
         trainer.behaviour_clone(trainer.collect_expert(args.bc_episodes))
