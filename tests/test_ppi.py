@@ -93,3 +93,57 @@ def test_ppi_figure_per_radar_and_viewer_contain_scopes():
     html = viewer3d.build_html(payload)
     assert 'id="ppiRow"' in html and "window.PPI" in html and 'id="ppiB"' in html
     assert 'id="ppiBack"' in html and "pairTable" in html            # click-to-enlarge view with the comparison table
+
+
+class _FixedClassifier:
+    """Stand-in classifier: the same probabilities for every track."""
+    probs = np.array([0.1, 0.7, 0.2])
+
+    def classify_tracks(self, tracks):
+        return {tr.id: self.probs for tr in tracks}
+
+
+def test_frames_carry_class_probabilities_for_the_popup():
+    from src.services.simulation_service import viewer_payload
+    sc = load_scenario("nominal")
+    sc["duration_s"] = 12.0
+    sc["terrain"] = {"source": "procedural"}
+    env = RadarNetEnv(sc, classifier=_FixedClassifier(), record=True, local_tracks=True)
+    env.reset(seed=0)
+    while env.agents:
+        env.step({a: 1 for a in env.agents})
+    classified = [t for fr in env.frames for t in fr["tracks"] if t["probs"] is not None]
+    assert classified, "no track was classified"
+    for t in classified:
+        assert len(t["probs"]) == 3 and abs(sum(t["probs"]) - 1) < 1e-2 and t["cls"] == int(np.argmax(t["probs"]))
+    payload = viewer_payload(env)
+    assert payload["classifier"] is True and len(payload["classes"]) == 3
+
+
+def test_ppi_2d_has_paths_no_coverage_sector_and_class_hover():
+    from src.interfaces import plots
+    from src.services.simulation_service import viewer_payload
+    env = _short_env(duration=30.0)
+    payload = viewer_payload(env)
+    k = len(payload["frames"]) - 1
+    fig = plots.ppi(payload, k, 0)
+    fills = [tr for tr in fig.data if tr.fill == "toself"]
+    assert not any((tr.fillcolor or "").startswith("rgba(79,209,197") for tr in fills)   # no field-of-view wedge
+    paths = [tr for tr in fig.data if tr.mode == "lines" and tr.line.shape == "spline"]
+    assert paths and all(len(tr.x) > 1 for tr in paths)                                  # pen-line track paths
+    assert not [tr for tr in fig.data if tr.mode == "lines" and tr.x is not None and len(tr.x) == 2
+                and tr.line.shape != "spline" and tr.line.dash != "dot"]                  # no velocity vectors
+    hovers = " ".join(tr.hovertemplate or "" for tr in fig.data)
+    assert "integrated" in hovers and "not classified" in hovers                         # no classifier in this run
+
+
+def test_viewer_has_popup_table_zoom_and_trails():
+    from src.interfaces import viewer3d
+    from src.services.simulation_service import viewer_payload
+    env = _short_env(duration=5.0)
+    html = viewer3d.build_html(viewer_payload(env))
+    assert "function showPop" in html and 'class="pop"' in html          # class pop-up
+    assert 'data-go="loc:' in html and "sc.focus" in html                # table row -> zoom and follow
+    assert "function trails" in html and "TRAIL_S" in html               # pen-line paths
+    assert "rgba(79,209,197,0.13)" not in html                           # field-of-view wedge removed
+    assert "t.v[0] * 20" not in html                                     # no velocity vectors in front of tracks

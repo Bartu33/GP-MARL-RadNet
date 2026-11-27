@@ -497,8 +497,9 @@ with tab_sim:
         else:
             k = st.slider("Frame", 0, len(payload["frames"]) - 1, len(payload["frames"]) // 2)
             st.plotly_chart(plots.map_2d(payload, k), width="stretch")
-            st.markdown("**PPI scopes** · own detections (4 s afterglow), own local track L# (amber), "
-                        "fused track T# from the fusion centre (white; open square = this radar does not feed it)")
+            st.markdown("**PPI scopes** · own detections of this step, track paths of the last 20 s in class colour, own local track L# (amber), "
+                        "fused track T# from the fusion centre (white; open square = this radar does not feed it); "
+                        "hover a track for its class probabilities")
             n_r = len(payload["radars"])
             for row in range(0, n_r, 4):
                 cols = st.columns(min(4, n_r - row))

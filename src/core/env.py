@@ -656,6 +656,8 @@ class RadarNetEnv(ParallelEnv):
                 "sig": round(tr.ekf.pos_std, 1), "conf": bool(tr.confirmed),
                 "cls": int(np.argmax(cp)) if cp is not None else -1,
                 "pc": round(float(np.max(cp)), 3) if cp is not None else 0.0,
+                # class probabilities (classifier order, D.classes), for the PPI pop-up
+                "probs": [round(float(x), 3) for x in cp] if cp is not None else None,
                 # radars whose reports updated this fused track in the last 3 s
                 "by": sorted(r for r, tt in tr.updated_by.items() if self.t - tt <= 3.0),
             })

@@ -70,9 +70,10 @@ hides them; in the **2-D** view the same scopes are drawn with Plotly (offline).
 
 | Symbol | Meaning |
 |---|---|
-| shaded sector | the radar's field of view; north up, rings every 2 km out to r_max |
+| rings, dashed line | north up, rings every 2 km out to r_max; dashed line = boresight |
 | teal / blue wedge | search / track beams of this step |
-| small fading dots | the radar's own detections, 4 s afterglow (red = false alarm) |
+| small dots | the radar's own detections of this step (red = false alarm) |
+| fading pen line | the path of each confirmed track over the last 20 s, in the colour of the class the fusion centre gives it (solid: T#, dashed: L#; white / amber while not classified) |
 | amber diamond `L#` | the radar's own confirmed local track (structure A) |
 | white square `T#` | fused track from the fusion centre; dashed / open when this radar does not feed it |
 | dashed amber line `L5→T12` | the fused track updated by the same reports as the local track |
@@ -88,8 +89,16 @@ distance are shown top left. Uncertainty circles (3σ) are drawn for both the
 local and the fused tracks. A table compares, for every confirmed local track,
 the fused track it feeds: position difference, σ of the local track, σ of the
 fused track and how many radars fed the fused track in the last 3 s; fused
-tracks this radar has no own track for are listed below it. Close with ✕, Esc
-or a click outside.
+tracks this radar has no own track for are listed below it. **Click a row of
+the table (or a T# below it) to zoom to that track**; the view then follows it
+until **Fit**, a double click or a drag. Close with ✕, Esc or a click outside.
+
+**Click a track** (in a small or an enlarged scope) for a small pop-up with the
+class probabilities the fusion centre's classifier gives it (UAV / aircraft /
+missile, highest first). For an own track L# it shows the class of the
+integrated track it feeds; a truth dot shows the true class. Without a
+classifier, or while a track is too young to be classified, the pop-up says
+so. In the 2-D view the same probabilities appear when hovering a track.
 
 Local tracks are recorded when the episode runs with `local_tracks=True`
 (the dashboard and `run_episode` do); otherwise the scopes show detections and

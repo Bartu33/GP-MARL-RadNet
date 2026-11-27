@@ -399,6 +399,7 @@ def viewer_payload(env: RadarNetEnv) -> dict:
             "fc_ghz": p.fc_hz / 1e9, "pfa": p.pfa, "swerling_note": "",
         } for p in env.radar_params],
         "targets": radar_info.target_parameters(env.targets),
+        "classifier": env.classifier is not None,
         "classes": CLASS_SHORT,                    # classifier output (UAV / aircraft / missile)
         "target_labels": target_labels,
         "target_legend": target_legend,
